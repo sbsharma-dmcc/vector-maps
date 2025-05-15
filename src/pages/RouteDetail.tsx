@@ -35,7 +35,7 @@ const RouteDetail = () => {
 
   // Create mock route coordinates
   // In a real app, these would come from the backend
-  const baseRouteCoordinates = [
+  const baseRouteCoordinates: [number, number][] = [
     [121.08295, 29.52432], // Start point (from the example image)
     [124.08295, 32.52432], 
     [127.08295, 35.52432],
@@ -44,7 +44,7 @@ const RouteDetail = () => {
     [135.08295, 45.52432], // End point
   ];
 
-  const weatherRouteCoordinates = [
+  const weatherRouteCoordinates: [number, number][] = [
     [121.08295, 29.52432], // Same start point
     [125.08295, 33.52432], 
     [128.08295, 37.52432],
