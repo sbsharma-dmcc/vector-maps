@@ -1,18 +1,15 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Route, History, Ship } from "lucide-react";
-
+import { LayoutDashboard, Route, History, Ship, Search, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
 } from "@/components/ui/sidebar";
 
 const navigationItems = [
@@ -22,63 +19,58 @@ const navigationItems = [
 ];
 
 const AppSidebar = () => {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Helper functions
+  // Helper function
   const isActive = (path: string) => 
     path === "/" ? currentPath === path : currentPath.startsWith(path);
-  const isMainNavExpanded = navigationItems.some((item) => isActive(item.path));
 
   return (
-    <Sidebar
-      className={`${collapsed ? "w-18" : "w-64"} border-r transition-width duration-300 bg-sidebar`}
-    >
-      <div className={`${collapsed ? "px-2 py-4" : "px-4 py-5"} flex items-center justify-between border-b`}>
-        {!collapsed && (
-          <div className="flex items-center">
-            <Ship className="h-6 w-6 mr-3 text-vessel-green" />
-            <span className="font-bold text-lg">VesselTrack</span>
-          </div>
-        )}
-        {collapsed && <Ship className="h-6 w-6 mx-auto text-vessel-green" />}
-        <SidebarTrigger className={`${collapsed ? "ml-auto" : ""}`} />
+    <Sidebar className="w-16 bg-white/90 shadow-md z-10 flex flex-col" collapsible="none">
+      <div className="p-2 border-b flex justify-center">
+        <Ship className="h-6 w-6 text-vessel-green" />
       </div>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className={`${collapsed ? "sr-only" : ""}`}>
-            Navigation
-          </SidebarGroupLabel>
-
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.path}
-                      end={item.path === "/"}
-                      className={({ isActive }) =>
-                        `flex items-center py-2 px-3 rounded-md transition-colors ${
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                        } ${collapsed ? "justify-center" : ""}`
-                      }
-                    >
-                      <item.icon className={`h-5 w-5 ${collapsed ? "" : "mr-3"}`} />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <div className="px-2 py-4">
+              <Button variant="outline" size="icon" className="w-full mb-4 bg-white">
+                <Search className="h-4 w-4" />
+              </Button>
+              
+              <SidebarMenu>
+                {navigationItems.map((item) => (
+                  <SidebarMenuItem key={item.title} className="mb-2">
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.path}
+                        end={item.path === "/"}
+                        className={({ isActive }) =>
+                          `flex items-center justify-center py-2 rounded-md transition-colors ${
+                            isActive
+                              ? "bg-vessel-green text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`
+                        }
+                      >
+                        <item.icon className="h-5 w-5" />
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <div className="mt-auto p-2 mb-4">
+        <Button className="w-full bg-blue-600 hover:bg-blue-700" size="icon">
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
     </Sidebar>
   );
 };

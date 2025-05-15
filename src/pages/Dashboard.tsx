@@ -25,11 +25,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Map fills the entire screen */}
-      <div className="flex-1 overflow-hidden">
-        <MapboxMap vessels={filteredVessels} />
-      </div>
+    <div className="absolute inset-0">
+      <MapboxMap vessels={filteredVessels} />
     </div>
   );
 };
