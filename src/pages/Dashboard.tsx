@@ -25,7 +25,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-full flex-1">
+    <div className="absolute inset-0">
       <MapboxMap vessels={filteredVessels} />
     </div>
   );
