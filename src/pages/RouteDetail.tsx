@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Map, Navigation, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -74,7 +74,7 @@ const RouteDetail = () => {
 
   return (
     <div className="absolute inset-0 flex flex-col">
-      {/* Header */}
+      {/* Header - Updated to match design */}
       <div className="bg-[#0c1c3d] text-white p-4">
         <div className="flex items-center">
           <Button 
@@ -86,48 +86,47 @@ const RouteDetail = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           
-          <div>
-            <h1 className="text-xl font-semibold flex items-center">
-              {route.name}
-              <span className="bg-green-500 text-xs font-medium ml-2 px-2 py-0.5 rounded">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold">Landbridge Fortune</h1>
+              <span className="bg-green-500 text-xs px-2 py-0.5 rounded">
                 Loaded
               </span>
-            </h1>
-            <div className="flex text-sm text-gray-300">
-              <span>29° 52' 43.2" N</span>
-              <span className="mx-2">•</span>
-              <span>Chiba</span>
+              <span className="text-xs text-gray-400 ml-auto">{id || '9727211'}</span>
             </div>
-            <div className="text-sm text-gray-300">
-              <span>121° 08' 29.5" E</span>
+            <div className="text-sm text-[#8E9196]">
+              20° 52' 43.2" N, <span className="ml-2">Chiba</span>
+            </div>
+            <div className="text-sm text-[#8E9196]">
+              121° 08' 29.5" E
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6 mt-4">
           <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Voyage ID</p>
-            <p className="font-bold">#{id}</p>
+            <p className="text-xs text-[#8E9196]">Voyage ID</p>
+            <p className="font-bold">#12</p>
           </div>
           <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Start Date</p>
+            <p className="text-xs text-[#8E9196]">Start Date</p>
             <p className="font-bold">15th May 25</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">Time</p>
+            <p className="text-xs text-[#8E9196]">Time</p>
             <p className="font-bold">07:40 UTC</p>
           </div>
 
           <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Hire Rate</p>
+            <p className="text-xs text-[#8E9196]">Hire Rate</p>
             <p className="font-bold">$0</p>
           </div>
           <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Fuel Price</p>
+            <p className="text-xs text-[#8E9196]">Fuel Price</p>
             <p className="font-bold">$0</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">Planned Speed</p>
+            <p className="text-xs text-[#8E9196]">Planned Speed</p>
             <p className="font-bold">10kt - 12kt</p>
           </div>
         </div>
@@ -135,108 +134,103 @@ const RouteDetail = () => {
 
       {/* Sidebar and Map */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-96 bg-gray-100 overflow-y-auto">
-          <div className="bg-white">
-            <div className="flex">
-              <Button 
-                variant="ghost" 
-                className={`flex-1 rounded-none py-6 ${activeTab === 'base' ? 'bg-gray-100' : ''}`}
-                onClick={() => setActiveTab('base')}
-              >
-                <span>Base Route</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                className={`flex-1 rounded-none py-6 ${activeTab === 'weather' ? 'bg-gray-100' : ''}`}
-                onClick={() => setActiveTab('weather')}
-              >
-                <span>Weather Routing</span>
-              </Button>
-            </div>
+        {/* Sidebar - Updated to match design */}
+        <div className="w-[350px] bg-white overflow-y-auto border-r">
+          <div className="flex">
+            <button 
+              className={`flex-1 py-4 font-medium text-center ${activeTab === 'base' ? 'bg-gray-100' : 'bg-white'}`}
+              onClick={() => setActiveTab('base')}
+            >
+              <span className="text-black">Base Route</span>
+            </button>
+            <button 
+              className={`flex-1 py-4 font-medium text-center ${activeTab === 'weather' ? 'bg-gray-100' : 'bg-white'}`}
+              onClick={() => setActiveTab('weather')}
+            >
+              <span className="text-black">Weather Routing</span>
+            </button>
           </div>
           
           <div className="p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white p-4 rounded">
-                <div className="flex flex-col items-center">
-                  <p className="text-sm text-gray-500">21st May 25</p>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Voyage Details</h3>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-gray-100 p-4 rounded">
+                <p className="text-sm text-center">ETA</p>
+                <div className="flex flex-col items-center mt-1">
+                  <p className="text-sm text-gray-700">21st May 25</p>
                   <p className="font-medium">11:50 UTC</p>
                 </div>
               </div>
-              <div className="bg-white p-4 rounded">
-                <div className="flex flex-col items-center">
+              <div className="bg-gray-100 p-4 rounded">
+                <p className="text-sm text-center">ETA</p>
+                <div className="flex flex-col items-center mt-1">
                   <p className="text-sm text-green-500">21st May 25</p>
                   <p className="font-medium text-green-500">08:49 UTC</p>
                 </div>
               </div>
             </div>
             
-            <div className="mt-4">
-              <div className="bg-white rounded">
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Total Distance</p>
-                    <p className="font-medium">1,342 nm</p>
-                  </div>
-                  <div className="p-4 flex">
-                    <p className="font-medium text-red-500">1,351 nm</p>
-                  </div>
+            <div className="bg-white border rounded">
+              <div className="grid grid-cols-2 border-b">
+                <div className="p-4 border-r">
+                  <p className="text-sm text-gray-500">Total Distance</p>
+                  <p className="font-medium">1,342 nm</p>
                 </div>
-                
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Total Consumption</p>
-                    <p className="font-medium">154 mt</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium text-green-500">151 mt</p>
-                  </div>
+                <div className="p-4">
+                  <p className="font-medium text-red-500">1,351 nm</p>
                 </div>
-                
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Fuel Cost</p>
-                    <p className="font-medium">$0</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium">$0</p>
-                  </div>
+              </div>
+              
+              <div className="grid grid-cols-2 border-b">
+                <div className="p-4 border-r">
+                  <p className="text-sm text-gray-500">Total Consumption</p>
+                  <p className="font-medium">154 mt</p>
                 </div>
-                
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Hire Cost</p>
-                    <p className="font-medium">$0</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium">$0</p>
-                  </div>
+                <div className="p-4">
+                  <p className="font-medium text-green-500">151 mt</p>
                 </div>
-                
-                <div className="grid grid-cols-2">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Total Est. Cost</p>
-                    <p className="font-medium">$0</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium">$0</p>
-                  </div>
+              </div>
+              
+              <div className="grid grid-cols-2 border-b">
+                <div className="p-4 border-r">
+                  <p className="text-sm text-gray-500">Fuel Cost</p>
+                  <p className="font-medium">$0</p>
+                </div>
+                <div className="p-4">
+                  <p className="font-medium">$0</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 border-b">
+                <div className="p-4 border-r">
+                  <p className="text-sm text-gray-500">Hire Cost</p>
+                  <p className="font-medium">$0</p>
+                </div>
+                <div className="p-4">
+                  <p className="font-medium">$0</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2">
+                <div className="p-4 border-r">
+                  <p className="text-sm text-gray-500">Total Est. Cost</p>
+                  <p className="font-medium">$0</p>
+                </div>
+                <div className="p-4">
+                  <p className="font-medium">$0</p>
                 </div>
               </div>
             </div>
             
-            <div className="mt-4">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-between bg-white hover:bg-gray-50 py-6"
-              >
-                <div className="flex items-center">
-                  <div className="font-medium">More Details</div>
-                  <div className="text-sm text-gray-500 ml-2">Route ID, Weather, Waypoints etc...</div>
+            <div className="mt-4 border rounded">
+              <button className="w-full flex justify-between items-center p-4 hover:bg-gray-50">
+                <div>
+                  <p className="font-medium text-left">More Details</p>
+                  <p className="text-sm text-gray-500 text-left">Route ID, Weather, Waypoints etc...</p>
                 </div>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </button>
             </div>
           </div>
         </div>
@@ -252,20 +246,27 @@ const RouteDetail = () => {
             activeRouteType={activeTab}
           />
           
-          {/* Timeline Navigation */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-80 text-white">
+          {/* Map Layers Button */}
+          <div className="absolute left-4 bottom-20 bg-white p-2 rounded-md shadow-md">
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <Layers className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          {/* Timeline Navigation - Updated to match design */}
+          <div className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t">
             <div className="flex overflow-x-auto">
-              {days.map((day, index) => (
+              {['13 Tue', '14 Wed', 'Today', '16 Fri', '17 Sat'].map((day, index) => (
                 <div 
                   key={index} 
-                  className={`flex-1 p-4 text-center cursor-pointer border-t-2 ${
-                    day.active ? 'bg-gray-900 border-blue-500' : 'border-transparent'
+                  className={`flex-1 p-3 text-center cursor-pointer ${
+                    day === 'Today' ? 'bg-[#0c1c3d] text-white' : 'hover:bg-gray-100'
                   }`}
                 >
-                  <div className="text-sm">{day.date} {day.day}</div>
+                  <div className="text-sm font-medium">{day}</div>
                 </div>
               ))}
-              <div className="p-4 flex items-center justify-center cursor-pointer">
+              <div className="p-3 flex items-center justify-center cursor-pointer hover:bg-gray-100">
                 <ChevronRight className="h-5 w-5" />
               </div>
             </div>
@@ -277,3 +278,4 @@ const RouteDetail = () => {
 };
 
 export default RouteDetail;
+
