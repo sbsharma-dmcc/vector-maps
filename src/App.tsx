@@ -23,6 +23,10 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/routes" element={<RoutesPage />} />
             <Route path="/history" element={<History />} />
+            <Route path="/grid" element={<Dashboard />} />
+            <Route path="/stats" element={<Dashboard />} />
+            <Route path="/schedule" element={<Dashboard />} />
+            <Route path="/settings" element={<Dashboard />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
