@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Ship } from 'lucide-react';
 
 interface MapboxMapProps {
   vessels: {
@@ -64,35 +64,40 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
       // Add zoom controls
       map.current.scrollZoom.enable();
 
-      // Create animation keyframes for vessel markers
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes pulse-vessel {
-          0% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.1); opacity: 1; }
-          100% { transform: scale(1); opacity: 0.8; }
-        }
-      `;
-      document.head.appendChild(style);
+      // Clear any existing markers
+      Object.values(markersRef.current).forEach(marker => marker.remove());
+      markersRef.current = {};
 
-      // Create markers for vessels
+      // Create vessels markers that match the reference image
       vessels.forEach(vessel => {
         // Create marker element
         const el = document.createElement('div');
         el.className = `vessel-marker vessel-${vessel.type}`;
+        
+        // Style to match the reference image - horizontal elliptical shape
         el.style.width = '20px';
-        el.style.height = '10px';
+        el.style.height = '8px';
         el.style.borderRadius = '10px';
         el.style.backgroundColor = vessel.type === 'green' ? '#4ade80' : '#fb923c';
-        el.style.animation = 'pulse-vessel 2s infinite';
+        el.style.transform = 'rotate(20deg)'; // Slight rotation to match image
+        el.style.opacity = '0.9';
         el.style.cursor = 'pointer';
         
         // Create popup
         const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`<h3 class="font-bold">${vessel.name}</h3><p>Vessel ID: ${vessel.id}</p>`);
+          .setHTML(`
+            <div class="p-2">
+              <h3 class="font-bold text-sm">${vessel.name}</h3>
+              <p class="text-xs">ID: ${vessel.id}</p>
+            </div>
+          `);
 
         // Create and store marker
-        const marker = new mapboxgl.Marker(el)
+        const marker = new mapboxgl.Marker({
+          element: el,
+          // Adjust anchor point to center of ellipse
+          anchor: 'center'
+        })
           .setLngLat(vessel.position)
           .setPopup(popup)
           .addTo(map.current!);
