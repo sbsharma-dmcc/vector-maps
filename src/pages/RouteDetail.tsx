@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers } from 'lucide-react';
+import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import { Button } from '@/components/ui/button';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
@@ -177,31 +176,40 @@ const RouteDetail = () => {
       <div className="w-96 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-[#0c1c3d] text-white p-4">
-          <div className="flex items-center">
+          <div className="flex items-center justify-between mb-4">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-white mr-2" 
+              className="text-white" 
               onClick={() => navigate('/routes')}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             
-            <div>
-              <h1 className="text-xl font-semibold flex items-center">
-                {route.name}
-                <span className="bg-green-500 text-xs font-medium ml-2 px-2 py-0.5 rounded">
-                  Loaded
-                </span>
-              </h1>
-              <div className="flex text-sm text-gray-300">
-                <span>29° 52' 43.2" N</span>
-                <span className="mx-2">•</span>
-                <span>Chiba</span>
-              </div>
-              <div className="text-sm text-gray-300">
-                <span>121° 08' 29.5" E</span>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="icon" className="text-white">
+                <Search className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-white">
+                <Bell className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+          
+          <div>
+            <h1 className="text-xl font-semibold flex items-center">
+              {route?.name}
+              <span className="bg-green-500 text-xs font-medium ml-2 px-2 py-0.5 rounded">
+                Loaded
+              </span>
+            </h1>
+            <div className="flex text-sm text-gray-300">
+              <span>29° 52' 43.2" N</span>
+              <span className="mx-2">•</span>
+              <span>Chiba</span>
+            </div>
+            <div className="text-sm text-gray-300">
+              <span>121° 08' 29.5" E</span>
             </div>
           </div>
 
@@ -343,11 +351,14 @@ const RouteDetail = () => {
       
       {/* Map Container - covers the entire right side */}
       <div className="flex-1 relative">
-        {/* Map layers button */}
-        <div className="absolute right-4 top-4 z-10">
+        {/* Top right buttons */}
+        <div className="absolute right-4 top-4 z-10 flex space-x-2">
           <Button variant="secondary" className="bg-white shadow-md">
             <Layers className="h-5 w-5 mr-2" />
             Map Layers
+          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700" size="icon">
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
         
