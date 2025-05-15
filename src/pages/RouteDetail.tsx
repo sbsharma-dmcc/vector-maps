@@ -1,16 +1,21 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import { Button } from '@/components/ui/button';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
+import { useToast } from '@/hooks/use-toast';
 
 const RouteDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [route, setRoute] = useState<Route | null>(null);
   const [activeTab, setActiveTab] = useState<'base' | 'weather'>('base');
+  const [vesselPosition, setVesselPosition] = useState<[number, number] | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animationRef = useRef<number | null>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     // In a real app, we would fetch the specific route
@@ -23,14 +28,6 @@ const RouteDetail = () => {
       setRoute(foundRoute);
     }
   }, [id]);
-
-  if (!route) {
-    return (
-      <div className="p-8 flex justify-center items-center h-full">
-        <p>Loading route details...</p>
-      </div>
-    );
-  }
 
   // Create mock route coordinates
   // In a real app, these would come from the backend
@@ -52,11 +49,99 @@ const RouteDetail = () => {
     [135.08295, 45.52432], // Same end point
   ];
 
-  const routeVessel = {
-    id: route.vesselId,
-    name: route.name,
-    type: 'green' as const,
-    position: [baseRouteCoordinates[0][0], baseRouteCoordinates[0][1]] as [number, number]
+  // Initialize vessel position at the start of the route
+  useEffect(() => {
+    if (!vesselPosition && activeTab === 'base' && baseRouteCoordinates.length > 0) {
+      setVesselPosition(baseRouteCoordinates[0]);
+    } else if (!vesselPosition && activeTab === 'weather' && weatherRouteCoordinates.length > 0) {
+      setVesselPosition(weatherRouteCoordinates[0]);
+    }
+  }, [activeTab, vesselPosition, baseRouteCoordinates, weatherRouteCoordinates]);
+
+  // Set the active route coordinates based on the active tab
+  const activeRouteCoordinates = activeTab === 'base' ? baseRouteCoordinates : weatherRouteCoordinates;
+  
+  // Cancel any ongoing animation when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  // Function to animate the vessel along the route
+  const animateVessel = (dayIndex: number) => {
+    // Stop any previous animation
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    // Ensure we have a route to animate along
+    if (activeRouteCoordinates.length === 0) return;
+
+    setIsAnimating(true);
+    
+    // Calculate the segment of the route to animate based on the day clicked
+    const totalDays = 5; // Number of days in the timeline
+    const segmentSize = activeRouteCoordinates.length - 1;
+    
+    // For day 0, we animate from point 0 to 1/5 of the way
+    // For day 1, we animate from 1/5 to 2/5 of the way, etc.
+    const startIdx = Math.floor((dayIndex / totalDays) * segmentSize);
+    const endIdx = Math.min(Math.floor(((dayIndex + 1) / totalDays) * segmentSize), segmentSize);
+    
+    // Get the points for this segment
+    const segmentPoints = activeRouteCoordinates.slice(startIdx, endIdx + 1);
+    
+    // If there's only one point in the segment, add the next point
+    if (segmentPoints.length === 1 && endIdx < activeRouteCoordinates.length - 1) {
+      segmentPoints.push(activeRouteCoordinates[endIdx + 1]);
+    }
+    
+    // Start vessel at the first point of this segment
+    setVesselPosition(segmentPoints[0]);
+    
+    let step = 0;
+    const totalSteps = 100; // Number of animation frames
+    
+    // Animation function
+    const animate = () => {
+      if (step >= totalSteps) {
+        setIsAnimating(false);
+        return;
+      }
+      
+      // Calculate position along the segment using linear interpolation
+      if (segmentPoints.length >= 2) {
+        const progress = step / totalSteps;
+        let currentSegmentIndex = Math.min(
+          Math.floor(progress * (segmentPoints.length - 1)),
+          segmentPoints.length - 2
+        );
+        
+        const segmentProgress = (progress * (segmentPoints.length - 1)) % 1;
+        
+        const p1 = segmentPoints[currentSegmentIndex];
+        const p2 = segmentPoints[currentSegmentIndex + 1];
+        
+        const newLng = p1[0] + (p2[0] - p1[0]) * segmentProgress;
+        const newLat = p1[1] + (p2[1] - p1[1]) * segmentProgress;
+        
+        setVesselPosition([newLng, newLat]);
+      }
+      
+      step++;
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    // Start the animation
+    animationRef.current = requestAnimationFrame(animate);
+    
+    toast({
+      title: `Day ${dayIndex === 0 ? "Today" : dayIndex + 1}`,
+      description: "Animating vessel journey for this day"
+    });
   };
 
   // For the timeline dates
@@ -70,6 +155,21 @@ const RouteDetail = () => {
       active: i === 0
     };
   });
+
+  if (!route) {
+    return (
+      <div className="p-8 flex justify-center items-center h-full">
+        <p>Loading route details...</p>
+      </div>
+    );
+  }
+
+  const routeVessel = {
+    id: route.vesselId,
+    name: route.name,
+    type: 'green' as const,
+    position: vesselPosition || activeRouteCoordinates[0]
+  };
 
   return (
     <div className="absolute inset-0 flex">
@@ -268,7 +368,8 @@ const RouteDetail = () => {
                 key={index} 
                 className={`flex-1 p-4 text-center cursor-pointer border-t-2 ${
                   day.active ? 'bg-gray-900 border-blue-500' : 'border-transparent'
-                }`}
+                } hover:bg-gray-700 transition-colors`}
+                onClick={() => animateVessel(index)}
               >
                 <div className="text-sm">{day.date} {day.day}</div>
               </div>
