@@ -25,10 +25,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col">
-      <div className="flex-1 overflow-hidden">
-        <MapboxMap vessels={filteredVessels} />
-      </div>
+    <div className="h-full flex-1">
+      <MapboxMap vessels={filteredVessels} />
     </div>
   );
 };

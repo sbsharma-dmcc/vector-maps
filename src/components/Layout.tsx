@@ -8,7 +8,7 @@ const Layout = () => {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
-        <main className="flex-1 overflow-hidden relative">
+        <main className="flex-1 overflow-hidden">
           <Outlet />
         </main>
       </div>
