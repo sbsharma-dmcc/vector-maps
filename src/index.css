@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -49,6 +50,9 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    --vessel-green: #4ade80;
+    --vessel-orange: #fb923c;
   }
 
   .dark {
@@ -87,6 +91,9 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    --vessel-green: #4ade80;
+    --vessel-orange: #fb923c;
   }
 }
 
@@ -98,4 +105,36 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@keyframes pulse-vessel {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+.bg-vessel-green {
+  background-color: var(--vessel-green);
+}
+
+.bg-vessel-orange {
+  background-color: var(--vessel-orange);
+}
+
+.text-vessel-green {
+  color: var(--vessel-green);
+}
+
+.text-vessel-orange {
+  color: var(--vessel-orange);
+}
+
+.vessel-marker.vessel-green {
+  background-color: var(--vessel-green);
+  animation: pulse-vessel 2s infinite;
+}
+
+.vessel-marker.vessel-orange {
+  background-color: var(--vessel-orange);
+  animation: pulse-vessel 2s infinite;
 }

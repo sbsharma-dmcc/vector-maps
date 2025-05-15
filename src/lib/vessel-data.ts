@@ -86,12 +86,12 @@ export interface Route {
 export const generateMockRoutes = (vessels: Vessel[]): Route[] => {
   const routes: Route[] = [];
   const ports = [
-    { name: 'New York', position: [-74.0060, 40.7128] },
-    { name: 'Rotterdam', position: [4.4777, 51.9225] },
-    { name: 'Singapore', position: [103.8198, 1.3521] },
-    { name: 'Shanghai', position: [121.4737, 31.2304] },
-    { name: 'Sydney', position: [151.2093, -33.8688] },
-    { name: 'Cape Town', position: [18.4241, -33.9249] }
+    { name: 'New York', position: [-74.0060, 40.7128] as [number, number] },
+    { name: 'Rotterdam', position: [4.4777, 51.9225] as [number, number] },
+    { name: 'Singapore', position: [103.8198, 1.3521] as [number, number] },
+    { name: 'Shanghai', position: [121.4737, 31.2304] as [number, number] },
+    { name: 'Sydney', position: [151.2093, -33.8688] as [number, number] },
+    { name: 'Cape Town', position: [18.4241, -33.9249] as [number, number] }
   ];
   
   const routeStatuses: Route['status'][] = ['scheduled', 'in-progress', 'completed', 'diverted'];
@@ -126,7 +126,7 @@ export const generateMockRoutes = (vessels: Vessel[]): Route[] => {
         waypoints.push([
           lng + (Math.random() * 10 - 5),
           lat + (Math.random() * 10 - 5)
-        ]);
+        ] as [number, number]);
       }
       
       waypoints.push(endPort.position);
@@ -175,12 +175,12 @@ export const generateMockHistory = (vessels: Vessel[], count = 100): VesselEvent
   const events: VesselEvent[] = [];
   const eventTypes: VesselEvent['eventType'][] = ['departure', 'arrival', 'position', 'status', 'alert'];
   const ports = [
-    { name: 'New York', position: [-74.0060, 40.7128] },
-    { name: 'Rotterdam', position: [4.4777, 51.9225] },
-    { name: 'Singapore', position: [103.8198, 1.3521] },
-    { name: 'Shanghai', position: [121.4737, 31.2304] },
-    { name: 'Sydney', position: [151.2093, -33.8688] },
-    { name: 'Cape Town', position: [18.4241, -33.9249] }
+    { name: 'New York', position: [-74.0060, 40.7128] as [number, number] },
+    { name: 'Rotterdam', position: [4.4777, 51.9225] as [number, number] },
+    { name: 'Singapore', position: [103.8198, 1.3521] as [number, number] },
+    { name: 'Shanghai', position: [121.4737, 31.2304] as [number, number] },
+    { name: 'Sydney', position: [151.2093, -33.8688] as [number, number] },
+    { name: 'Cape Town', position: [18.4241, -33.9249] as [number, number] }
   ];
   
   for (let i = 0; i < count; i++) {
@@ -210,7 +210,7 @@ export const generateMockHistory = (vessels: Vessel[], count = 100): VesselEvent
       
       case 'position':
         // Random position in the ocean
-        coordinates = [Math.random() * 360 - 180, Math.random() * 160 - 80];
+        coordinates = [Math.random() * 360 - 180, Math.random() * 160 - 80] as [number, number];
         location = 'Open Waters';
         description = `Routine position update at ${coordinates[0].toFixed(2)}, ${coordinates[1].toFixed(2)}`;
         break;
