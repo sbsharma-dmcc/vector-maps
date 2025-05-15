@@ -1,10 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Map, Navigation, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
 
 const RouteDetail = () => {
@@ -73,70 +72,70 @@ const RouteDetail = () => {
   });
 
   return (
-    <div className="absolute inset-0 flex flex-col">
-      {/* Header */}
-      <div className="bg-[#0c1c3d] text-white p-4">
-        <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-white mr-2" 
-            onClick={() => navigate('/routes')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          
-          <div>
-            <h1 className="text-xl font-semibold flex items-center">
-              {route.name}
-              <span className="bg-green-500 text-xs font-medium ml-2 px-2 py-0.5 rounded">
-                Loaded
-              </span>
-            </h1>
-            <div className="flex text-sm text-gray-300">
-              <span>29° 52' 43.2" N</span>
-              <span className="mx-2">•</span>
-              <span>Chiba</span>
+    <div className="absolute inset-0 flex">
+      {/* Left sidebar with header and details */}
+      <div className="w-96 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-[#0c1c3d] text-white p-4">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white mr-2" 
+              onClick={() => navigate('/routes')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            
+            <div>
+              <h1 className="text-xl font-semibold flex items-center">
+                {route.name}
+                <span className="bg-green-500 text-xs font-medium ml-2 px-2 py-0.5 rounded">
+                  Loaded
+                </span>
+              </h1>
+              <div className="flex text-sm text-gray-300">
+                <span>29° 52' 43.2" N</span>
+                <span className="mx-2">•</span>
+                <span>Chiba</span>
+              </div>
+              <div className="text-sm text-gray-300">
+                <span>121° 08' 29.5" E</span>
+              </div>
             </div>
-            <div className="text-sm text-gray-300">
-              <span>121° 08' 29.5" E</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6 mt-4">
+            <div className="border-r border-gray-700 pr-4">
+              <p className="text-xs text-gray-400">Voyage ID</p>
+              <p className="font-bold">#{id}</p>
+            </div>
+            <div className="border-r border-gray-700 pr-4">
+              <p className="text-xs text-gray-400">Start Date</p>
+              <p className="font-bold">15th May 25</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Time</p>
+              <p className="font-bold">07:40 UTC</p>
+            </div>
+
+            <div className="border-r border-gray-700 pr-4">
+              <p className="text-xs text-gray-400">Hire Rate</p>
+              <p className="font-bold">$0</p>
+            </div>
+            <div className="border-r border-gray-700 pr-4">
+              <p className="text-xs text-gray-400">Fuel Price</p>
+              <p className="font-bold">$0</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Planned Speed</p>
+              <p className="font-bold">10kt - 12kt</p>
             </div>
           </div>
         </div>
-
-        <div className="grid grid-cols-3 gap-6 mt-4">
-          <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Voyage ID</p>
-            <p className="font-bold">#{id}</p>
-          </div>
-          <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Start Date</p>
-            <p className="font-bold">15th May 25</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400">Time</p>
-            <p className="font-bold">07:40 UTC</p>
-          </div>
-
-          <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Hire Rate</p>
-            <p className="font-bold">$0</p>
-          </div>
-          <div className="border-r border-gray-700 pr-4">
-            <p className="text-xs text-gray-400">Fuel Price</p>
-            <p className="font-bold">$0</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400">Planned Speed</p>
-            <p className="font-bold">10kt - 12kt</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Sidebar and Map */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-96 bg-gray-100 overflow-y-auto">
+        
+        {/* Sidebar content */}
+        <div className="flex-1 bg-gray-100 overflow-y-auto">
           <div className="bg-white">
             <div className="flex">
               <Button 
@@ -240,34 +239,42 @@ const RouteDetail = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Map Container - covers the entire right side */}
+      <div className="flex-1 relative">
+        {/* Map layers button */}
+        <div className="absolute right-4 top-4 z-10">
+          <Button variant="secondary" className="bg-white shadow-md">
+            <Layers className="h-5 w-5 mr-2" />
+            Map Layers
+          </Button>
+        </div>
         
-        {/* Map Container */}
-        <div className="flex-1 relative">
-          {/* Customize MapboxMap to handle routes */}
-          <MapboxMap 
-            vessels={[routeVessel]} 
-            showRoutes={true}
-            baseRoute={baseRouteCoordinates}
-            weatherRoute={weatherRouteCoordinates}
-            activeRouteType={activeTab}
-          />
-          
-          {/* Timeline Navigation */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-80 text-white">
-            <div className="flex overflow-x-auto">
-              {days.map((day, index) => (
-                <div 
-                  key={index} 
-                  className={`flex-1 p-4 text-center cursor-pointer border-t-2 ${
-                    day.active ? 'bg-gray-900 border-blue-500' : 'border-transparent'
-                  }`}
-                >
-                  <div className="text-sm">{day.date} {day.day}</div>
-                </div>
-              ))}
-              <div className="p-4 flex items-center justify-center cursor-pointer">
-                <ChevronRight className="h-5 w-5" />
+        {/* Customize MapboxMap to handle routes */}
+        <MapboxMap 
+          vessels={[routeVessel]} 
+          showRoutes={true}
+          baseRoute={baseRouteCoordinates}
+          weatherRoute={weatherRouteCoordinates}
+          activeRouteType={activeTab}
+        />
+        
+        {/* Timeline Navigation */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-80 text-white">
+          <div className="flex overflow-x-auto">
+            {days.map((day, index) => (
+              <div 
+                key={index} 
+                className={`flex-1 p-4 text-center cursor-pointer border-t-2 ${
+                  day.active ? 'bg-gray-900 border-blue-500' : 'border-transparent'
+                }`}
+              >
+                <div className="text-sm">{day.date} {day.day}</div>
               </div>
+            ))}
+            <div className="p-4 flex items-center justify-center cursor-pointer">
+              <ChevronRight className="h-5 w-5" />
             </div>
           </div>
         </div>
