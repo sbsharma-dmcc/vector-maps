@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
-import { Search, MapPin, Ship } from 'lucide-react';
+import { Search, MapPin } from 'lucide-react';
 
 interface MapboxMapProps {
   vessels: {
@@ -22,7 +22,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
   const [mapToken, setMapToken] = useState<string>(
     accessToken || 'pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q'
   );
-  const [hoverCoordinates, setHoverCoordinates] = useState<{lat: string, lng: string} | null>(null);
   const { toast } = useToast();
 
   // If no access token is provided, ask the user to input one
@@ -39,20 +38,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
         variant: "destructive"
       });
     }
-  };
-
-  // Function to format coordinates in degrees, minutes, seconds
-  const formatCoordinate = (coord: number, isLat: boolean): string => {
-    const absolute = Math.abs(coord);
-    const degrees = Math.floor(absolute);
-    const minutes = Math.floor((absolute - degrees) * 60);
-    const seconds = ((absolute - degrees - minutes/60) * 3600).toFixed(2);
-    
-    const direction = isLat 
-      ? (coord >= 0 ? 'N' : 'S')
-      : (coord >= 0 ? 'E' : 'W');
-      
-    return `${degrees}°${minutes}'${seconds}" ${direction}`;
   };
 
   useEffect(() => {
@@ -79,52 +64,40 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
       // Add zoom controls
       map.current.scrollZoom.enable();
 
-      // Clear any existing markers
-      Object.values(markersRef.current).forEach(marker => marker.remove());
-      markersRef.current = {};
+      // Create animation keyframes for vessel markers
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes pulse-vessel {
+          0% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 0.8; }
+        }
+      `;
+      document.head.appendChild(style);
 
-      // Create vessels markers that match the reference image
+      // Create markers for vessels
       vessels.forEach(vessel => {
         // Create marker element
         const el = document.createElement('div');
         el.className = `vessel-marker vessel-${vessel.type}`;
-        
-        // Style to match the reference image - horizontal elliptical shape
         el.style.width = '20px';
-        el.style.height = '8px';
+        el.style.height = '10px';
         el.style.borderRadius = '10px';
         el.style.backgroundColor = vessel.type === 'green' ? '#4ade80' : '#fb923c';
-        el.style.transform = 'rotate(20deg)'; // Slight rotation to match image
-        el.style.opacity = '0.9';
+        el.style.animation = 'pulse-vessel 2s infinite';
         el.style.cursor = 'pointer';
         
         // Create popup
         const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <div class="p-2">
-              <h3 class="font-bold text-sm">${vessel.name}</h3>
-              <p class="text-xs">ID: ${vessel.id}</p>
-            </div>
-          `);
+          .setHTML(`<h3 class="font-bold">${vessel.name}</h3><p>Vessel ID: ${vessel.id}</p>`);
 
         // Create and store marker
-        const marker = new mapboxgl.Marker({
-          element: el,
-          // Adjust anchor point to center of ellipse
-          anchor: 'center'
-        })
+        const marker = new mapboxgl.Marker(el)
           .setLngLat(vessel.position)
           .setPopup(popup)
           .addTo(map.current!);
           
         markersRef.current[vessel.id] = marker;
-      });
-
-      // Add mouse move event listener to capture and display coordinates
-      map.current.on('mousemove', (e) => {
-        const lat = formatCoordinate(e.lngLat.lat, true);
-        const lng = formatCoordinate(e.lngLat.lng, false);
-        setHoverCoordinates({ lat, lng });
       });
 
       // Cleanup
@@ -171,15 +144,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
 
         {/* Map container */}
         <div ref={mapContainer} className="absolute inset-0" />
-
-        {/* Coordinates display on hover */}
-        {hoverCoordinates && (
-          <div className="absolute bottom-24 right-10 z-10 bg-blue-900/80 text-white p-3 rounded-md flex flex-col items-end">
-            <div className="text-lg font-medium">{hoverCoordinates.lat}</div>
-            <div className="text-lg font-medium">{hoverCoordinates.lng}</div>
-            <div className="text-lg font-medium">500m</div>
-          </div>
-        )}
       </div>
     );
   }

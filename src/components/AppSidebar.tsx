@@ -1,10 +1,13 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Route, History, Ship, Grid, Settings, Clock, BarChart } from "lucide-react";
+import { LayoutDashboard, Route, History, Ship } from "lucide-react";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -14,11 +17,8 @@ import {
 
 const navigationItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
-  { title: "Grid View", path: "/grid", icon: Grid },
   { title: "Routes", path: "/routes", icon: Route },
   { title: "History", path: "/history", icon: History },
-  { title: "Statistics", path: "/stats", icon: BarChart },
-  { title: "Schedule", path: "/schedule", icon: Clock },
 ];
 
 const AppSidebar = () => {
@@ -27,69 +27,58 @@ const AppSidebar = () => {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Helper function
+  // Helper functions
   const isActive = (path: string) => 
     path === "/" ? currentPath === path : currentPath.startsWith(path);
+  const isMainNavExpanded = navigationItems.some((item) => isActive(item.path));
 
   return (
     <Sidebar
-      className="border-none"
-      style={{ width: "64px", minWidth: "64px" }}
+      className={`${collapsed ? "w-18" : "w-64"} border-r transition-width duration-300 bg-sidebar`}
     >
-      <div className="bg-blue-950 flex flex-col items-center h-full pt-4 pb-2">
-        <div className="mb-4">
-          <NavLink to="/" className="block">
-            <Ship className="h-7 w-7 mx-auto text-blue-400" />
-          </NavLink>
-        </div>
-
-        <SidebarTrigger className="hidden" />
-
-        <SidebarContent>
-          <SidebarMenu>
-            {navigationItems.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to={item.path}
-                    title={item.title}
-                    end={item.path === "/"}
-                    className={({ isActive }) =>
-                      `flex justify-center rounded-md my-3 transition-colors ${
-                        isActive
-                          ? "text-white bg-blue-800"
-                          : "text-blue-300 hover:bg-blue-800/50"
-                      } p-2`
-                    }
-                  >
-                    <item.icon className="h-5 w-5" />
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        
-        <div className="mt-auto">
-          <NavLink 
-            to="/settings" 
-            title="Settings"
-            className={({ isActive }) =>
-              `flex justify-center rounded-md my-3 transition-colors ${
-                isActive
-                  ? "text-white bg-blue-800"
-                  : "text-blue-300 hover:bg-blue-800/50"
-              } p-2`
-            }
-          >
-            <Settings className="h-5 w-5" />
-          </NavLink>
-          
-          <div className="h-8 w-8 bg-indigo-600 rounded-full text-white flex items-center justify-center mt-5">
-            A
+      <div className={`${collapsed ? "px-2 py-4" : "px-4 py-5"} flex items-center justify-between border-b`}>
+        {!collapsed && (
+          <div className="flex items-center">
+            <Ship className="h-6 w-6 mr-3 text-vessel-green" />
+            <span className="font-bold text-lg">VesselTrack</span>
           </div>
-        </div>
+        )}
+        {collapsed && <Ship className="h-6 w-6 mx-auto text-vessel-green" />}
+        <SidebarTrigger className={`${collapsed ? "ml-auto" : ""}`} />
       </div>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className={`${collapsed ? "sr-only" : ""}`}>
+            Navigation
+          </SidebarGroupLabel>
+
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.path}
+                      end={item.path === "/"}
+                      className={({ isActive }) =>
+                        `flex items-center py-2 px-3 rounded-md transition-colors ${
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        } ${collapsed ? "justify-center" : ""}`
+                      }
+                    >
+                      <item.icon className={`h-5 w-5 ${collapsed ? "" : "mr-3"}`} />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
     </Sidebar>
   );
 };
