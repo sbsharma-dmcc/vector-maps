@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -13,12 +12,25 @@ interface MapboxMapProps {
     position: [number, number];
   }[];
   accessToken?: string;
+  showRoutes?: boolean;
+  baseRoute?: [number, number][];
+  weatherRoute?: [number, number][];
+  activeRouteType?: 'base' | 'weather';
 }
 
-const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
+const MapboxMap: React.FC<MapboxMapProps> = ({ 
+  vessels, 
+  accessToken,
+  showRoutes = false,
+  baseRoute = [],
+  weatherRoute = [],
+  activeRouteType = 'base'
+}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
+  const baseRouteRef = useRef<mapboxgl.GeoJSONSource | null>(null);
+  const weatherRouteRef = useRef<mapboxgl.GeoJSONSource | null>(null);
   const [mapToken, setMapToken] = useState<string>(
     accessToken || 'pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q'
   );
@@ -50,8 +62,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/geoserve/cm5kwbsxd003w01sabztwggic",
-        center: [83.167, 6.887],
-        zoom: 4,
+        center: showRoutes && baseRoute.length > 0 
+          ? [(baseRoute[0][0] + baseRoute[baseRoute.length - 1][0]) / 2, 
+             (baseRoute[0][1] + baseRoute[baseRoute.length - 1][1]) / 2] 
+          : [83.167, 6.887],
+        zoom: showRoutes ? 5 : 4,
         attributionControl: false
       });
 
@@ -74,6 +89,106 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
         }
       `;
       document.head.appendChild(style);
+
+      // Add sources and layers for routes when the map loads
+      map.current.on('load', () => {
+        if (showRoutes) {
+          // Add base route source and layer
+          map.current?.addSource('base-route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: baseRoute
+              }
+            }
+          });
+          
+          map.current?.addLayer({
+            id: 'base-route-line',
+            type: 'line',
+            source: 'base-route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#000',
+              'line-width': 3,
+              'line-dasharray': [1, 0]
+            }
+          });
+          
+          // Add weather route source and layer
+          map.current?.addSource('weather-route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: weatherRoute
+              }
+            }
+          });
+          
+          map.current?.addLayer({
+            id: 'weather-route-line',
+            type: 'line',
+            source: 'weather-route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#4ade80',
+              'line-width': 3,
+              'line-dasharray': [1, 0]
+            }
+          });
+          
+          // Add start and end markers
+          if (baseRoute.length > 0) {
+            // Start marker (S)
+            const startEl = document.createElement('div');
+            startEl.className = 'start-marker';
+            startEl.style.width = '30px';
+            startEl.style.height = '30px';
+            startEl.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="%234ade80" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="12px" font-family="Arial">S</text></svg>')`;
+            
+            new mapboxgl.Marker(startEl)
+              .setLngLat([baseRoute[0][0], baseRoute[0][1]])
+              .addTo(map.current!);
+            
+            // End marker (destination)
+            const endEl = document.createElement('div');
+            endEl.className = 'end-marker';
+            endEl.style.width = '30px';
+            endEl.style.height = '30px';
+            endEl.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="red" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="12px" font-family="Arial">D</text></svg>')`;
+            
+            new mapboxgl.Marker(endEl)
+              .setLngLat([baseRoute[baseRoute.length - 1][0], baseRoute[baseRoute.length - 1][1]])
+              .addTo(map.current!);
+          }
+          
+          // Keep references to the sources for updates
+          baseRouteRef.current = map.current?.getSource('base-route') as mapboxgl.GeoJSONSource;
+          weatherRouteRef.current = map.current?.getSource('weather-route') as mapboxgl.GeoJSONSource;
+          
+          // Set initial bounds to fit routes
+          const coordinates = [...baseRoute, ...weatherRoute];
+          const bounds = coordinates.reduce((bounds, coord) => {
+            return bounds.extend(coord as mapboxgl.LngLatLike);
+          }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+          
+          map.current?.fitBounds(bounds, {
+            padding: 50
+          });
+        }
+      });
 
       // Create markers for vessels
       vessels.forEach(vessel => {
@@ -113,7 +228,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ vessels, accessToken }) => {
         variant: "destructive"
       });
     }
-  }, [mapToken, vessels]);
+  }, [mapToken, vessels, showRoutes, baseRoute, weatherRoute]);
+
+  // Update visible route when activeRouteType changes
+  useEffect(() => {
+    if (!map.current) return;
+    
+    if (map.current.getLayer('base-route-line') && map.current.getLayer('weather-route-line')) {
+      if (activeRouteType === 'base') {
+        map.current.setLayoutProperty('base-route-line', 'visibility', 'visible');
+        map.current.setLayoutProperty('weather-route-line', 'visibility', 'none');
+      } else {
+        map.current.setLayoutProperty('base-route-line', 'visibility', 'none');
+        map.current.setLayoutProperty('weather-route-line', 'visibility', 'visible');
+      }
+    }
+  }, [activeRouteType]);
 
   // If the map is already initialized, render the map with top controls
   if (mapToken) {

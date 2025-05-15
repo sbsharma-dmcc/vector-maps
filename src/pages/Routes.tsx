@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ import {
 import { Route, Search, Calendar } from 'lucide-react';
 
 const Routes = () => {
+  const navigate = useNavigate();
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [routes, setRoutes] = useState<RouteType[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<RouteType[]>([]);
@@ -71,6 +73,11 @@ const Routes = () => {
   const getVesselType = (id: string): 'green' | 'orange' | 'unknown' => {
     const vessel = vessels.find(v => v.id === id);
     return vessel ? vessel.type : 'unknown';
+  };
+
+  // Navigate to route detail page
+  const handleViewDetails = (routeId: string) => {
+    navigate(`/routes/${routeId}`);
   };
 
   return (
@@ -134,7 +141,11 @@ const Routes = () => {
             <tbody>
               {filteredRoutes.length > 0 ? (
                 filteredRoutes.map(route => (
-                  <tr key={route.id} className="border-t hover:bg-muted/30">
+                  <tr 
+                    key={route.id} 
+                    className="border-t hover:bg-muted/30 cursor-pointer"
+                    onClick={() => handleViewDetails(route.id)}
+                  >
                     <td className="px-4 py-3 text-sm">{route.id}</td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center">
@@ -174,7 +185,16 @@ const Routes = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <Button variant="outline" size="sm">View Details</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(route.id);
+                        }}
+                      >
+                        View Details
+                      </Button>
                     </td>
                   </tr>
                 ))
