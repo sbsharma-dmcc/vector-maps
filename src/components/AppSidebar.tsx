@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Route, History, Ship } from "lucide-react";
 
@@ -35,7 +34,6 @@ const AppSidebar = () => {
   return (
     <Sidebar
       className={`${collapsed ? "w-18" : "w-64"} border-r transition-width duration-300 bg-sidebar`}
-      collapsible
     >
       <div className={`${collapsed ? "px-2 py-4" : "px-4 py-5"} flex items-center justify-between border-b`}>
         {!collapsed && (
@@ -49,9 +47,7 @@ const AppSidebar = () => {
       </div>
 
       <SidebarContent>
-        <SidebarGroup
-          defaultOpen={true}
-        >
+        <SidebarGroup>
           <SidebarGroupLabel className={`${collapsed ? "sr-only" : ""}`}>
             Navigation
           </SidebarGroupLabel>
