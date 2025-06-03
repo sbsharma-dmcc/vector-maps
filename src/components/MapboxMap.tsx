@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -50,7 +49,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     pressure: { dtnLayerId: 'pressure', tileSetId: 'pressure-latest' },
     storm: { dtnLayerId: 'storm', tileSetId: 'storm-latest' },
     current: { dtnLayerId: 'current', tileSetId: 'current-latest' },
-    wind: { dtnLayerId: 'wind', tileSetId: 'wind-latest' }
+    wind: { dtnLayerId: 'fcst-onefx-wind-speed-contours', tileSetId: '1fed7688-ee77-4c15-acfa-3e6d5d0fb2a9' }
   };
 
   // Base layer styles
