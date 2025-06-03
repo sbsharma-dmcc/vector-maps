@@ -84,6 +84,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     
     if (!config) return;
 
+    console.log(`Updating weather layer ${layerType}, enabled: ${enabled}`);
+
     if (enabled) {
       // Add or update the source
       if (!map.current.getSource(sourceId)) {
@@ -95,41 +97,24 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           ],
           tileSize: 512,
         });
-      } else {
-        console.log("Updating existing source:", sourceId);
-        // Update the existing source tiles
-        const source = map.current.getSource(sourceId) as mapboxgl.RasterSource;
-        source.setTiles([
-          `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.webp?size=512&unit=metric-marine&token=${dtnToken}`,
-        ]);
       }
 
-      // Add layer if it doesn't exist - position it above water layers but below labels
+      // Add layer if it doesn't exist - add it as the top layer
       if (!map.current.getLayer(layerId)) {
-        // Find the first symbol layer to insert the weather layer before it
-        const layers = map.current.getStyle().layers;
-        let beforeLayerId = null;
-        
-        // Find the first symbol or label layer
-        for (let i = 0; i < layers.length; i++) {
-          if (layers[i].type === 'symbol') {
-            beforeLayerId = layers[i].id;
-            break;
-          }
-        }
-
+        console.log("Adding new layer:", layerId);
         map.current.addLayer({
           id: layerId,
           type: "raster",
           source: sourceId,
           paint: {
-            "raster-opacity": 0.8
+            "raster-opacity": 0.9
           }
-        }, beforeLayerId || undefined);
+        });
       } else {
+        console.log("Updating existing layer:", layerId);
         // Make sure layer is visible and update opacity
         map.current.setLayoutProperty(layerId, 'visibility', 'visible');
-        map.current.setPaintProperty(layerId, 'raster-opacity', 0.8);
+        map.current.setPaintProperty(layerId, 'raster-opacity', 0.9);
       }
       
       toast({
@@ -139,6 +124,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     } else {
       // Hide the layer
       if (map.current.getLayer(layerId)) {
+        console.log("Hiding layer:", layerId);
         map.current.setLayoutProperty(layerId, 'visibility', 'none');
       }
     }
@@ -148,6 +134,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   useEffect(() => {
     if (!map.current) return;
 
+    console.log("Active layers changed:", activeLayers);
     Object.entries(activeLayers).forEach(([layerType, enabled]) => {
       updateWeatherLayer(layerType, enabled);
     });
