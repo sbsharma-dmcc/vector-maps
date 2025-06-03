@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -40,20 +41,29 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [initialLayersApplied, setInitialLayersApplied] = useState(false);
   const [mapToken, setMapToken] = useState<string>(accessToken || defaultMapToken);
   const [appliedLayers, setAppliedLayers] = useState<Record<string, boolean>>({});
+  const [mapInitialized, setMapInitialized] = useState(false);
   const { toast } = useToast();
 
+  // Memoize vessels array to prevent unnecessary re-renders
+  const memoizedVessels = useMemo(() => vessels, [JSON.stringify(vessels)]);
+  
+  // Memoize routes to prevent unnecessary re-renders
+  const memoizedBaseRoute = useMemo(() => baseRoute, [JSON.stringify(baseRoute)]);
+  const memoizedWeatherRoute = useMemo(() => weatherRoute, [JSON.stringify(weatherRoute)]);
+  
   // Memoize activeLayers to prevent unnecessary re-renders
   const memoizedActiveLayers = useMemo(() => activeLayers, [JSON.stringify(activeLayers)]);
 
-  // Initialize map effect
+  // Initialize map effect - only run once when token changes
   useEffect(() => {
-    if (!mapToken || !mapContainer.current || map.current) return;
+    if (!mapToken || !mapContainer.current || mapInitialized) return;
 
     console.log("Initializing map with token:", mapToken.substring(0, 10) + "...");
 
     try {
       // Initialize map with the default style only
-      map.current = initializeMap(mapContainer.current, mapToken, showRoutes, baseRoute);
+      map.current = initializeMap(mapContainer.current, mapToken, showRoutes, memoizedBaseRoute);
+      setMapInitialized(true);
 
       // Add sources and layers for routes when the map loads
       map.current.on('load', () => {
@@ -63,8 +73,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         if (map.current) {
           addTerrainLayer(map.current);
 
-          if (showRoutes && baseRoute.length > 0) {
-            addRoutesToMap(map.current, baseRoute, weatherRoute);
+          if (showRoutes && memoizedBaseRoute.length > 0) {
+            addRoutesToMap(map.current, memoizedBaseRoute, memoizedWeatherRoute);
             
             // Keep references to the sources for updates
             baseRouteRef.current = map.current?.getSource('base-route') as mapboxgl.GeoJSONSource;
@@ -83,8 +93,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
 
       // Create markers for vessels
-      if (vessels.length > 0) {
-        createVesselMarkers(map.current, vessels, markersRef);
+      if (memoizedVessels.length > 0) {
+        createVesselMarkers(map.current, memoizedVessels, markersRef);
       }
 
       // Cleanup
@@ -97,6 +107,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         setMapReady(false);
         setInitialLayersApplied(false);
         setAppliedLayers({});
+        setMapInitialized(false);
       };
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -105,8 +116,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         description: "Failed to initialize the map. Please check your access token.",
         variant: "destructive"
       });
+      setMapInitialized(false);
     }
-  }, [mapToken, vessels, showRoutes, baseRoute, weatherRoute, toast]);
+  }, [mapToken]); // Only depend on mapToken
 
   // Update layers when activeLayers changes - only after initial setup and when explicitly changed
   useEffect(() => {
@@ -154,8 +166,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         // Re-add routes and other layers after style change
         map.current.once('style.load', () => {
           // Re-add routes if they exist
-          if (showRoutes && baseRoute.length > 0) {
-            addRoutesToMap(map.current!, baseRoute, weatherRoute);
+          if (showRoutes && memoizedBaseRoute.length > 0) {
+            addRoutesToMap(map.current!, memoizedBaseRoute, memoizedWeatherRoute);
           }
           
           // Re-apply active weather layers
@@ -169,7 +181,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     } catch (error) {
       console.error("Error updating base layer:", error);
     }
-  }, [activeBaseLayer, mapReady, appliedLayers, showRoutes, baseRoute, weatherRoute, toast]);
+  }, [activeBaseLayer, mapReady, appliedLayers, showRoutes, memoizedBaseRoute, memoizedWeatherRoute, toast]);
 
   // Update visible route when activeRouteType changes
   useEffect(() => {
