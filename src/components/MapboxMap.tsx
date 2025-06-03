@@ -104,19 +104,32 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         ]);
       }
 
-      // Add layer if it doesn't exist
+      // Add layer if it doesn't exist - position it above water layers but below labels
       if (!map.current.getLayer(layerId)) {
+        // Find the first symbol layer to insert the weather layer before it
+        const layers = map.current.getStyle().layers;
+        let beforeLayerId = null;
+        
+        // Find the first symbol or label layer
+        for (let i = 0; i < layers.length; i++) {
+          if (layers[i].type === 'symbol') {
+            beforeLayerId = layers[i].id;
+            break;
+          }
+        }
+
         map.current.addLayer({
           id: layerId,
           type: "raster",
           source: sourceId,
           paint: {
-            "raster-opacity": 0.7
+            "raster-opacity": 0.8
           }
-        });
+        }, beforeLayerId || undefined);
       } else {
-        // Make sure layer is visible
+        // Make sure layer is visible and update opacity
         map.current.setLayoutProperty(layerId, 'visibility', 'visible');
+        map.current.setPaintProperty(layerId, 'raster-opacity', 0.8);
       }
       
       toast({
@@ -155,6 +168,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           // Re-add route sources and layers
           // This would be the same code as in the initial load
         }
+        
+        // Re-apply active weather layers
+        Object.entries(activeLayers).forEach(([layerType, enabled]) => {
+          if (enabled) {
+            updateWeatherLayer(layerType, enabled);
+          }
+        });
       });
     }
   }, [activeBaseLayer]);
@@ -324,12 +344,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           });
         }
 
-        // Apply any initially active layers
-        Object.entries(activeLayers).forEach(([layerType, enabled]) => {
-          if (enabled) {
-            updateWeatherLayer(layerType, enabled);
-          }
-        });
+        // Apply any initially active layers after the map is fully loaded
+        setTimeout(() => {
+          Object.entries(activeLayers).forEach(([layerType, enabled]) => {
+            if (enabled) {
+              updateWeatherLayer(layerType, enabled);
+            }
+          });
+        }, 1000);
       });
 
       // Create markers for vessels
