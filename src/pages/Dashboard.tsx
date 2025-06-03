@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
@@ -11,9 +10,6 @@ const Dashboard = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | VesselType>('all');
   const [showLayersPanel, setShowLayersPanel] = useState(false);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
-    pressure: false,
-    storm: false,
-    current: false,
     wind: false
   });
   const [activeBaseLayer, setActiveBaseLayer] = useState('default');

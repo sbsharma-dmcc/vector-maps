@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Cloud, Zap, Waves, Wind } from 'lucide-react';
+import { X, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface MapLayersPanelProps {
@@ -19,9 +19,6 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
   onBaseLayerChange
 }) => {
   const [enabledLayers, setEnabledLayers] = useState<Record<string, boolean>>({
-    pressure: false,
-    storm: false,
-    current: false,
     wind: false
   });
 
@@ -36,10 +33,8 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
     onLayerToggle(layerType, newState);
   };
 
+  // Only wind layer active for testing
   const overlayLayers = [
-    { id: 'pressure', name: 'Pressure', icon: Cloud },
-    { id: 'storm', name: 'Storm', icon: Zap },
-    { id: 'current', name: 'Current', icon: Waves },
     { id: 'wind', name: 'Wind', icon: Wind }
   ];
 
@@ -61,7 +56,7 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
         </Button>
       </div>
 
-      {/* Overlay Layers */}
+      {/* Overlay Layers - Only Wind for now */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {overlayLayers.map((layer) => {
           const IconComponent = layer.icon;
