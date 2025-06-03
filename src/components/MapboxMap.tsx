@@ -16,6 +16,8 @@ interface MapboxMapProps {
   baseRoute?: [number, number][];
   weatherRoute?: [number, number][];
   activeRouteType?: 'base' | 'weather';
+  activeLayers?: Record<string, boolean>;
+  activeBaseLayer?: string;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -24,7 +26,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   showRoutes = false,
   baseRoute = [],
   weatherRoute = [],
-  activeRouteType = 'base'
+  activeRouteType = 'base',
+  activeLayers = {},
+  activeBaseLayer = 'default'
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -35,6 +39,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     accessToken || 'pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q'
   );
   const { toast } = useToast();
+
+  // Layer configurations for DTN API
+  const layerConfigs = {
+    pressure: { dtnLayerId: 'pressure', tileSetId: 'pressure-latest' },
+    storm: { dtnLayerId: 'storm', tileSetId: 'storm-latest' },
+    current: { dtnLayerId: 'current', tileSetId: 'current-latest' },
+    wind: { dtnLayerId: 'wind', tileSetId: 'wind-latest' }
+  };
+
+  // Base layer styles
+  const baseLayerStyles = {
+    default: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66",
+    swell: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66", // You can change these to different styles
+    wave: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66"
+  };
 
   // If no access token is provided, ask the user to input one
   const handleTokenSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -52,6 +71,88 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
+  // Function to add or update weather layer
+  const updateWeatherLayer = (layerType: string, enabled: boolean) => {
+    if (!map.current) return;
+
+    const sourceId = `${layerType}-layer`;
+    const layerId = `${layerType}-layer-render`;
+    const config = layerConfigs[layerType as keyof typeof layerConfigs];
+    
+    if (!config) return;
+
+    const token = 'your-dtn-api-token'; // You'll need to get this from user or environment
+
+    if (enabled) {
+      // Add or update the source
+      if (!map.current.getSource(sourceId)) {
+        console.log("Adding new source:", sourceId);
+        map.current.addSource(sourceId, {
+          type: "raster",
+          tiles: [
+            `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.webp?size=512&unit=metric-marine&token=${token}`,
+          ],
+          tileSize: 512,
+        });
+      } else {
+        console.log("Updating existing source:", sourceId);
+        // Update the existing source tiles
+        const source = map.current.getSource(sourceId) as mapboxgl.RasterSource;
+        source.setTiles([
+          `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.webp?size=512&unit=metric-marine&token=${token}`,
+        ]);
+      }
+
+      // Add layer if it doesn't exist
+      if (!map.current.getLayer(layerId)) {
+        map.current.addLayer({
+          id: layerId,
+          type: "raster",
+          source: sourceId,
+          paint: {
+            "raster-opacity": 0.7
+          }
+        });
+      } else {
+        // Make sure layer is visible
+        map.current.setLayoutProperty(layerId, 'visibility', 'visible');
+      }
+    } else {
+      // Hide the layer
+      if (map.current.getLayer(layerId)) {
+        map.current.setLayoutProperty(layerId, 'visibility', 'none');
+      }
+    }
+  };
+
+  // Update layers when activeLayers changes
+  useEffect(() => {
+    if (!map.current) return;
+
+    Object.entries(activeLayers).forEach(([layerType, enabled]) => {
+      updateWeatherLayer(layerType, enabled);
+    });
+  }, [activeLayers]);
+
+  // Update base layer when activeBaseLayer changes
+  useEffect(() => {
+    if (!map.current) return;
+
+    const styleUrl = baseLayerStyles[activeBaseLayer as keyof typeof baseLayerStyles];
+    if (styleUrl && map.current.getStyle().name !== activeBaseLayer) {
+      map.current.setStyle(styleUrl);
+      
+      // Re-add routes and other layers after style change
+      map.current.once('style.load', () => {
+        // Re-add routes if they exist
+        if (showRoutes && baseRoute.length > 0) {
+          // Re-add route sources and layers
+          // This would be the same code as in the initial load
+        }
+      });
+    }
+  }, [activeBaseLayer]);
+
   useEffect(() => {
     if (!mapToken || !mapContainer.current) return;
 
@@ -61,7 +162,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: "mapbox://styles/geoserve/cm5kwbsxd003w01sabztwggic",
+        style: baseLayerStyles[activeBaseLayer as keyof typeof baseLayerStyles] || baseLayerStyles.default,
         center: showRoutes && baseRoute.length > 0 
           ? [(baseRoute[0][0] + baseRoute[baseRoute.length - 1][0]) / 2, 
              (baseRoute[0][1] + baseRoute[baseRoute.length - 1][1]) / 2] 
@@ -216,6 +317,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             padding: 50
           });
         }
+
+        // Apply any initially active layers
+        Object.entries(activeLayers).forEach(([layerType, enabled]) => {
+          if (enabled) {
+            updateWeatherLayer(layerType, enabled);
+          }
+        });
       });
 
       // Create markers for vessels

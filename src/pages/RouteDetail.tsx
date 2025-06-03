@@ -16,6 +16,12 @@ const RouteDetail = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [activeBaseLayer, setActiveBaseLayer] = useState('default');
+  const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
+    pressure: false,
+    storm: false,
+    current: false,
+    wind: false
+  });
   const animationRef = useRef<number | null>(null);
   const { toast } = useToast();
   
@@ -161,12 +167,10 @@ const RouteDetail = () => {
   const handleLayerToggle = (layerType: string, enabled: boolean) => {
     console.log(`Layer ${layerType} ${enabled ? 'enabled' : 'disabled'}`);
     
-    // Here you would call your API to fetch layer data
-    // Example API call format:
-    // const apiUrl = `https://your-api.com/layers/${layerType}`;
-    // fetch(apiUrl).then(response => response.json()).then(data => {
-    //   // Apply layer to map
-    // });
+    setActiveLayers(prev => ({
+      ...prev,
+      [layerType]: enabled
+    }));
     
     toast({
       title: `${layerType.charAt(0).toUpperCase() + layerType.slice(1)} Layer`,
@@ -391,26 +395,31 @@ const RouteDetail = () => {
 
         {/* Top right buttons */}
         <div className="absolute right-4 top-4 z-10 flex space-x-2">
+          <Button className="bg-blue-600 hover:bg-blue-700" size="icon">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Bottom left layers toggle button */}
+        <div className="absolute bottom-20 left-4 z-10">
           <Button 
             variant="secondary" 
             className="bg-white shadow-md"
             onClick={() => setLayersPanelOpen(!layersPanelOpen)}
           >
-            <Layers className="h-5 w-5 mr-2" />
-            Map Layers
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700" size="icon">
-            <Plus className="h-4 w-4" />
+            <Layers className="h-5 w-5" />
           </Button>
         </div>
         
-        {/* Customize MapboxMap to handle routes */}
+        {/* Customize MapboxMap to handle routes and layers */}
         <MapboxMap 
           vessels={[routeVessel]} 
           showRoutes={true}
           baseRoute={baseRouteCoordinates}
           weatherRoute={weatherRouteCoordinates}
           activeRouteType={activeTab}
+          activeLayers={activeLayers}
+          activeBaseLayer={activeBaseLayer}
         />
         
         {/* Timeline Navigation */}
