@@ -35,6 +35,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const baseRouteRef = useRef<mapboxgl.GeoJSONSource | null>(null);
   const weatherRouteRef = useRef<mapboxgl.GeoJSONSource | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const [mapToken, setMapToken] = useState<string>(
     accessToken || 'pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q'
   );
@@ -76,7 +77,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   // Function to add or update weather layer
   const updateWeatherLayer = (layerType: string, enabled: boolean) => {
-    if (!map.current) return;
+    // Add safety check for map existence
+    if (!map.current || !mapReady) {
+      console.log(`Map not ready, skipping layer update for ${layerType}`);
+      return;
+    }
 
     const sourceId = `${layerType}-layer`;
     const layerId = `${layerType}-layer-render`;
@@ -130,19 +135,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-  // Update layers when activeLayers changes
+  // Update layers when activeLayers changes - only when map is ready
   useEffect(() => {
-    if (!map.current) return;
+    if (!mapReady) {
+      console.log("Map not ready, skipping layer updates");
+      return;
+    }
 
     console.log("Active layers changed:", activeLayers);
     Object.entries(activeLayers).forEach(([layerType, enabled]) => {
       updateWeatherLayer(layerType, enabled);
     });
-  }, [activeLayers]);
+  }, [activeLayers, mapReady]);
 
   // Update base layer when activeBaseLayer changes
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapReady) return;
 
     const styleUrl = baseLayerStyles[activeBaseLayer as keyof typeof baseLayerStyles];
     if (styleUrl && map.current.getStyle().name !== activeBaseLayer) {
@@ -164,7 +172,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         });
       });
     }
-  }, [activeBaseLayer]);
+  }, [activeBaseLayer, mapReady]);
 
   useEffect(() => {
     if (!mapToken || !mapContainer.current) return;
@@ -206,6 +214,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       // Add sources and layers for routes when the map loads
       map.current.on('load', () => {
+        console.log("Map loaded, setting mapReady to true");
+        setMapReady(true);
+        
         // Add vector tile source for terrain/elevation data instead of raster
         map.current?.addSource('mapbox-dem-vector', {
           'type': 'vector',
@@ -330,15 +341,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             padding: 50
           });
         }
-
-        // Apply any initially active layers after the map is fully loaded
-        setTimeout(() => {
-          Object.entries(activeLayers).forEach(([layerType, enabled]) => {
-            if (enabled) {
-              updateWeatherLayer(layerType, enabled);
-            }
-          });
-        }, 1000);
       });
 
       // Create markers for vessels
@@ -370,6 +372,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       return () => {
         map.current?.remove();
         Object.values(markersRef.current).forEach(marker => marker.remove());
+        setMapReady(false);
       };
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -383,7 +386,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   // Update visible route when activeRouteType changes
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapReady) return;
     
     if (map.current.getLayer('base-route-line') && map.current.getLayer('weather-route-line')) {
       if (activeRouteType === 'base') {
@@ -394,7 +397,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         map.current.setLayoutProperty('weather-route-line', 'visibility', 'visible');
       }
     }
-  }, [activeRouteType]);
+  }, [activeRouteType, mapReady]);
 
   // If the map is already initialized, render the map with top controls
   if (mapToken) {
