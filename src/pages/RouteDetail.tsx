@@ -393,19 +393,12 @@ const RouteDetail = () => {
           onBaseLayerChange={handleBaseLayerChange}
         />
 
-        {/* Top right buttons */}
-        <div className="absolute right-4 top-4 z-10 flex space-x-2">
-          <Button className="bg-blue-600 hover:bg-blue-700" size="icon">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Bottom left layers toggle button */}
+        {/* Layers toggle button - positioned in bottom-left corner */}
         <div className="absolute bottom-20 left-4 z-10">
           <Button 
-            variant="secondary" 
-            className="bg-white shadow-md"
             onClick={() => setLayersPanelOpen(!layersPanelOpen)}
+            className="bg-white hover:bg-gray-50 text-gray-800 shadow-lg border border-gray-200 w-12 h-12 p-0"
+            size="icon"
           >
             <Layers className="h-5 w-5" />
           </Button>
