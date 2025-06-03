@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
@@ -39,7 +40,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [mapReady, setMapReady] = useState(false);
   const [initialLayersApplied, setInitialLayersApplied] = useState(false);
   const [mapToken, setMapToken] = useState<string>(accessToken || defaultMapToken);
+  const [appliedLayers, setAppliedLayers] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+
+  // Memoize activeLayers to prevent unnecessary re-renders
+  const memoizedActiveLayers = useMemo(() => activeLayers, [JSON.stringify(activeLayers)]);
 
   // Update layers when activeLayers changes - only after initial setup and when explicitly changed
   useEffect(() => {
@@ -51,14 +56,29 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     // Don't apply layers on initial load - only when user explicitly toggles them
     if (!initialLayersApplied) {
       setInitialLayersApplied(true);
+      setAppliedLayers(memoizedActiveLayers);
       return;
     }
 
-    console.log("Active layers changed:", activeLayers);
-    Object.entries(activeLayers).forEach(([layerType, enabled]) => {
-      updateWeatherLayer(map.current, layerType, enabled, toast);
+    // Only update layers that have actually changed
+    const layersChanged = Object.keys(memoizedActiveLayers).some(
+      layerType => appliedLayers[layerType] !== memoizedActiveLayers[layerType]
+    );
+
+    if (!layersChanged) {
+      console.log("No layer changes detected, skipping update");
+      return;
+    }
+
+    console.log("Active layers changed:", memoizedActiveLayers);
+    Object.entries(memoizedActiveLayers).forEach(([layerType, enabled]) => {
+      if (appliedLayers[layerType] !== enabled) {
+        updateWeatherLayer(map.current, layerType, enabled, toast);
+      }
     });
-  }, [activeLayers, mapReady, initialLayersApplied]);
+
+    setAppliedLayers({ ...memoizedActiveLayers });
+  }, [memoizedActiveLayers, mapReady, initialLayersApplied, appliedLayers, toast]);
 
   // Update base layer when activeBaseLayer changes
   useEffect(() => {
@@ -77,7 +97,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           }
           
           // Re-apply active weather layers
-          Object.entries(activeLayers).forEach(([layerType, enabled]) => {
+          Object.entries(appliedLayers).forEach(([layerType, enabled]) => {
             if (enabled) {
               updateWeatherLayer(map.current, layerType, enabled, toast);
             }
@@ -87,7 +107,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     } catch (error) {
       console.error("Error updating base layer:", error);
     }
-  }, [activeBaseLayer, mapReady]);
+  }, [activeBaseLayer, mapReady, appliedLayers, showRoutes, baseRoute, weatherRoute, toast]);
 
   useEffect(() => {
     if (!mapToken || !mapContainer.current) return;
@@ -121,6 +141,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         cleanupVesselMarkers(markersRef);
         setMapReady(false);
         setInitialLayersApplied(false);
+        setAppliedLayers({});
       };
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -130,7 +151,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         variant: "destructive"
       });
     }
-  }, [mapToken, vessels, showRoutes, baseRoute, weatherRoute]);
+  }, [mapToken, vessels, showRoutes, baseRoute, weatherRoute, toast]);
 
   // Update visible route when activeRouteType changes
   useEffect(() => {
