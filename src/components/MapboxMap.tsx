@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -45,6 +44,69 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   // Memoize activeLayers to prevent unnecessary re-renders
   const memoizedActiveLayers = useMemo(() => activeLayers, [JSON.stringify(activeLayers)]);
+
+  // Initialize map effect
+  useEffect(() => {
+    if (!mapToken || !mapContainer.current || map.current) return;
+
+    console.log("Initializing map with token:", mapToken.substring(0, 10) + "...");
+
+    try {
+      // Initialize map with the default style only
+      map.current = initializeMap(mapContainer.current, mapToken, showRoutes, baseRoute);
+
+      // Add sources and layers for routes when the map loads
+      map.current.on('load', () => {
+        console.log("Map loaded successfully, setting mapReady to true");
+        setMapReady(true);
+        
+        if (map.current) {
+          addTerrainLayer(map.current);
+
+          if (showRoutes && baseRoute.length > 0) {
+            addRoutesToMap(map.current, baseRoute, weatherRoute);
+            
+            // Keep references to the sources for updates
+            baseRouteRef.current = map.current?.getSource('base-route') as mapboxgl.GeoJSONSource;
+            weatherRouteRef.current = map.current?.getSource('weather-route') as mapboxgl.GeoJSONSource;
+          }
+        }
+      });
+
+      map.current.on('error', (e) => {
+        console.error("Map error:", e.error);
+        toast({
+          title: "Map Error",
+          description: "Failed to load the map. Please check your internet connection.",
+          variant: "destructive"
+        });
+      });
+
+      // Create markers for vessels
+      if (vessels.length > 0) {
+        createVesselMarkers(map.current, vessels, markersRef);
+      }
+
+      // Cleanup
+      return () => {
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+        }
+        cleanupVesselMarkers(markersRef);
+        setMapReady(false);
+        setInitialLayersApplied(false);
+        setAppliedLayers({});
+      };
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      toast({
+        title: "Map Error",
+        description: "Failed to initialize the map. Please check your access token.",
+        variant: "destructive"
+      });
+    }
+  }, [mapToken, vessels, showRoutes, baseRoute, weatherRoute, toast]);
 
   // Update layers when activeLayers changes - only after initial setup and when explicitly changed
   useEffect(() => {
@@ -109,50 +171,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   }, [activeBaseLayer, mapReady, appliedLayers, showRoutes, baseRoute, weatherRoute, toast]);
 
-  useEffect(() => {
-    if (!mapToken || !mapContainer.current) return;
-
-    try {
-      // Initialize map with the default style only
-      map.current = initializeMap(mapContainer.current, mapToken, showRoutes, baseRoute);
-
-      // Add sources and layers for routes when the map loads
-      map.current.on('load', () => {
-        console.log("Map loaded, setting mapReady to true");
-        setMapReady(true);
-        
-        addTerrainLayer(map.current!);
-
-        if (showRoutes) {
-          addRoutesToMap(map.current!, baseRoute, weatherRoute);
-          
-          // Keep references to the sources for updates
-          baseRouteRef.current = map.current?.getSource('base-route') as mapboxgl.GeoJSONSource;
-          weatherRouteRef.current = map.current?.getSource('weather-route') as mapboxgl.GeoJSONSource;
-        }
-      });
-
-      // Create markers for vessels
-      createVesselMarkers(map.current, vessels, markersRef);
-
-      // Cleanup
-      return () => {
-        map.current?.remove();
-        cleanupVesselMarkers(markersRef);
-        setMapReady(false);
-        setInitialLayersApplied(false);
-        setAppliedLayers({});
-      };
-    } catch (error) {
-      console.error("Error initializing map:", error);
-      toast({
-        title: "Map Error",
-        description: "Failed to initialize the map. Please check your access token.",
-        variant: "destructive"
-      });
-    }
-  }, [mapToken, vessels, showRoutes, baseRoute, weatherRoute, toast]);
-
   // Update visible route when activeRouteType changes
   useEffect(() => {
     if (!map.current || !mapReady) return;
@@ -160,18 +178,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     updateRouteVisibility(map.current, activeRouteType);
   }, [activeRouteType, mapReady]);
 
-  // If the map is already initialized, render the map with top controls
-  if (mapToken) {
-    return (
-      <div className="relative h-full w-full bg-[#2B67AF]">
-        <MapTopControls />
-        <div ref={mapContainer} className="absolute inset-0" />
-      </div>
-    );
+  // If no token provided, show token input form
+  if (!mapToken || mapToken === '') {
+    return <MapTokenInput onTokenSubmit={setMapToken} />;
   }
 
-  // Show token input form if token not provided
-  return <MapTokenInput onTokenSubmit={setMapToken} />;
+  // Render the map with top controls
+  return (
+    <div className="relative h-full w-full bg-[#2B67AF]">
+      <MapTopControls />
+      <div ref={mapContainer} className="absolute inset-0" />
+    </div>
+  );
 };
 
 export default MapboxMap;
