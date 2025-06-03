@@ -92,6 +92,34 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       // Add sources and layers for routes when the map loads
       map.current.on('load', () => {
+        // Add vector tile source for terrain/elevation data instead of raster
+        map.current?.addSource('mapbox-dem-vector', {
+          'type': 'vector',
+          'url': 'mapbox://mapbox.mapbox-terrain-v2',
+          'maxzoom': 14
+        });
+
+        // Add terrain layer using vector tiles
+        map.current?.addLayer({
+          'id': 'terrain-layer',
+          'type': 'fill-extrusion',
+          'source': 'mapbox-dem-vector',
+          'source-layer': 'contour',
+          'paint': {
+            'fill-extrusion-color': [
+              'interpolate',
+              ['linear'],
+              ['get', 'ele'],
+              0, '#4264fb',
+              100, '#4fb3d9',
+              500, '#85C1E5',
+              1000, '#B8DBF0'
+            ],
+            'fill-extrusion-height': ['*', ['get', 'ele'], 10],
+            'fill-extrusion-opacity': 0.3
+          }
+        });
+
         if (showRoutes) {
           // Add base route source and layer
           map.current?.addSource('base-route', {

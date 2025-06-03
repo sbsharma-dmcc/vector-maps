@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
+import MapLayersPanel from '../components/MapLayersPanel';
 import { Button } from '@/components/ui/button';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +14,8 @@ const RouteDetail = () => {
   const [activeTab, setActiveTab] = useState<'base' | 'weather'>('base');
   const [vesselPosition, setVesselPosition] = useState<[number, number] | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [layersPanelOpen, setLayersPanelOpen] = useState(false);
+  const [activeBaseLayer, setActiveBaseLayer] = useState('default');
   const animationRef = useRef<number | null>(null);
   const { toast } = useToast();
   
@@ -154,6 +157,32 @@ const RouteDetail = () => {
       active: i === 0
     };
   });
+
+  const handleLayerToggle = (layerType: string, enabled: boolean) => {
+    console.log(`Layer ${layerType} ${enabled ? 'enabled' : 'disabled'}`);
+    
+    // Here you would call your API to fetch layer data
+    // Example API call format:
+    // const apiUrl = `https://your-api.com/layers/${layerType}`;
+    // fetch(apiUrl).then(response => response.json()).then(data => {
+    //   // Apply layer to map
+    // });
+    
+    toast({
+      title: `${layerType.charAt(0).toUpperCase() + layerType.slice(1)} Layer`,
+      description: `${enabled ? 'Enabled' : 'Disabled'} ${layerType} overlay`
+    });
+  };
+
+  const handleBaseLayerChange = (layer: string) => {
+    setActiveBaseLayer(layer);
+    console.log(`Base layer changed to: ${layer}`);
+    
+    toast({
+      title: "Base Layer Changed",
+      description: `Switched to ${layer} base layer`
+    });
+  };
 
   if (!route) {
     return (
@@ -351,9 +380,22 @@ const RouteDetail = () => {
       
       {/* Map Container - covers the entire right side */}
       <div className="flex-1 relative">
+        {/* Map Layers Panel */}
+        <MapLayersPanel
+          isOpen={layersPanelOpen}
+          onClose={() => setLayersPanelOpen(false)}
+          onLayerToggle={handleLayerToggle}
+          activeLayer={activeBaseLayer}
+          onBaseLayerChange={handleBaseLayerChange}
+        />
+
         {/* Top right buttons */}
         <div className="absolute right-4 top-4 z-10 flex space-x-2">
-          <Button variant="secondary" className="bg-white shadow-md">
+          <Button 
+            variant="secondary" 
+            className="bg-white shadow-md"
+            onClick={() => setLayersPanelOpen(!layersPanelOpen)}
+          >
             <Layers className="h-5 w-5 mr-2" />
             Map Layers
           </Button>
