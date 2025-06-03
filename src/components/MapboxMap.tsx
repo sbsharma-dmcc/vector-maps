@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -77,9 +78,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   // Function to add or update weather layer
   const updateWeatherLayer = (layerType: string, enabled: boolean) => {
-    // Add safety check for map existence
+    // Add comprehensive safety checks
     if (!map.current || !mapReady) {
       console.log(`Map not ready, skipping layer update for ${layerType}`);
+      return;
+    }
+
+    // Additional safety check to ensure map methods exist
+    if (typeof map.current.getSource !== 'function' || typeof map.current.getLayer !== 'function') {
+      console.log(`Map methods not available, skipping layer update for ${layerType}`);
       return;
     }
 
@@ -91,53 +98,62 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     console.log(`Updating weather layer ${layerType}, enabled: ${enabled}`);
 
-    if (enabled) {
-      // Add or update the source
-      if (!map.current.getSource(sourceId)) {
-        console.log("Adding new source:", sourceId);
-        map.current.addSource(sourceId, {
-          type: "raster",
-          tiles: [
-            `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.webp?size=512&unit=metric-marine&token=${dtnToken}`,
-          ],
-          tileSize: 512,
-        });
-      }
+    try {
+      if (enabled) {
+        // Add or update the source
+        if (!map.current.getSource(sourceId)) {
+          console.log("Adding new source:", sourceId);
+          map.current.addSource(sourceId, {
+            type: "raster",
+            tiles: [
+              `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.webp?size=512&unit=metric-marine&token=${dtnToken}`,
+            ],
+            tileSize: 512,
+          });
+        }
 
-      // Add layer if it doesn't exist - add it as the top layer
-      if (!map.current.getLayer(layerId)) {
-        console.log("Adding new layer:", layerId);
-        map.current.addLayer({
-          id: layerId,
-          type: "raster",
-          source: sourceId,
-          paint: {
-            "raster-opacity": 0.9
-          }
+        // Add layer if it doesn't exist - add it as the top layer
+        if (!map.current.getLayer(layerId)) {
+          console.log("Adding new layer:", layerId);
+          map.current.addLayer({
+            id: layerId,
+            type: "raster",
+            source: sourceId,
+            paint: {
+              "raster-opacity": 0.9
+            }
+          });
+        } else {
+          console.log("Updating existing layer:", layerId);
+          // Make sure layer is visible and update opacity
+          map.current.setLayoutProperty(layerId, 'visibility', 'visible');
+          map.current.setPaintProperty(layerId, 'raster-opacity', 0.9);
+        }
+        
+        toast({
+          title: `${layerType.charAt(0).toUpperCase() + layerType.slice(1)} Layer`,
+          description: `Successfully loaded ${layerType} overlay`
         });
       } else {
-        console.log("Updating existing layer:", layerId);
-        // Make sure layer is visible and update opacity
-        map.current.setLayoutProperty(layerId, 'visibility', 'visible');
-        map.current.setPaintProperty(layerId, 'raster-opacity', 0.9);
+        // Hide the layer
+        if (map.current.getLayer(layerId)) {
+          console.log("Hiding layer:", layerId);
+          map.current.setLayoutProperty(layerId, 'visibility', 'none');
+        }
       }
-      
+    } catch (error) {
+      console.error(`Error updating weather layer ${layerType}:`, error);
       toast({
-        title: `${layerType.charAt(0).toUpperCase() + layerType.slice(1)} Layer`,
-        description: `Successfully loaded ${layerType} overlay`
+        title: "Layer Error",
+        description: `Failed to update ${layerType} layer`,
+        variant: "destructive"
       });
-    } else {
-      // Hide the layer
-      if (map.current.getLayer(layerId)) {
-        console.log("Hiding layer:", layerId);
-        map.current.setLayoutProperty(layerId, 'visibility', 'none');
-      }
     }
   };
 
   // Update layers when activeLayers changes - only when map is ready
   useEffect(() => {
-    if (!mapReady) {
+    if (!mapReady || !map.current) {
       console.log("Map not ready, skipping layer updates");
       return;
     }
@@ -152,25 +168,29 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   useEffect(() => {
     if (!map.current || !mapReady) return;
 
-    const styleUrl = baseLayerStyles[activeBaseLayer as keyof typeof baseLayerStyles];
-    if (styleUrl && map.current.getStyle().name !== activeBaseLayer) {
-      map.current.setStyle(styleUrl);
-      
-      // Re-add routes and other layers after style change
-      map.current.once('style.load', () => {
-        // Re-add routes if they exist
-        if (showRoutes && baseRoute.length > 0) {
-          // Re-add route sources and layers
-          // This would be the same code as in the initial load
-        }
+    try {
+      const styleUrl = baseLayerStyles[activeBaseLayer as keyof typeof baseLayerStyles];
+      if (styleUrl && map.current.getStyle()?.name !== activeBaseLayer) {
+        map.current.setStyle(styleUrl);
         
-        // Re-apply active weather layers
-        Object.entries(activeLayers).forEach(([layerType, enabled]) => {
-          if (enabled) {
-            updateWeatherLayer(layerType, enabled);
+        // Re-add routes and other layers after style change
+        map.current.once('style.load', () => {
+          // Re-add routes if they exist
+          if (showRoutes && baseRoute.length > 0) {
+            // Re-add route sources and layers
+            // This would be the same code as in the initial load
           }
+          
+          // Re-apply active weather layers
+          Object.entries(activeLayers).forEach(([layerType, enabled]) => {
+            if (enabled) {
+              updateWeatherLayer(layerType, enabled);
+            }
+          });
         });
-      });
+      }
+    } catch (error) {
+      console.error("Error updating base layer:", error);
     }
   }, [activeBaseLayer, mapReady]);
 
@@ -388,14 +408,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   useEffect(() => {
     if (!map.current || !mapReady) return;
     
-    if (map.current.getLayer('base-route-line') && map.current.getLayer('weather-route-line')) {
-      if (activeRouteType === 'base') {
-        map.current.setLayoutProperty('base-route-line', 'visibility', 'visible');
-        map.current.setLayoutProperty('weather-route-line', 'visibility', 'none');
-      } else {
-        map.current.setLayoutProperty('base-route-line', 'visibility', 'none');
-        map.current.setLayoutProperty('weather-route-line', 'visibility', 'visible');
+    try {
+      if (map.current.getLayer('base-route-line') && map.current.getLayer('weather-route-line')) {
+        if (activeRouteType === 'base') {
+          map.current.setLayoutProperty('base-route-line', 'visibility', 'visible');
+          map.current.setLayoutProperty('weather-route-line', 'visibility', 'none');
+        } else {
+          map.current.setLayoutProperty('base-route-line', 'visibility', 'none');
+          map.current.setLayoutProperty('weather-route-line', 'visibility', 'visible');
+        }
       }
+    } catch (error) {
+      console.error("Error updating route visibility:", error);
     }
   }, [activeRouteType, mapReady]);
 
