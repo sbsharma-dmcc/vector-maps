@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -36,6 +37,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const baseRouteRef = useRef<mapboxgl.GeoJSONSource | null>(null);
   const weatherRouteRef = useRef<mapboxgl.GeoJSONSource | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [initialLayersApplied, setInitialLayersApplied] = useState(false);
   const [mapToken, setMapToken] = useState<string>(
     accessToken || 'pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q'
   );
@@ -52,7 +54,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     wind: { dtnLayerId: 'fcst-onefx-wind-speed-contours', tileSetId: '1fed7688-ee77-4c15-acfa-3e6d5d0fb2a9' }
   };
 
-  // Base layer styles
+  // Base layer styles - always use the same default style
   const baseLayerStyles = {
     default: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66",
     swell: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66",
@@ -150,10 +152,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-  // Update layers when activeLayers changes - only when map is ready
+  // Update layers when activeLayers changes - only after initial setup and when explicitly changed
   useEffect(() => {
     if (!mapReady || !map.current) {
       console.log("Map not ready, skipping layer updates");
+      return;
+    }
+
+    // Don't apply layers on initial load - only when user explicitly toggles them
+    if (!initialLayersApplied) {
+      setInitialLayersApplied(true);
       return;
     }
 
@@ -161,7 +169,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     Object.entries(activeLayers).forEach(([layerType, enabled]) => {
       updateWeatherLayer(layerType, enabled);
     });
-  }, [activeLayers, mapReady]);
+  }, [activeLayers, mapReady, initialLayersApplied]);
 
   // Update base layer when activeBaseLayer changes
   useEffect(() => {
@@ -197,12 +205,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     if (!mapToken || !mapContainer.current) return;
 
     try {
-      // Initialize map with the provided style
+      // Initialize map with the default style only
       mapboxgl.accessToken = mapToken;
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: baseLayerStyles[activeBaseLayer as keyof typeof baseLayerStyles] || baseLayerStyles.default,
+        style: baseLayerStyles.default, // Always use default style
         center: showRoutes && baseRoute.length > 0 
           ? [(baseRoute[0][0] + baseRoute[baseRoute.length - 1][0]) / 2, 
              (baseRoute[0][1] + baseRoute[baseRoute.length - 1][1]) / 2] 
@@ -392,6 +400,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         map.current?.remove();
         Object.values(markersRef.current).forEach(marker => marker.remove());
         setMapReady(false);
+        setInitialLayersApplied(false);
       };
     } catch (error) {
       console.error("Error initializing map:", error);
