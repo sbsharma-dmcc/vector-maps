@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -55,6 +54,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
+
+  // Define heatmap gradient colors for display
+  const heatmapGradient = [
+    { value: '0m', color: 'rgb(0, 0, 139)' },      // Dark blue (0-0.5m)
+    { value: '1m', color: 'rgb(0, 100, 255)' },    // Blue (0.5-1.0m)
+    { value: '2m', color: 'rgb(0, 150, 255)' },    // Light blue (1.0-1.5m)
+    { value: '3m', color: 'rgb(0, 200, 255)' },    // Cyan (1.5-2.0m)
+    { value: '4m', color: 'rgb(0, 255, 200)' },    // Light cyan (2.0-2.5m)
+    { value: '5m', color: 'rgb(100, 255, 100)' },  // Light green (2.5-3.0m)
+    { value: '6m', color: 'rgb(200, 255, 0)' },    // Yellow-green (3.0-3.5m)
+    { value: '8m', color: 'rgb(255, 255, 0)' },    // Yellow (3.5-4.0m)
+    { value: '10m', color: 'rgb(255, 200, 0)' },   // Orange (4.0-4.5m)
+    { value: '12m', color: 'rgb(255, 150, 0)' },   // Orange-red (4.5-5.0m)
+    { value: '14m', color: 'rgb(255, 100, 100)' }, // Pink (5.0-10.0m)
+    { value: '15m+', color: 'rgb(200, 0, 200)' }   // Purple (10.0m+)
+  ];
 
   useEffect(() => {
     if (mapref.current) return;
@@ -397,31 +412,50 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           </div>
 
           {selectedWeatherType === 'swell' && (
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Heatmap Intensity
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  type="range"
-                  min="0.1"
-                  max="3"
-                  step="0.1"
-                  value={heatmapIntensity}
-                  onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  min="0.1"
-                  max="3"
-                  step="0.1"
-                  value={heatmapIntensity}
-                  onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
-                  className="w-16 text-xs"
-                />
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Heatmap Intensity
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    type="range"
+                    min="0.1"
+                    max="3"
+                    step="0.1"
+                    value={heatmapIntensity}
+                    onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    min="0.1"
+                    max="3"
+                    step="0.1"
+                    value={heatmapIntensity}
+                    onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
+                    className="w-16 text-xs"
+                  />
+                </div>
               </div>
-            </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  Heatmap Gradient Colors
+                </label>
+                <div className="grid grid-cols-2 gap-1 text-xs">
+                  {heatmapGradient.map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded border border-gray-300" 
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className="text-xs text-gray-600">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           {selectedWeatherType === 'swell' ? (
