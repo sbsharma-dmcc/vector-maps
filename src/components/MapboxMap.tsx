@@ -175,7 +175,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     
     if (mapref.current.getLayer(layerId)) {
       // Create color expression based on wave height values
-      const colorExpression = [
+      const colorExpression: any[] = [
         'interpolate',
         ['linear'],
         ['to-number', ['get', 'value'], 0]
