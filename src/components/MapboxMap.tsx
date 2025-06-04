@@ -44,6 +44,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     swell: '#00ff00',
     symbol: '#ff0000'
   });
+  const [heatmapGradient, setHeatmapGradient] = useState([
+    { value: '0m', color: 'rgb(0, 0, 139)' },      // Dark blue (0-0.5m)
+    { value: '1m', color: 'rgb(0, 100, 255)' },    // Blue (0.5-1.0m)
+    { value: '2m', color: 'rgb(0, 150, 255)' },    // Light blue (1.0-1.5m)
+    { value: '3m', color: 'rgb(0, 200, 255)' },    // Cyan (1.5-2.0m)
+    { value: '4m', color: 'rgb(0, 255, 200)' },    // Light cyan (2.0-2.5m)
+    { value: '5m', color: 'rgb(100, 255, 100)' },  // Light green (2.5-3.0m)
+    { value: '6m', color: 'rgb(200, 255, 0)' },    // Yellow-green (3.0-3.5m)
+    { value: '8m', color: 'rgb(255, 255, 0)' },    // Yellow (3.5-4.0m)
+    { value: '10m', color: 'rgb(255, 200, 0)' },   // Orange (4.0-4.5m)
+    { value: '12m', color: 'rgb(255, 150, 0)' },   // Orange-red (4.5-5.0m)
+    { value: '14m', color: 'rgb(255, 100, 100)' }, // Pink (5.0-10.0m)
+    { value: '15m+', color: 'rgb(200, 0, 200)' }   // Purple (10.0m+)
+  ]);
   const { toast } = useToast();
 
   const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpfX21pZW13NGhoTmdvQWQxR3N6ciJ9.eyJodHRwczovL2F1dGguZHRuLmNvbS9hY2NvdW50SWQiOiIyNTY1Mzk5IiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vdmVuZG9ySWQiOiJ1bmtub3duIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vY3VzdG9tZXJJZCI6IjI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9wcm9kdWN0Q29kZSI6IkRUTld4QVBJXzI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9yZXF1ZXN0ZXJJcCI6IjE4LjIxMy4xNzQuMjciLCJodHRwczovL2F1dGguZHRuLmNvbS9ycHMiOiIyNTAiLCJodHRwczovL2F1dGguZHRuLmNvbS90aWVyIjoiRW50ZXJwcmlzZSIsImh0dHBzOi8vYXV0aC5kdG4uY29tL3F1b3RhIjoiMTAwMDAwIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vYXJlYVNpemUiOiIwIiwiaXNzIjoiaHR0cHM6Ly9pZC5hdXRoLmR0bi5jb20vIiwic3ViIjoiRnpGbHZJajNjUFBhejhlc3B5ckhEN0FySnVlY0xOR1BAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbWFwLmFwaS5kdG4uY29tIiwiaWF0IjoxNzQ5MDIxODk4LCJleHAiOjE3NDkxMDgyOTgsInNjb3BlIjoicmVhZDpjYXRhbG9nLWRlZmF1bHQgd2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJGekZsdklqM2NQUGF6OGVzcHlySEQ3QXJKdWVjTE5HUCIsInBlcm1pc3Npb25zIjpbInJlYWQ6Y2F0YWxvZy1kZWZhdWx0Iiwid2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiXX0.lcYv0PVc-udtw59zLvxAi0AqVVYnliEGlQapLrS_jc84If6tY8c9Qu_j1IaEUKv6IE4utH1z6KABF299wayBLFe355yasc3dsxqWbpP1YosD-NW_BNnAo48x7cJXzK1ZnnIWzB8_t0pvX8MVVqu9r_G-yz0Vd48CokXwJ06ErTLod-YG15vq7MVhBoa-_mvjJl2bR96SIobC_RaN60ybdwX6sxhAJTYBV-KU8a2yd2b0WZofEGs1_G7cCp5f2ecSeJcKc111l8etJy7zd01Ch23KjMpueSUwQU1ruWmAFKLKtBjbZ-1Pel0G-1HZaCtIuUqZQhUPtXcAf5G8g5j7KA';
@@ -176,6 +190,28 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
+  const updateHeatmapGradient = () => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-swell`;
+    
+    if (mapref.current.getLayer(layerId)) {
+      const gradientStops = [];
+      heatmapGradient.forEach((item, index) => {
+        const density = index / (heatmapGradient.length - 1);
+        gradientStops.push(density, item.color);
+      });
+
+      mapref.current.setPaintProperty(layerId, 'heatmap-color', [
+        'interpolate',
+        ['linear'],
+        ['heatmap-density'],
+        ...gradientStops
+      ]);
+      console.log('Updated swell heatmap gradient colors');
+    }
+  };
+
   const handleOverlayClick = async (overlay) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) {
       console.warn("Map style not yet loaded");
@@ -202,6 +238,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
         // Special handling for swell layer as heatmap
         if (overlay === 'swell') {
+          const gradientStops = [];
+          heatmapGradient.forEach((item, index) => {
+            const density = index / (heatmapGradient.length - 1);
+            gradientStops.push(density, item.color);
+          });
+
           mapref.current.addLayer({
             id: layerId,
             type: "heatmap",
@@ -226,19 +268,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 'interpolate',
                 ['linear'],
                 ['heatmap-density'],
-                0, 'rgba(0, 0, 139, 0)',      // Transparent dark blue
-                0.1, 'rgb(0, 0, 139)',        // Dark blue (0-0.5m)
-                0.2, 'rgb(0, 100, 255)',      // Blue (0.5-1.0m)
-                0.3, 'rgb(0, 150, 255)',      // Light blue (1.0-1.5m)
-                0.4, 'rgb(0, 200, 255)',      // Cyan (1.5-2.0m)
-                0.5, 'rgb(0, 255, 200)',      // Light cyan (2.0-2.5m)
-                0.6, 'rgb(100, 255, 100)',    // Light green (2.5-3.0m)
-                0.7, 'rgb(200, 255, 0)',      // Yellow-green (3.0-3.5m)
-                0.8, 'rgb(255, 255, 0)',      // Yellow (3.5-4.0m)
-                0.85, 'rgb(255, 200, 0)',     // Orange (4.0-4.5m)
-                0.9, 'rgb(255, 150, 0)',      // Orange-red (4.5-5.0m)
-                0.95, 'rgb(255, 100, 100)',   // Pink (5.0-10.0m)
-                1, 'rgb(200, 0, 200)'         // Purple (10.0m+)
+                ...gradientStops
               ],
               "heatmap-radius": [
                 'interpolate',
@@ -327,6 +357,43 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
+  const handleGradientUpdate = () => {
+    updateHeatmapGradient();
+    
+    toast({
+      title: "Gradient Updated",
+      description: "Swell heatmap gradient colors updated"
+    });
+  };
+
+  const updateGradientColor = (index, newColor) => {
+    const updatedGradient = [...heatmapGradient];
+    updatedGradient[index].color = newColor;
+    setHeatmapGradient(updatedGradient);
+  };
+
+  const convertRgbToHex = (rgbString) => {
+    const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (!match) return rgbString;
+    
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
+    
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  const convertHexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return hex;
+    
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
   return (
     <div className="relative h-full w-full">
       <MapTopControls />
@@ -367,7 +434,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       )}
 
       {/* Weather Layer Configuration Box */}
-      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[280px]">
+      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[320px] max-h-[80vh] overflow-y-auto">
         <h3 className="text-sm font-semibold mb-3">Weather Layer Configuration</h3>
         
         <div className="space-y-3">
@@ -443,30 +510,48 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Heatmap Gradient Colors
                 </label>
-                <div className="grid grid-cols-2 gap-1 text-xs">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {heatmapGradient.map((item, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded border border-gray-300" 
-                        style={{ backgroundColor: item.color }}
-                      ></div>
-                      <span className="text-xs text-gray-600">{item.value}</span>
+                      <Input
+                        type="color"
+                        value={convertRgbToHex(item.color)}
+                        onChange={(e) => updateGradientColor(index, convertHexToRgb(e.target.value))}
+                        className="w-8 h-6 p-0 border rounded cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-600 w-10 text-center">{item.value}</span>
+                      <Input
+                        type="text"
+                        value={item.color}
+                        onChange={(e) => updateGradientColor(index, e.target.value)}
+                        className="flex-1 text-xs"
+                        placeholder="rgb(255, 255, 255)"
+                      />
                     </div>
                   ))}
                 </div>
               </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleIntensityUpdate}
+                  className="flex-1"
+                  size="sm"
+                >
+                  Apply Intensity
+                </Button>
+                <Button 
+                  onClick={handleGradientUpdate}
+                  className="flex-1"
+                  size="sm"
+                >
+                  Apply Gradient
+                </Button>
+              </div>
             </>
           )}
 
-          {selectedWeatherType === 'swell' ? (
-            <Button 
-              onClick={handleIntensityUpdate}
-              className="w-full"
-              size="sm"
-            >
-              Apply Intensity
-            </Button>
-          ) : (
+          {selectedWeatherType !== 'swell' && (
             <Button 
               onClick={handleColorUpdate}
               className="w-full"
