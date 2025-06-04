@@ -149,7 +149,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     
     if (mapref.current.getLayer(layerId)) {
       if (layerType === 'swell') {
-        console.log(`Swell is a heatmap layer with predefined colors`);
+        console.log(`Swell is a filled layer with gradient colors`);
       } else {
         mapref.current.setPaintProperty(layerId, 'line-color', color);
         console.log(`Updated ${layerType} layer color to ${color}`);
@@ -163,14 +163,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const layerId = `dtn-layer-swell`;
     
     if (mapref.current.getLayer(layerId)) {
-      mapref.current.setPaintProperty(layerId, 'heatmap-intensity', [
-        'interpolate',
-        ['linear'],
-        ['zoom'],
-        0, intensity,
-        9, intensity * 3
-      ]);
-      console.log(`Updated swell heatmap intensity to ${intensity}`);
+      mapref.current.setPaintProperty(layerId, 'fill-opacity', intensity * 0.8);
+      console.log(`Updated swell fill opacity to ${intensity * 0.8}`);
     }
   };
 
@@ -180,19 +174,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const layerId = `dtn-layer-swell`;
     
     if (mapref.current.getLayer(layerId)) {
-      const gradientStops = [];
-      heatmapGradient.forEach((item, index) => {
-        const density = index / (heatmapGradient.length - 1);
-        gradientStops.push(density, item.color);
-      });
-
-      mapref.current.setPaintProperty(layerId, 'heatmap-color', [
+      // Create color expression based on wave height values
+      const colorExpression = [
         'interpolate',
         ['linear'],
-        ['heatmap-density'],
-        ...gradientStops
-      ]);
-      console.log('Updated swell heatmap gradient colors');
+        ['to-number', ['get', 'value'], 0]
+      ];
+
+      heatmapGradient.forEach((item) => {
+        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+        colorExpression.push(heightValue, item.color);
+      });
+
+      mapref.current.setPaintProperty(layerId, 'fill-color', colorExpression);
+      console.log('Updated swell gradient colors');
     }
   };
 
@@ -220,48 +215,29 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
-        // Special handling for swell layer as heatmap
+        // Special handling for swell layer as filled polygons with gradient
         if (overlay === 'swell') {
-          const gradientStops = [];
-          heatmapGradient.forEach((item, index) => {
-            const density = index / (heatmapGradient.length - 1);
-            gradientStops.push(density, item.color);
+          // Create color expression based on wave height values
+          const colorExpression = [
+            'interpolate',
+            ['linear'],
+            ['to-number', ['get', 'value'], 0]
+          ];
+
+          heatmapGradient.forEach((item) => {
+            const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+            colorExpression.push(heightValue, item.color);
           });
 
           mapref.current.addLayer({
             id: layerId,
-            type: "heatmap",
+            type: "fill",
             source: sourceId,
             "source-layer": sourceLayer,
             paint: {
-              "heatmap-weight": [
-                'interpolate',
-                ['linear'],
-                ['get', 'value'],
-                0, 0,
-                15, 1  // max wave height in meters (0-15m based on your reference image)
-              ],
-              "heatmap-intensity": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0, heatmapIntensity,
-                9, heatmapIntensity * 3
-              ],
-              "heatmap-color": [
-                'interpolate',
-                ['linear'],
-                ['heatmap-density'],
-                ...gradientStops
-              ],
-              "heatmap-radius": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0, 2,
-                9, 20
-              ],
-              "heatmap-opacity": 0.8,
+              "fill-color": colorExpression,
+              "fill-opacity": heatmapIntensity * 0.8,
+              "fill-outline-color": "transparent"
             },
           });
         } else {
@@ -337,7 +313,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     
     toast({
       title: "Intensity Updated",
-      description: `Swell heatmap intensity updated to ${heatmapIntensity}`
+      description: `Swell opacity updated to ${heatmapIntensity}`
     });
   };
 
@@ -346,7 +322,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     
     toast({
       title: "Gradient Updated",
-      description: "Swell heatmap gradient colors updated"
+      description: "Swell gradient colors updated"
     });
   };
 
@@ -433,7 +409,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <SelectContent className="bg-white border shadow-lg z-50">
                 <SelectItem value="wind">Wind</SelectItem>
                 <SelectItem value="pressure">Pressure</SelectItem>
-                <SelectItem value="swell">Swell (Heatmap)</SelectItem>
+                <SelectItem value="swell">Swell (Filled)</SelectItem>
                 <SelectItem value="symbol">Symbol</SelectItem>
               </SelectContent>
             </Select>
@@ -441,7 +417,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Line Color {selectedWeatherType === 'swell' && '(N/A for heatmap)'}
+              Line Color {selectedWeatherType === 'swell' && '(N/A for filled)'}
             </label>
             <div className="flex gap-2">
               <Input
@@ -466,13 +442,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             <>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Heatmap Intensity
+                  Fill Opacity
                 </label>
                 <div className="flex gap-2">
                   <Input
                     type="range"
                     min="0.1"
-                    max="3"
+                    max="1"
                     step="0.1"
                     value={heatmapIntensity}
                     onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
@@ -481,7 +457,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   <Input
                     type="number"
                     min="0.1"
-                    max="3"
+                    max="1"
                     step="0.1"
                     value={heatmapIntensity}
                     onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
@@ -492,7 +468,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
-                  Heatmap Gradient Colors
+                  Wave Height Gradient Colors
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {heatmapGradient.map((item, index) => (
@@ -522,7 +498,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   className="flex-1"
                   size="sm"
                 >
-                  Apply Intensity
+                  Apply Opacity
                 </Button>
                 <Button 
                   onClick={handleGradientUpdate}
@@ -552,7 +528,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 <span className="capitalize">{type}:</span>
                 <div className="flex items-center gap-1">
                   {type === 'swell' ? (
-                    <span className="text-xs">Intensity: {heatmapIntensity}</span>
+                    <span className="text-xs">Opacity: {heatmapIntensity}</span>
                   ) : (
                     <>
                       <div 
