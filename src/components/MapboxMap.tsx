@@ -2,6 +2,9 @@ import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import MapTopControls from './MapTopControls';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
@@ -32,6 +35,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
+  const [lineColor, setLineColor] = useState('#ffffff');
+  const [layerColors, setLayerColors] = useState({
+    wind: '#ffffff',
+    pressure: '#ff6b35',
+    swell: '#00ff00',
+    symbol: '#ff0000'
+  });
   const { toast } = useToast();
 
   const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpfX21pZW13NGhoTmdvQWQxR3N6ciJ9.eyJodHRwczovL2F1dGguZHRuLmNvbS9hY2NvdW50SWQiOiIyNTY1Mzk5IiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vdmVuZG9ySWQiOiJ1bmtub3duIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vY3VzdG9tZXJJZCI6IjI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9wcm9kdWN0Q29kZSI6IkRUTld4QVBJXzI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9yZXF1ZXN0ZXJJcCI6IjE4LjIxMy4xNzQuMjciLCJodHRwczovL2F1dGguZHRuLmNvbS9ycHMiOiIyNTAiLCJodHRwczovL2F1dGguZHRuLmNvbS90aWVyIjoiRW50ZXJwcmlzZSIsImh0dHBzOi8vYXV0aC5kdG4uY29tL3F1b3RhIjoiMTAwMDAwIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vYXJlYVNpemUiOiIwIiwiaXNzIjoiaHR0cHM6Ly9pZC5hdXRoLmR0bi5jb20vIiwic3ViIjoiRnpGbHZJajNjUFBhejhlc3B5ckhEN0FySnVlY0xOR1BAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbWFwLmFwaS5kdG4uY29tIiwiaWF0IjoxNzQ5MDIxODk4LCJleHAiOjE3NDkxMDgyOTgsInNjb3BlIjoicmVhZDpjYXRhbG9nLWRlZmF1bHQgd2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJGekZsdklqM2NQUGF6OGVzcHlySEQ3QXJKdWVjTE5HUCIsInBlcm1pc3Npb25zIjpbInJlYWQ6Y2F0YWxvZy1kZWZhdWx0Iiwid2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiXX0.lcYv0PVc-udtw59zLvxAi0AqVVYnliEGlQapLrS_jc84If6tY8c9Qu_j1IaEUKv6IE4utH1z6KABF299wayBLFe355yasc3dsxqWbpP1YosD-NW_BNnAo48x7cJXzK1ZnnIWzB8_t0pvX8MVVqu9r_G-yz0Vd48CokXwJ06ErTLod-YG15vq7MVhBoa-_mvjJl2bR96SIobC_RaN60ybdwX6sxhAJTYBV-KU8a2yd2b0WZofEGs1_G7cCp5f2ecSeJcKc111l8etJy7zd01Ch23KjMpueSUwQU1ruWmAFKLKtBjbZ-1Pel0G-1HZaCtIuUqZQhUPtXcAf5G8g5j7KA';
@@ -58,7 +69,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     mapref.current = map;
 
-    // Add navigation controls
     map.addControl(
       new mapboxgl.NavigationControl(),
       'bottom-right'
@@ -83,7 +93,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
     });
 
-    // Cleanup
     return () => {
       if (mapref.current) {
         mapref.current.remove();
@@ -93,7 +102,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     };
   }, [toast]);
 
-  // Handle layer toggle from external controls
   useEffect(() => {
     if (!activeLayers || !isMapLoaded) return;
 
@@ -117,6 +125,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const data = await response.json();
     const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
     return sourceLayerName;
+  };
+
+  const updateLayerColor = (layerType, color) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-${layerType}`;
+    
+    if (mapref.current.getLayer(layerId)) {
+      mapref.current.setPaintProperty(layerId, 'line-color', color);
+      console.log(`Updated ${layerType} layer color to ${color}`);
+    }
   };
 
   const handleOverlayClick = async (overlay) => {
@@ -153,10 +172,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "line-join": "round",
           },
           paint: {
-            "line-color": overlay === 'wind' ? "#ffffff" : 
-                          overlay === 'pressure' ? "#ff6b35" :
-                          overlay === 'swell' ? "#00ff00" : 
-                          overlay === 'symbol' ? "#ff0000" : "#64748b",
+            "line-color": layerColors[overlay] || "#64748b",
             "line-width": 1,
             "line-opacity": 0.6,
           },
@@ -200,6 +216,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
+  const handleColorUpdate = () => {
+    const newColors = { ...layerColors, [selectedWeatherType]: lineColor };
+    setLayerColors(newColors);
+    updateLayerColor(selectedWeatherType, lineColor);
+    
+    toast({
+      title: "Color Updated",
+      description: `${selectedWeatherType} layer color updated to ${lineColor}`
+    });
+  };
+
   return (
     <div className="relative h-full w-full">
       <MapTopControls />
@@ -238,6 +265,75 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           )}
         </div>
       )}
+
+      {/* Weather Layer Configuration Box */}
+      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[280px]">
+        <h3 className="text-sm font-semibold mb-3">Weather Layer Configuration</h3>
+        
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Weather Type
+            </label>
+            <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select weather type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border shadow-lg z-50">
+                <SelectItem value="wind">Wind</SelectItem>
+                <SelectItem value="pressure">Pressure</SelectItem>
+                <SelectItem value="swell">Swell</SelectItem>
+                <SelectItem value="symbol">Symbol</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Line Color
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                value={lineColor}
+                onChange={(e) => setLineColor(e.target.value)}
+                className="w-16 h-8 p-1 border rounded"
+              />
+              <Input
+                type="text"
+                value={lineColor}
+                onChange={(e) => setLineColor(e.target.value)}
+                placeholder="#ffffff"
+                className="flex-1 text-xs"
+              />
+            </div>
+          </div>
+
+          <Button 
+            onClick={handleColorUpdate}
+            className="w-full"
+            size="sm"
+          >
+            Apply Color
+          </Button>
+
+          <div className="text-xs text-gray-500 mt-2">
+            <div className="font-medium mb-1">Current Colors:</div>
+            {Object.entries(layerColors).map(([type, color]) => (
+              <div key={type} className="flex items-center justify-between">
+                <span className="capitalize">{type}:</span>
+                <div className="flex items-center gap-1">
+                  <div 
+                    className="w-3 h-3 rounded border" 
+                    style={{ backgroundColor: color }}
+                  ></div>
+                  <span className="text-xs">{color}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
