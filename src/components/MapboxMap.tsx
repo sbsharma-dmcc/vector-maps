@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -154,7 +153,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "line-join": "round",
           },
           paint: {
-            "line-color": overlay === 'wind' ? "#00aaff" : 
+            "line-color": overlay === 'wind' ? "#ffffff" : 
                           overlay === 'pressure' ? "#ff6b35" :
                           overlay === 'swell' ? "#00ff00" : 
                           overlay === 'symbol' ? "#ff0000" : "#64748b",
