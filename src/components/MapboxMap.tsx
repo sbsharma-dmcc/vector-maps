@@ -69,22 +69,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
-  // Define heatmap gradient colors for display
-  const heatmapGradient = [
-    { value: '0m', color: 'rgb(0, 0, 139)' },      // Dark blue (0-0.5m)
-    { value: '1m', color: 'rgb(0, 100, 255)' },    // Blue (0.5-1.0m)
-    { value: '2m', color: 'rgb(0, 150, 255)' },    // Light blue (1.0-1.5m)
-    { value: '3m', color: 'rgb(0, 200, 255)' },    // Cyan (1.5-2.0m)
-    { value: '4m', color: 'rgb(0, 255, 200)' },    // Light cyan (2.0-2.5m)
-    { value: '5m', color: 'rgb(100, 255, 100)' },  // Light green (2.5-3.0m)
-    { value: '6m', color: 'rgb(200, 255, 0)' },    // Yellow-green (3.0-3.5m)
-    { value: '8m', color: 'rgb(255, 255, 0)' },    // Yellow (3.5-4.0m)
-    { value: '10m', color: 'rgb(255, 200, 0)' },   // Orange (4.0-4.5m)
-    { value: '12m', color: 'rgb(255, 150, 0)' },   // Orange-red (4.5-5.0m)
-    { value: '14m', color: 'rgb(255, 100, 100)' }, // Pink (5.0-10.0m)
-    { value: '15m+', color: 'rgb(200, 0, 200)' }   // Purple (10.0m+)
-  ];
-
   useEffect(() => {
     if (mapref.current) return;
 
