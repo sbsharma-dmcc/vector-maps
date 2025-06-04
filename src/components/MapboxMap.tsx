@@ -38,6 +38,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
   const [lineColor, setLineColor] = useState('#ffffff');
+  const [heatmapIntensity, setHeatmapIntensity] = useState(1);
   const [layerColors, setLayerColors] = useState({
     wind: '#ffffff',
     pressure: '#ff6b35',
@@ -135,12 +136,28 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     
     if (mapref.current.getLayer(layerId)) {
       if (layerType === 'swell') {
-        // For heatmap layers, we don't update the color as it uses a predefined gradient
         console.log(`Swell is a heatmap layer with predefined colors`);
       } else {
         mapref.current.setPaintProperty(layerId, 'line-color', color);
         console.log(`Updated ${layerType} layer color to ${color}`);
       }
+    }
+  };
+
+  const updateHeatmapIntensity = (intensity) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-swell`;
+    
+    if (mapref.current.getLayer(layerId)) {
+      mapref.current.setPaintProperty(layerId, 'heatmap-intensity', [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        0, intensity,
+        9, intensity * 3
+      ]);
+      console.log(`Updated swell heatmap intensity to ${intensity}`);
     }
   };
 
@@ -187,8 +204,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                0, 1,
-                9, 3
+                0, heatmapIntensity,
+                9, heatmapIntensity * 3
               ],
               "heatmap-color": [
                 'interpolate',
@@ -286,6 +303,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
+  const handleIntensityUpdate = () => {
+    updateHeatmapIntensity(heatmapIntensity);
+    
+    toast({
+      title: "Intensity Updated",
+      description: `Swell heatmap intensity updated to ${heatmapIntensity}`
+    });
+  };
+
   return (
     <div className="relative h-full w-full">
       <MapTopControls />
@@ -370,23 +396,60 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </div>
           </div>
 
-          <Button 
-            onClick={handleColorUpdate}
-            className="w-full"
-            size="sm"
-            disabled={selectedWeatherType === 'swell'}
-          >
-            Apply Color
-          </Button>
+          {selectedWeatherType === 'swell' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Heatmap Intensity
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  type="range"
+                  min="0.1"
+                  max="3"
+                  step="0.1"
+                  value={heatmapIntensity}
+                  onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
+                  className="flex-1"
+                />
+                <Input
+                  type="number"
+                  min="0.1"
+                  max="3"
+                  step="0.1"
+                  value={heatmapIntensity}
+                  onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
+                  className="w-16 text-xs"
+                />
+              </div>
+            </div>
+          )}
+
+          {selectedWeatherType === 'swell' ? (
+            <Button 
+              onClick={handleIntensityUpdate}
+              className="w-full"
+              size="sm"
+            >
+              Apply Intensity
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleColorUpdate}
+              className="w-full"
+              size="sm"
+            >
+              Apply Color
+            </Button>
+          )}
 
           <div className="text-xs text-gray-500 mt-2">
-            <div className="font-medium mb-1">Current Colors:</div>
+            <div className="font-medium mb-1">Current Settings:</div>
             {Object.entries(layerColors).map(([type, color]) => (
               <div key={type} className="flex items-center justify-between">
                 <span className="capitalize">{type}:</span>
                 <div className="flex items-center gap-1">
                   {type === 'swell' ? (
-                    <span className="text-xs">Heatmap Gradient</span>
+                    <span className="text-xs">Intensity: {heatmapIntensity}</span>
                   ) : (
                     <>
                       <div 
