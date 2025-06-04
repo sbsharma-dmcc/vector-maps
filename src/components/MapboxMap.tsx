@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -133,8 +134,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const layerId = `dtn-layer-${layerType}`;
     
     if (mapref.current.getLayer(layerId)) {
-      mapref.current.setPaintProperty(layerId, 'line-color', color);
-      console.log(`Updated ${layerType} layer color to ${color}`);
+      if (layerType === 'swell') {
+        // For heatmap layers, we don't update the color as it uses a predefined gradient
+        console.log(`Swell is a heatmap layer with predefined colors`);
+      } else {
+        mapref.current.setPaintProperty(layerId, 'line-color', color);
+        console.log(`Updated ${layerType} layer color to ${color}`);
+      }
     }
   };
 
@@ -162,21 +168,74 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
-        mapref.current.addLayer({
-          id: layerId,
-          type: "line",
-          source: sourceId,
-          "source-layer": sourceLayer,
-          layout: {
-            "line-cap": "round",
-            "line-join": "round",
-          },
-          paint: {
-            "line-color": layerColors[overlay] || "#64748b",
-            "line-width": 1,
-            "line-opacity": 0.6,
-          },
-        });
+        // Special handling for swell layer as heatmap
+        if (overlay === 'swell') {
+          mapref.current.addLayer({
+            id: layerId,
+            type: "heatmap",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "heatmap-weight": [
+                'interpolate',
+                ['linear'],
+                ['get', 'value'],
+                0, 0,
+                15, 1  // max wave height in meters (0-15m based on your reference image)
+              ],
+              "heatmap-intensity": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, 1,
+                9, 3
+              ],
+              "heatmap-color": [
+                'interpolate',
+                ['linear'],
+                ['heatmap-density'],
+                0, 'rgba(0, 0, 139, 0)',      // Transparent dark blue
+                0.1, 'rgb(0, 0, 139)',        // Dark blue (0-0.5m)
+                0.2, 'rgb(0, 100, 255)',      // Blue (0.5-1.0m)
+                0.3, 'rgb(0, 150, 255)',      // Light blue (1.0-1.5m)
+                0.4, 'rgb(0, 200, 255)',      // Cyan (1.5-2.0m)
+                0.5, 'rgb(0, 255, 200)',      // Light cyan (2.0-2.5m)
+                0.6, 'rgb(100, 255, 100)',    // Light green (2.5-3.0m)
+                0.7, 'rgb(200, 255, 0)',      // Yellow-green (3.0-3.5m)
+                0.8, 'rgb(255, 255, 0)',      // Yellow (3.5-4.0m)
+                0.85, 'rgb(255, 200, 0)',     // Orange (4.0-4.5m)
+                0.9, 'rgb(255, 150, 0)',      // Orange-red (4.5-5.0m)
+                0.95, 'rgb(255, 100, 100)',   // Pink (5.0-10.0m)
+                1, 'rgb(200, 0, 200)'         // Purple (10.0m+)
+              ],
+              "heatmap-radius": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, 2,
+                9, 20
+              ],
+              "heatmap-opacity": 0.8,
+            },
+          });
+        } else {
+          // Regular line layer for other overlays
+          mapref.current.addLayer({
+            id: layerId,
+            type: "line",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "line-cap": "round",
+              "line-join": "round",
+            },
+            paint: {
+              "line-color": layerColors[overlay] || "#64748b",
+              "line-width": 1,
+              "line-opacity": 0.6,
+            },
+          });
+        }
 
         setActiveOverlay(overlay);
         console.log(`Successfully added ${overlay} layer`);
@@ -282,7 +341,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <SelectContent className="bg-white border shadow-lg z-50">
                 <SelectItem value="wind">Wind</SelectItem>
                 <SelectItem value="pressure">Pressure</SelectItem>
-                <SelectItem value="swell">Swell</SelectItem>
+                <SelectItem value="swell">Swell (Heatmap)</SelectItem>
                 <SelectItem value="symbol">Symbol</SelectItem>
               </SelectContent>
             </Select>
@@ -290,7 +349,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Line Color
+              Line Color {selectedWeatherType === 'swell' && '(N/A for heatmap)'}
             </label>
             <div className="flex gap-2">
               <Input
@@ -298,6 +357,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 value={lineColor}
                 onChange={(e) => setLineColor(e.target.value)}
                 className="w-16 h-8 p-1 border rounded"
+                disabled={selectedWeatherType === 'swell'}
               />
               <Input
                 type="text"
@@ -305,6 +365,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 onChange={(e) => setLineColor(e.target.value)}
                 placeholder="#ffffff"
                 className="flex-1 text-xs"
+                disabled={selectedWeatherType === 'swell'}
               />
             </div>
           </div>
@@ -313,6 +374,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             onClick={handleColorUpdate}
             className="w-full"
             size="sm"
+            disabled={selectedWeatherType === 'swell'}
           >
             Apply Color
           </Button>
@@ -323,11 +385,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <div key={type} className="flex items-center justify-between">
                 <span className="capitalize">{type}:</span>
                 <div className="flex items-center gap-1">
-                  <div 
-                    className="w-3 h-3 rounded border" 
-                    style={{ backgroundColor: color }}
-                  ></div>
-                  <span className="text-xs">{color}</span>
+                  {type === 'swell' ? (
+                    <span className="text-xs">Heatmap Gradient</span>
+                  ) : (
+                    <>
+                      <div 
+                        className="w-3 h-3 rounded border" 
+                        style={{ backgroundColor: color }}
+                      ></div>
+                      <span className="text-xs">{color}</span>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
