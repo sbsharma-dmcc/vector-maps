@@ -218,7 +218,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         // Special handling for swell layer as filled polygons with gradient
         if (overlay === 'swell') {
           // Create color expression based on wave height values
-          const colorExpression = [
+          const colorExpression: any[] = [
             'interpolate',
             ['linear'],
             ['to-number', ['get', 'value'], 0]
