@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import MapTopControls from './MapTopControls';
 import { dtnToken } from '@/utils/mapConstants';
+import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -33,6 +34,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef(null);
+  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -70,6 +72,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
+  // Mock vessel data for testing
+  const mockVessels = [
+    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [-74.0060, 40.7128] }, // New York
+    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [-74.0160, 40.7228] }, // Near New York
+    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [4.4777, 51.9225] }, // Rotterdam
+    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [4.4877, 51.9325] }, // Near Rotterdam
+    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [103.8198, 1.3521] }, // Singapore
+    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [103.8298, 1.3621] }, // Near Singapore
+    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [121.4737, 31.2304] }, // Shanghai
+    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [121.4837, 31.2404] }, // Near Shanghai
+    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [151.2093, -33.8688] }, // Sydney
+    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [151.2193, -33.8588] }, // Near Sydney
+  ];
+
   useEffect(() => {
     if (mapref.current) return;
 
@@ -94,9 +110,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       setIsMapLoaded(true);
       console.log("Map fully loaded");
       
+      // Add vessel markers after map loads
+      createVesselMarkers(map, mockVessels, markersRef);
+      
       toast({
         title: "Map Loaded",
-        description: "Map has been successfully initialized"
+        description: "Map has been successfully initialized with vessel markers"
       });
     });
 
@@ -111,6 +130,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       if (mapref.current) {
+        cleanupVesselMarkers(markersRef);
         mapref.current.remove();
         mapref.current = null;
       }
@@ -550,3 +570,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+}
