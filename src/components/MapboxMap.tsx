@@ -86,6 +86,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [151.2193, -33.8588] },
   ];
 
+  // Function to ensure vessels are always on top
+  const ensureVesselsOnTop = () => {
+    // Small delay to ensure all layers are loaded
+    setTimeout(() => {
+      if (mapref.current) {
+        cleanupVesselMarkers(markersRef);
+        createVesselMarkers(mapref.current, mockVessels, markersRef);
+      }
+    }, 100);
+  };
+
   useEffect(() => {
     if (mapref.current) return;
 
@@ -110,7 +121,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       setIsMapLoaded(true);
       console.log("Map fully loaded");
       
-      createVesselMarkers(map, mockVessels, markersRef);
+      // Ensure vessels are created on top after map loads
+      ensureVesselsOnTop();
       
       toast({
         title: "Map Loaded",
@@ -240,15 +252,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
-        // Determine layer insertion order
+        // Determine layer insertion order - all layers go below vessels
         let beforeId = undefined;
-        
-        // For overlay layers (pressure, wind, symbol), insert before any existing vessel markers
-        // but after heatmap layers
-        if (overlay !== 'swell') {
-          // These should be on top of heatmaps but below vessel markers
-          beforeId = undefined; // Will be added on top by default
-        }
 
         if (overlay === 'swell') {
           // Heatmap should be the base layer - insert at the bottom
@@ -273,9 +278,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "fill-opacity": heatmapIntensity * 0.8,
               "fill-outline-color": "transparent"
             },
-          }, beforeId); // Insert at the very bottom
+          }, beforeId);
         } else {
-          // Line layers (pressure, wind, symbol) go above heatmaps
+          // Line layers (pressure, wind, symbol) go above heatmaps but below vessels
           mapref.current.addLayer({
             id: layerId,
             type: "line",
@@ -293,9 +298,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           }, beforeId);
         }
 
-        // Re-create vessel markers to ensure they're on top of all layers
-        cleanupVesselMarkers(markersRef);
-        createVesselMarkers(mapref.current, mockVessels, markersRef);
+        // Always ensure vessels are on top after adding any layer
+        ensureVesselsOnTop();
 
         setActiveOverlays(prev => [...prev, overlay]);
         console.log(`Successfully added ${overlay} layer`);
@@ -330,9 +334,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       mapref.current.removeSource(sourceId);
     }
 
-    // Re-create vessel markers to ensure they stay on top
-    cleanupVesselMarkers(markersRef);
-    createVesselMarkers(mapref.current, mockVessels, markersRef);
+    // Ensure vessels stay on top after removing layers
+    ensureVesselsOnTop();
 
     setActiveOverlays(prev => prev.filter(item => item !== overlay));
   };
@@ -340,6 +343,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const removeAllOverlays = () => {
     activeOverlays.forEach(overlay => removeOverlay(overlay));
     setActiveOverlays([]);
+    
+    // Ensure vessels are visible after removing all layers
+    ensureVesselsOnTop();
     
     toast({
       title: "All Layers Removed",
