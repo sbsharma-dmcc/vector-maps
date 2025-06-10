@@ -1,4 +1,3 @@
-
 import mapboxgl from 'mapbox-gl';
 
 export interface Vessel {
@@ -27,8 +26,18 @@ export const createVesselMarkers = (
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
+      z-index: 1000; /* Ensure vessels are always on top */
+      position: relative;
     }
   `;
+  
+  // Remove existing style if it exists to avoid duplicates
+  const existingStyle = document.getElementById('vessel-marker-styles');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+  
+  style.id = 'vessel-marker-styles';
   document.head.appendChild(style);
 
   // Create markers for vessels
@@ -38,6 +47,7 @@ export const createVesselMarkers = (
     el.className = `vessel-marker vessel-${vessel.type}`;
     el.style.width = '32px';
     el.style.height = '32px';
+    el.style.zIndex = '1000'; // High z-index to stay above all map layers
     
     // Set vessel icon based on type
     if (vessel.type === 'green') {
@@ -47,7 +57,10 @@ export const createVesselMarkers = (
     }
     
     // Create popup
-    const popup = new mapboxgl.Popup({ offset: 25 })
+    const popup = new mapboxgl.Popup({ 
+      offset: 25,
+      className: 'vessel-popup'
+    })
       .setHTML(`
         <div class="p-2">
           <h3 class="font-bold text-sm">${vessel.name}</h3>
@@ -57,8 +70,11 @@ export const createVesselMarkers = (
         </div>
       `);
 
-    // Create and store marker
-    const marker = new mapboxgl.Marker(el)
+    // Create and store marker with high z-index
+    const marker = new mapboxgl.Marker({
+      element: el,
+      anchor: 'center'
+    })
       .setLngLat(vessel.position)
       .setPopup(popup)
       .addTo(map);
@@ -72,4 +88,10 @@ export const cleanupVesselMarkers = (
 ) => {
   Object.values(markersRef.current).forEach(marker => marker.remove());
   markersRef.current = {};
+  
+  // Also remove the styles to keep DOM clean
+  const existingStyle = document.getElementById('vessel-marker-styles');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
 };

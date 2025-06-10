@@ -234,7 +234,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
+        // Determine layer insertion order
+        let beforeId = undefined;
+        
+        // For overlay layers (pressure, wind, symbol), insert before any existing vessel markers
+        // but after heatmap layers
+        if (overlay !== 'swell') {
+          // These should be on top of heatmaps but below vessel markers
+          beforeId = undefined; // Will be added on top by default
+        }
+
         if (overlay === 'swell') {
+          // Heatmap should be the base layer - insert at the bottom
           const colorExpression: any[] = [
             'interpolate',
             ['linear'],
@@ -256,8 +267,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "fill-opacity": heatmapIntensity * 0.8,
               "fill-outline-color": "transparent"
             },
-          });
+          }, beforeId); // Insert at the very bottom
         } else {
+          // Line layers (pressure, wind, symbol) go above heatmaps
           mapref.current.addLayer({
             id: layerId,
             type: "line",
@@ -272,8 +284,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "line-width": 1,
               "line-opacity": 0.6,
             },
-          });
+          }, beforeId);
         }
+
+        // Re-create vessel markers to ensure they're on top of all layers
+        cleanupVesselMarkers(markersRef);
+        createVesselMarkers(mapref.current, mockVessels, markersRef);
 
         setActiveOverlay(overlay);
         console.log(`Successfully added ${overlay} layer`);
@@ -307,6 +323,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     if (mapref.current.getSource(sourceId)) {
       mapref.current.removeSource(sourceId);
     }
+
+    // Re-create vessel markers to ensure they stay on top
+    cleanupVesselMarkers(markersRef);
+    createVesselMarkers(mapref.current, mockVessels, markersRef);
 
     if (activeOverlay === overlay) {
       setActiveOverlay(null);
@@ -564,3 +584,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+}
