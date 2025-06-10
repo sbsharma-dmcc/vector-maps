@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import MapTopControls from './MapTopControls';
 import { dtnToken } from '@/utils/mapConstants';
-import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
+import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -72,8 +72,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
-  // Mock vessel data for testing
-  const mockVessels = [
+  // Mock vessel data for testing - properly typed
+  const mockVessels: Vessel[] = [
     { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [-74.0060, 40.7128] },
     { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [-74.0160, 40.7228] },
     { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [4.4777, 51.9225] },
