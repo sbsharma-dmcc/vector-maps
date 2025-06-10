@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import MapTopControls from './MapTopControls';
+import { dtnToken } from '@/utils/mapConstants';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -60,7 +61,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   ]);
   const { toast } = useToast();
 
-  const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpfX21pZW13NGhoTmdvQWQxR3N6ciJ9.eyJodHRwczovL2F1dGguZHRuLmNvbS9hY2NvdW50SWQiOiIyNTY1Mzk5IiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vdmVuZG9ySWQiOiJ1bmtub3duIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vY3VzdG9tZXJJZCI6IjI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9wcm9kdWN0Q29kZSI6IkRUTld4QVBJXzI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9yZXF1ZXN0ZXJJcCI6IjE4LjIxMy4xNzQuMjciLCJodHRwczovL2F1dGguZHRuLmNvbS9ycHMiOiIyNTAiLCJodHRwczovL2F1dGguZHRuLmNvbS90aWVyIjoiRW50ZXJwcmlzZSIsImh0dHBzOi8vYXV0aC5kdG4uY29tL3F1b3RhIjoiMTAwMDAwIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vYXJlYVNpemUiOiIwIiwiaXNzIjoiaHR0cHM6Ly9pZC5hdXRoLmR0bi5jb20vIiwic3ViIjoiRnpGbHZJajNjUFBhejhlc3B5ckhEN0FySnVlY0xOR1BAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbWFwLmFwaS5kdG4uY29tIiwiaWF0IjoxNzQ5MDIxODk4LCJleHAiOjE3NDkxMDgyOTgsInNjb3BlIjoicmVhZDpjYXRhbG9nLWRlZmF1bHQgd2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJGekZsdklqM2NQUGF6OGVzcHlySEQ3QXJKdWVjTE5HUCIsInBlcm1pc3Npb25zIjpbInJlYWQ6Y2F0YWxvZy1kZWZhdWx0Iiwid2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiXX0.lcYv0PVc-udtw59zLvxAi0AqVVYnliEGlQapLrS_jc84If6tY8c9Qu_j1IaEUKv6IE4utH1z6KABF299wayBLFe355yasc3dsxqWbpP1YosD-NW_BNnAo48x7cJXzK1ZnnIWzB8_t0pvX8MVVqu9r_G-yz0Vd48CokXwJ06ErTLod-YG15vq7MVhBoa-_mvjJl2bR96SIobC_RaN60ybdwX6sxhAJTYBV-KU8a2yd2b0WZofEGs1_G7cCp5f2ecSeJcKc111l8etJy7zd01Ch23KjMpueSUwQU1ruWmAFKLKtBjbZ-1Pel0G-1HZaCtIuUqZQhUPtXcAf5G8g5j7KA';
+  const token = dtnToken.replace('Bearer ', '');
 
   const dtnOverlays = {
     wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
@@ -132,7 +133,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const fetchDTNSourceLayer = async (layerId) => {
     const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: dtnToken,
         Accept: "application/json",
       },
     });
