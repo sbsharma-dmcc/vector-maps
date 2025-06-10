@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -72,23 +73,23 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
-  // Ocean coordinates properly distributed across the Indian Ocean region visible on the map
+  // Well-distributed vessel coordinates across the Indian Ocean region
   const mockVessels: Vessel[] = [
-    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [75.2, 15.8] }, // Arabian Sea
-    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [68.5, 22.3] }, // Arabian Sea North
-    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [82.1, 18.7] }, // Bay of Bengal
-    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [89.4, 21.2] }, // Bay of Bengal North
-    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [77.8, 8.1] }, // Indian Ocean Central
-    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [85.6, 12.4] }, // Indian Ocean East
-    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [72.3, 19.6] }, // Arabian Sea East
-    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [79.7, 25.1] }, // Pakistan Coast
-    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [86.2, 16.8] }, // Bay of Bengal Central
-    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [74.9, 11.3] }, // Indian Ocean West
-    { id: 'vessel-11', name: 'Green Vessel 6', type: 'green', position: [81.4, 14.7] }, // Sri Lanka Waters
-    { id: 'vessel-12', name: 'Orange Vessel 6', type: 'orange', position: [87.8, 19.2] }, // Bay of Bengal East
-    { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [76.6, 23.5] }, // Gujarat Coast
-    { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [83.9, 9.4] }, // Tamil Nadu Coast
-    { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [70.2, 16.9] }, // Maharashtra Coast
+    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [72.5, 15.2] }, // Arabian Sea Central
+    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [78.8, 12.1] }, // Indian Ocean West Central
+    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [85.2, 18.5] }, // Bay of Bengal Central
+    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [80.1, 6.8] }, // Indian Ocean South of India
+    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [90.5, 14.3] }, // Bay of Bengal East
+    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [75.2, 20.1] }, // Arabian Sea North
+    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [68.7, 18.9] }, // Arabian Sea West
+    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [82.4, 10.5] }, // Tamil Nadu Waters
+    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [87.9, 21.7] }, // Bay of Bengal North
+    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [76.8, 8.3] }, // Kerala Waters
+    { id: 'vessel-11', name: 'Green Vessel 6', type: 'green', position: [81.6, 16.4] }, // Sri Lanka North
+    { id: 'vessel-12', name: 'Orange Vessel 6', type: 'orange', position: [88.2, 11.7] }, // Bay of Bengal South
+    { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [74.1, 13.6] }, // Goa Waters
+    { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [79.5, 22.4] }, // Gujarat Waters
+    { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [84.7, 7.2] }, // Indian Ocean East
   ];
 
   // Function to ensure vessels are always on top
