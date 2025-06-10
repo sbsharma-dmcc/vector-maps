@@ -48,18 +48,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: '#ff0000'
   });
   const [heatmapGradient, setHeatmapGradient] = useState([
-    { value: '0m', color: 'rgb(0, 0, 139)' },      // Dark blue (0-0.5m)
-    { value: '1m', color: 'rgb(0, 100, 255)' },    // Blue (0.5-1.0m)
-    { value: '2m', color: 'rgb(0, 150, 255)' },    // Light blue (1.0-1.5m)
-    { value: '3m', color: 'rgb(0, 200, 255)' },    // Cyan (1.5-2.0m)
-    { value: '4m', color: 'rgb(0, 255, 200)' },    // Light cyan (2.0-2.5m)
-    { value: '5m', color: 'rgb(100, 255, 100)' },  // Light green (2.5-3.0m)
-    { value: '6m', color: 'rgb(200, 255, 0)' },    // Yellow-green (3.0-3.5m)
-    { value: '8m', color: 'rgb(255, 255, 0)' },    // Yellow (3.5-4.0m)
-    { value: '10m', color: 'rgb(255, 200, 0)' },   // Orange (4.0-4.5m)
-    { value: '12m', color: 'rgb(255, 150, 0)' },   // Orange-red (4.5-5.0m)
-    { value: '14m', color: 'rgb(255, 100, 100)' }, // Pink (5.0-10.0m)
-    { value: '15m+', color: 'rgb(200, 0, 200)' }   // Purple (10.0m+)
+    { value: '0m', color: 'rgb(0, 0, 139)' },      
+    { value: '1m', color: 'rgb(0, 100, 255)' },    
+    { value: '2m', color: 'rgb(0, 150, 255)' },    
+    { value: '3m', color: 'rgb(0, 200, 255)' },    
+    { value: '4m', color: 'rgb(0, 255, 200)' },    
+    { value: '5m', color: 'rgb(100, 255, 100)' },  
+    { value: '6m', color: 'rgb(200, 255, 0)' },    
+    { value: '8m', color: 'rgb(255, 255, 0)' },    
+    { value: '10m', color: 'rgb(255, 200, 0)' },   
+    { value: '12m', color: 'rgb(255, 150, 0)' },   
+    { value: '14m', color: 'rgb(255, 100, 100)' }, 
+    { value: '15m+', color: 'rgb(200, 0, 200)' }   
   ]);
   const { toast } = useToast();
 
@@ -74,16 +74,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   // Mock vessel data for testing
   const mockVessels = [
-    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [-74.0060, 40.7128] }, // New York
-    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [-74.0160, 40.7228] }, // Near New York
-    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [4.4777, 51.9225] }, // Rotterdam
-    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [4.4877, 51.9325] }, // Near Rotterdam
-    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [103.8198, 1.3521] }, // Singapore
-    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [103.8298, 1.3621] }, // Near Singapore
-    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [121.4737, 31.2304] }, // Shanghai
-    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [121.4837, 31.2404] }, // Near Shanghai
-    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [151.2093, -33.8688] }, // Sydney
-    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [151.2193, -33.8588] }, // Near Sydney
+    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [-74.0060, 40.7128] },
+    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [-74.0160, 40.7228] },
+    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [4.4777, 51.9225] },
+    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [4.4877, 51.9325] },
+    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [103.8198, 1.3521] },
+    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [103.8298, 1.3621] },
+    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [121.4737, 31.2304] },
+    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [121.4837, 31.2404] },
+    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [151.2093, -33.8688] },
+    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [151.2193, -33.8588] },
   ];
 
   useEffect(() => {
@@ -110,7 +110,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       setIsMapLoaded(true);
       console.log("Map fully loaded");
       
-      // Add vessel markers after map loads
       createVesselMarkers(map, mockVessels, markersRef);
       
       toast({
@@ -195,7 +194,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const layerId = `dtn-layer-swell`;
     
     if (mapref.current.getLayer(layerId)) {
-      // Create color expression based on wave height values
       const colorExpression: any[] = [
         'interpolate',
         ['linear'],
@@ -236,9 +234,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
-        // Special handling for swell layer as filled polygons with gradient
         if (overlay === 'swell') {
-          // Create color expression based on wave height values
           const colorExpression: any[] = [
             'interpolate',
             ['linear'],
@@ -262,7 +258,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
           });
         } else {
-          // Regular line layer for other overlays
           mapref.current.addLayer({
             id: layerId,
             type: "line",
@@ -414,7 +409,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         </div>
       )}
 
-      {/* Weather Layer Configuration Box */}
       <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[320px] max-h-[80vh] overflow-y-auto">
         <h3 className="text-sm font-semibold mb-3">Weather Layer Configuration</h3>
         
@@ -570,5 +564,3 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
-
-}
