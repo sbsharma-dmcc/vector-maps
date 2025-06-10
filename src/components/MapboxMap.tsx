@@ -36,7 +36,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const mapref = useRef(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
-  const [activeOverlay, setActiveOverlay] = useState(null);
+  const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
   const [lineColor, setLineColor] = useState('#ffffff');
@@ -141,9 +141,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     if (!activeLayers || !isMapLoaded) return;
 
     Object.entries(activeLayers).forEach(([layerType, enabled]) => {
-      if (enabled && layerType in dtnOverlays) {
+      if (enabled && layerType in dtnOverlays && !activeOverlays.includes(layerType)) {
         handleOverlayClick(layerType);
-      } else if (!enabled && activeOverlay === layerType) {
+      } else if (!enabled && activeOverlays.includes(layerType)) {
         removeOverlay(layerType);
       }
     });
@@ -213,6 +213,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const handleOverlayClick = async (overlay) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) {
       console.warn("Map style not yet loaded");
+      return;
+    }
+
+    // Toggle layer - if it exists, remove it; if not, add it
+    if (activeOverlays.includes(overlay)) {
+      removeOverlay(overlay);
       return;
     }
 
@@ -291,7 +297,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         cleanupVesselMarkers(markersRef);
         createVesselMarkers(mapref.current, mockVessels, markersRef);
 
-        setActiveOverlay(overlay);
+        setActiveOverlays(prev => [...prev, overlay]);
         console.log(`Successfully added ${overlay} layer`);
         
         toast({
@@ -328,9 +334,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     cleanupVesselMarkers(markersRef);
     createVesselMarkers(mapref.current, mockVessels, markersRef);
 
-    if (activeOverlay === overlay) {
-      setActiveOverlay(null);
-    }
+    setActiveOverlays(prev => prev.filter(item => item !== overlay));
+  };
+
+  const removeAllOverlays = () => {
+    activeOverlays.forEach(overlay => removeOverlay(overlay));
+    setActiveOverlays([]);
+    
+    toast({
+      title: "All Layers Removed",
+      description: "All weather layers have been removed from the map"
+    });
   };
 
   const handleColorUpdate = () => {
@@ -410,20 +424,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               key={overlay}
               onClick={() => handleOverlayClick(overlay)}
               className={`p-2 m-1 rounded cursor-pointer transition-colors ${
-                activeOverlay === overlay 
+                activeOverlays.includes(overlay)
                   ? 'bg-blue-500 text-white' 
                   : 'bg-gray-100 hover:bg-gray-200 text-black'
               }`}
             >
               {overlay.charAt(0).toUpperCase() + overlay.slice(1)}
+              {activeOverlays.includes(overlay) && <span className="ml-2">✓</span>}
             </div>
           ))}
-          {activeOverlay && (
+          {activeOverlays.length > 0 && (
             <button
-              onClick={() => removeOverlay(activeOverlay)}
+              onClick={removeAllOverlays}
               className="w-full mt-2 p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
             >
-              Remove Active Layer
+              Remove All Layers ({activeOverlays.length})
             </button>
           )}
         </div>
@@ -584,3 +599,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+}
