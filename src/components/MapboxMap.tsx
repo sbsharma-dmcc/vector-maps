@@ -72,18 +72,23 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
-  // Mock vessel data for testing - properly typed
+  // Random ocean coordinates - distributed across various seas and oceans
   const mockVessels: Vessel[] = [
-    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [-74.0060, 40.7128] },
-    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [-74.0160, 40.7228] },
-    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [4.4777, 51.9225] },
-    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [4.4877, 51.9325] },
-    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [103.8198, 1.3521] },
-    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [103.8298, 1.3621] },
-    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [121.4737, 31.2304] },
-    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [121.4837, 31.2404] },
-    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [151.2093, -33.8688] },
-    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [151.2193, -33.8588] },
+    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [65.2341, 12.4567] }, // Arabian Sea
+    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [78.9876, 18.2345] }, // Bay of Bengal
+    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [92.1234, 8.7654] }, // Andaman Sea
+    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [105.4567, 15.8901] }, // South China Sea
+    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [118.7890, 22.3456] }, // South China Sea
+    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [125.6543, 35.9876] }, // Sea of Japan
+    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [140.2109, 40.5432] }, // North Pacific
+    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [155.8765, 20.1098] }, // Central Pacific
+    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [45.3210, 25.6789] }, // Red Sea
+    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [58.9012, 30.4321] }, // Persian Gulf
+    { id: 'vessel-11', name: 'Green Vessel 6', type: 'green', position: [73.5678, 2.1234] }, // Indian Ocean
+    { id: 'vessel-12', name: 'Orange Vessel 6', type: 'orange', position: [88.2345, -5.6789] }, // Indian Ocean South
+    { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [110.8901, -8.9012] }, // Java Sea
+    { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [130.5432, -12.3456] }, // Timor Sea
+    { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [95.6789, 20.8765] }, // Bay of Bengal North
   ];
 
   // Function to ensure vessels are always on top
