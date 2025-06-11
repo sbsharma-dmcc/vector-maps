@@ -12,6 +12,7 @@ import { Lock, Unlock } from 'lucide-react';
 import MapTopControls from './MapTopControls';
 import { dtnToken } from '@/utils/mapConstants';
 import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
+import WeatherConfigDrafts from './WeatherConfigDrafts';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -577,19 +578,34 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }));
   };
 
-  const applyLayerConfiguration = () => {
-    const config = layerConfigs[selectedWeatherType];
+  // Function to load configuration from drafts
+  const loadConfigFromDraft = (config: any) => {
+    setLayerConfigs(config);
     
-    if (selectedWeatherType === 'swell') {
+    // Apply all configurations that are currently active
+    Object.keys(config).forEach(layerType => {
+      if (activeOverlays.includes(layerType)) {
+        applySpecificLayerConfiguration(layerType, config[layerType]);
+      }
+    });
+
+    toast({
+      title: "Configuration Loaded",
+      description: "Weather layer configuration has been loaded from draft"
+    });
+  };
+
+  // Enhanced function to apply specific layer configuration
+  const applySpecificLayerConfiguration = (layerType: string, config: any) => {
+    if (layerType === 'swell') {
       const colorExpression: any[] = [
         'interpolate',
         ['linear'],
         ['to-number', ['get', 'value'], 0]
       ];
 
-      config.gradient.forEach((item) => {
+      config.gradient.forEach((item: any) => {
         const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-        // Apply individual opacity to each color
         const rgbMatch = item.color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
         if (rgbMatch) {
           const [, r, g, b] = rgbMatch;
@@ -600,14 +616,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         }
       });
 
-      updateLayerProperties(selectedWeatherType, {
+      updateLayerProperties(layerType, {
         'fill-color': colorExpression,
-        'fill-opacity': 1.0, // Set to 1.0 since opacity is now handled per color
+        'fill-opacity': 1.0,
         'fill-outline-color': config.fillOutlineColor,
         'fill-antialias': config.fillAntialias
       });
-    } else if (selectedWeatherType === 'pressure') {
-      updateLayerProperties(selectedWeatherType, {
+    } else if (layerType === 'pressure') {
+      updateLayerProperties(layerType, {
         'line-color': config.lineColor,
         'line-width': config.lineWidth,
         'line-opacity': config.lineOpacity,
@@ -615,34 +631,34 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'line-gap-width': config.lineGapWidth
       });
       
-      updateLayoutProperties(selectedWeatherType, {
+      updateLayoutProperties(layerType, {
         'line-cap': config.lineCap,
         'line-join': config.lineJoin
       });
-    } else if (selectedWeatherType === 'wind') {
-      updateLayerProperties(selectedWeatherType, {
+    } else if (layerType === 'wind') {
+      updateLayerProperties(layerType, {
         'text-color': config.textColor,
         'text-opacity': config.textOpacity,
         'text-halo-color': config.haloColor,
         'text-halo-width': config.haloWidth
       });
       
-      updateLayoutProperties(selectedWeatherType, {
+      updateLayoutProperties(layerType, {
         'text-size': config.textSize,
         'text-allow-overlap': config.allowOverlap,
         'symbol-spacing': config.symbolSpacing
       });
-    } else if (selectedWeatherType === 'symbol') {
+    } else if (layerType === 'symbol') {
       const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
       
-      updateLayerProperties(selectedWeatherType, {
+      updateLayerProperties(layerType, {
         'text-color': config.textColor,
         'text-opacity': config.textOpacity,
         'text-halo-color': config.haloColor,
         'text-halo-width': config.haloWidth
       });
       
-      updateLayoutProperties(selectedWeatherType, {
+      updateLayoutProperties(layerType, {
         'text-size': config.textSize,
         'text-allow-overlap': config.allowOverlap,
         'symbol-spacing': config.symbolSpacing,
@@ -650,6 +666,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'text-field': symbolText
       });
     }
+  };
+
+  // Update the existing applyLayerConfiguration function
+  const applyLayerConfiguration = () => {
+    const config = layerConfigs[selectedWeatherType];
+    applySpecificLayerConfiguration(selectedWeatherType, config);
 
     toast({
       title: "Configuration Applied",
@@ -1237,6 +1259,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             Apply Configuration
           </Button>
 
+          {/* Add the Weather Config Drafts component */}
+          <WeatherConfigDrafts
+            currentConfig={layerConfigs}
+            onLoadConfig={loadConfigFromDraft}
+          />
+
           <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
             <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
             {activeOverlays.map(layer => (
@@ -1252,3 +1280,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+</edits_to_apply>
