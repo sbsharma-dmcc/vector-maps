@@ -53,8 +53,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       haloWidth: 1,
       symbolSpacing: 80,
       allowOverlap: true,
-      barbStyle: 'full', // full, half, pennant
-      speedUnit: 'knots' // knots, ms, kmh
+      barbStyle: 'full',
+      speedUnit: 'knots'
     },
     pressure: {
       lineColor: '#ff6b35',
@@ -72,18 +72,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       animationEnabled: true,
       fillAntialias: true,
       gradient: [
-        { value: '0m', color: 'rgb(0, 0, 139)' },      
-        { value: '1m', color: 'rgb(0, 100, 255)' },    
-        { value: '2m', color: 'rgb(0, 150, 255)' },    
-        { value: '3m', color: 'rgb(0, 200, 255)' },    
-        { value: '4m', color: 'rgb(0, 255, 200)' },    
-        { value: '5m', color: 'rgb(100, 255, 100)' },  
-        { value: '6m', color: 'rgb(200, 255, 0)' },    
-        { value: '8m', color: 'rgb(255, 255, 0)' },    
-        { value: '10m', color: 'rgb(255, 200, 0)' },   
-        { value: '12m', color: 'rgb(255, 150, 0)' },   
-        { value: '14m', color: 'rgb(255, 100, 100)' }, 
-        { value: '15m+', color: 'rgb(200, 0, 200)' }   
+        { value: '0m', color: 'rgb(0, 0, 139)', opacity: 0.8 },      
+        { value: '1m', color: 'rgb(0, 100, 255)', opacity: 0.8 },    
+        { value: '2m', color: 'rgb(0, 150, 255)', opacity: 0.8 },    
+        { value: '3m', color: 'rgb(0, 200, 255)', opacity: 0.8 },    
+        { value: '4m', color: 'rgb(0, 255, 200)', opacity: 0.8 },    
+        { value: '5m', color: 'rgb(100, 255, 100)', opacity: 0.8 },  
+        { value: '6m', color: 'rgb(200, 255, 0)', opacity: 0.8 },    
+        { value: '8m', color: 'rgb(255, 255, 0)', opacity: 0.8 },    
+        { value: '10m', color: 'rgb(255, 200, 0)', opacity: 0.8 },   
+        { value: '12m', color: 'rgb(255, 150, 0)', opacity: 0.8 },   
+        { value: '14m', color: 'rgb(255, 100, 100)', opacity: 0.8 }, 
+        { value: '15m+', color: 'rgb(200, 0, 200)', opacity: 0.8 }   
       ]
     },
     symbol: {
@@ -95,7 +95,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       symbolSpacing: 100,
       allowOverlap: true,
       rotationAlignment: 'map',
-      symbolType: 'arrow', // arrow, triangle, circle, square
+      symbolType: 'arrow',
       customSymbol: '→'
     }
   });
@@ -380,7 +380,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
           layerConfigs.swell.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-            colorExpression.push(heightValue, item.color);
+            // Apply individual opacity to each color
+            const rgbMatch = item.color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (rgbMatch) {
+              const [, r, g, b] = rgbMatch;
+              const colorWithOpacity = `rgba(${r}, ${g}, ${b}, ${item.opacity})`;
+              colorExpression.push(heightValue, colorWithOpacity);
+            } else {
+              colorExpression.push(heightValue, item.color);
+            }
           });
 
           mapref.current.addLayer({
@@ -390,7 +398,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "source-layer": sourceLayer,
             paint: {
               "fill-color": colorExpression,
-              "fill-opacity": layerConfigs.swell.fillOpacity,
+              "fill-opacity": 1.0, // Set to 1.0 since opacity is now handled per color
               "fill-outline-color": layerConfigs.swell.fillOutlineColor,
               "fill-translate": [0, 0],
               "fill-translate-transition": {
@@ -573,12 +581,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       config.gradient.forEach((item) => {
         const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-        colorExpression.push(heightValue, item.color);
+        // Apply individual opacity to each color
+        const rgbMatch = item.color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (rgbMatch) {
+          const [, r, g, b] = rgbMatch;
+          const colorWithOpacity = `rgba(${r}, ${g}, ${b}, ${item.opacity})`;
+          colorExpression.push(heightValue, colorWithOpacity);
+        } else {
+          colorExpression.push(heightValue, item.color);
+        }
       });
 
       updateLayerProperties(selectedWeatherType, {
         'fill-color': colorExpression,
-        'fill-opacity': config.fillOpacity,
+        'fill-opacity': 1.0, // Set to 1.0 since opacity is now handled per color
         'fill-outline-color': config.fillOutlineColor,
         'fill-antialias': config.fillAntialias
       });
@@ -718,10 +734,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             )}
 
             <div>
-              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient</Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
+              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient with Individual Opacity</Label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
                 {config.gradient.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
+                  <div key={index} className="flex items-center gap-2 p-2 border rounded">
                     <Input
                       type="color"
                       value={convertRgbToHex(item.color)}
@@ -732,7 +748,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                       }}
                       className="w-8 h-6 p-0"
                     />
-                    <span className="text-xs w-10">{item.value}</span>
+                    <span className="text-xs w-12 font-medium">{item.value}</span>
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-600">Opacity: {item.opacity}</Label>
+                      <Slider
+                        value={[item.opacity]}
+                        onValueChange={([value]) => {
+                          const newGradient = [...config.gradient];
+                          newGradient[index].opacity = value;
+                          updateConfigValue('swell', 'gradient', newGradient);
+                        }}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
