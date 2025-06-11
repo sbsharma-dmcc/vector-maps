@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, Save, Trash2 } from 'lucide-react';
 import MapTopControls from './MapTopControls';
 import { dtnToken } from '@/utils/mapConstants';
 import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
@@ -25,6 +25,14 @@ interface MapboxMapProps {
   activeRouteType?: 'base' | 'weather';
   activeLayers?: Record<string, boolean>;
   activeBaseLayer?: string;
+}
+
+interface WeatherLayerDraft {
+  id: string;
+  name: string;
+  weatherType: string;
+  config: any;
+  createdAt: string;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -44,6 +52,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
+  const [selectedDraft, setSelectedDraft] = useState<string>('');
+  const [weatherDrafts, setWeatherDrafts] = useState<WeatherLayerDraft[]>([]);
   const [swellConfigLocked, setSwellConfigLocked] = useState(true);
   
   // Enhanced configuration state for each layer type
@@ -105,6 +115,23 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const { toast } = useToast();
 
+  // Load weather drafts from localStorage on component mount
+  useEffect(() => {
+    const savedDrafts = localStorage.getItem('weatherLayerDrafts');
+    if (savedDrafts) {
+      try {
+        setWeatherDrafts(JSON.parse(savedDrafts));
+      } catch (error) {
+        console.error('Error loading weather drafts:', error);
+      }
+    }
+  }, []);
+
+  // Save weather drafts to localStorage whenever drafts change
+  useEffect(() => {
+    localStorage.setItem('weatherLayerDrafts', JSON.stringify(weatherDrafts));
+  }, [weatherDrafts]);
+
   const token = dtnToken.replace('Bearer ', '');
 
   const dtnOverlays = {
@@ -137,6 +164,82 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'circle-4', name: 'Circle Vessel 4', type: 'circle', position: [86.8, 19.2] },
     { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] },
   ];
+
+  // Get the next available draft number for a weather type
+  const getNextDraftNumber = (weatherType: string) => {
+    const existingDrafts = weatherDrafts.filter(draft => draft.weatherType === weatherType);
+    const numbers = existingDrafts.map(draft => {
+      const match = draft.name.match(/Draft (\d+)/);
+      return match ? parseInt(match[1]) : 0;
+    });
+    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+    return maxNumber + 1;
+  };
+
+  // Save current configuration as a draft
+  const saveConfigurationAsDraft = () => {
+    const currentConfig = layerConfigs[selectedWeatherType];
+    const draftNumber = getNextDraftNumber(selectedWeatherType);
+    
+    const newDraft: WeatherLayerDraft = {
+      id: `${selectedWeatherType}-${Date.now()}`,
+      name: `Draft ${draftNumber}`,
+      weatherType: selectedWeatherType,
+      config: JSON.parse(JSON.stringify(currentConfig)),
+      createdAt: new Date().toISOString()
+    };
+
+    setWeatherDrafts(prev => [...prev, newDraft]);
+    
+    toast({
+      title: "Configuration Saved",
+      description: `${selectedWeatherType} configuration saved as ${newDraft.name}`
+    });
+  };
+
+  // Load a draft configuration
+  const loadDraft = (draftId: string) => {
+    const draft = weatherDrafts.find(d => d.id === draftId);
+    if (draft) {
+      setLayerConfigs(prev => ({
+        ...prev,
+        [draft.weatherType]: draft.config
+      }));
+      
+      // Apply the configuration if the layer is active
+      if (activeOverlays.includes(draft.weatherType)) {
+        applySpecificLayerConfiguration(draft.weatherType, draft.config);
+      }
+      
+      setSelectedDraft(draftId);
+      
+      toast({
+        title: "Draft Loaded",
+        description: `${draft.weatherType} ${draft.name} has been loaded`
+      });
+    }
+  };
+
+  // Delete a draft
+  const deleteDraft = (draftId: string) => {
+    const draft = weatherDrafts.find(d => d.id === draftId);
+    if (draft) {
+      setWeatherDrafts(prev => prev.filter(d => d.id !== draftId));
+      if (selectedDraft === draftId) {
+        setSelectedDraft('');
+      }
+      
+      toast({
+        title: "Draft Deleted",
+        description: `${draft.weatherType} ${draft.name} has been deleted`
+      });
+    }
+  };
+
+  // Get drafts for the currently selected weather type
+  const getCurrentWeatherTypeDrafts = () => {
+    return weatherDrafts.filter(draft => draft.weatherType === selectedWeatherType);
+  };
 
   // Function to get symbol based on type
   const getSymbolByType = (symbolType: string, customSymbol?: string) => {
@@ -228,6 +331,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       }
     });
   }, [activeLayers, isMapLoaded]);
+
+  // Clear selected draft when weather type changes
+  useEffect(() => {
+    setSelectedDraft('');
+  }, [selectedWeatherType]);
 
   const fetchDTNSourceLayer = async (layerId) => {
     const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
@@ -388,7 +496,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
           layerConfigs.swell.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-            // Apply individual opacity to each color
             const rgbMatch = item.color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
             if (rgbMatch) {
               const [, r, g, b] = rgbMatch;
@@ -406,7 +513,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "source-layer": sourceLayer,
             paint: {
               "fill-color": colorExpression,
-              "fill-opacity": 1.0, // Set to 1.0 since opacity is now handled per color
+              "fill-opacity": 1.0,
               "fill-outline-color": layerConfigs.swell.fillOutlineColor,
               "fill-translate": [0, 0],
               "fill-translate-transition": {
@@ -419,7 +526,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
-          // Fixed wind barb expression with proper Mapbox GL JS syntax
           const windBarbExpression = [
             'case',
             ['has', 'value'],
@@ -672,9 +778,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const config = layerConfigs[selectedWeatherType];
     applySpecificLayerConfiguration(selectedWeatherType, config);
 
+    // Automatically save as draft after applying
+    saveConfigurationAsDraft();
+
     toast({
       title: "Configuration Applied",
-      description: `${selectedWeatherType} layer configuration updated successfully`
+      description: `${selectedWeatherType} layer configuration updated and saved as draft`
     });
   };
 
@@ -1248,6 +1357,49 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </Select>
           </div>
 
+          {/* Draft Selection */}
+          {getCurrentWeatherTypeDrafts().length > 0 && (
+            <div>
+              <Label className="block text-xs font-medium text-gray-700 mb-1">
+                Load Draft
+              </Label>
+              <div className="flex gap-2">
+                <Select value={selectedDraft} onValueChange={loadDraft}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select a draft" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border shadow-lg z-50">
+                    {getCurrentWeatherTypeDrafts().map((draft) => (
+                      <SelectItem key={draft.id} value={draft.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{draft.name}</span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(draft.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedDraft && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteDraft(selectedDraft)}
+                    className="p-2"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                )}
+              </div>
+              {getCurrentWeatherTypeDrafts().length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {getCurrentWeatherTypeDrafts().length} draft(s) available for {selectedWeatherType}
+                </p>
+              )}
+            </div>
+          )}
+
           {renderConfigurationPanel()}
 
           <Button 
@@ -1255,7 +1407,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             className="w-full"
             size="sm"
           >
-            Apply Configuration
+            <Save className="h-4 w-4 mr-2" />
+            Apply & Save as Draft
           </Button>
 
           {/* Add the Weather Config Drafts component */}
