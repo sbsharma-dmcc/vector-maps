@@ -912,5 +912,3 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
-
-</initial_code>
