@@ -187,7 +187,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     if (mapref.current.getLayer(layerId)) {
       if (layerType === 'swell') {
         console.log(`Swell is a filled layer with gradient colors`);
+      } else if (layerType === 'wind' || layerType === 'symbol') {
+        // Wind and symbol layers use text-color property
+        mapref.current.setPaintProperty(layerId, 'text-color', color);
+        console.log(`Updated ${layerType} layer text color to ${color}`);
       } else {
+        // Line layers use line-color
         mapref.current.setPaintProperty(layerId, 'line-color', color);
         console.log(`Updated ${layerType} layer color to ${color}`);
       }
@@ -224,6 +229,34 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       mapref.current.setPaintProperty(layerId, 'fill-color', colorExpression);
       console.log('Updated swell gradient colors');
+    }
+  };
+
+  // Add animation to swell layer
+  const animateSwell = () => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-swell`;
+    
+    if (mapref.current.getLayer(layerId)) {
+      let offset = 0;
+      
+      const animate = () => {
+        if (!mapref.current || !mapref.current.getLayer(layerId)) return;
+        
+        offset += 0.001; // Speed of animation
+        
+        // Create animated fill pattern
+        mapref.current.setPaintProperty(layerId, 'fill-translate', [
+          Math.sin(offset * 2) * 2,
+          Math.cos(offset) * 1
+        ]);
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      console.log('Started swell animation');
     }
   };
 
@@ -281,9 +314,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             paint: {
               "fill-color": colorExpression,
               "fill-opacity": heatmapIntensity * 0.8,
-              "fill-outline-color": "transparent"
+              "fill-outline-color": "transparent",
+              "fill-translate": [0, 0],
+              "fill-translate-transition": {
+                "duration": 0,
+                "delay": 0
+              }
             },
           }, beforeId);
+          
+          // Start animation for swell
+          setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
           // Wind layer should display as directional arrows showing wind direction and speed
           mapref.current.addLayer({
@@ -334,7 +375,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
             paint: {
               "text-color": layerColors[overlay] || "#ff0000",
-              "text-opacity": 0.8
+              "text-opacity": 0.8,
+              "text-halo-color": "#000000",
+              "text-halo-width": 1
             },
           }, beforeId);
         } else {
