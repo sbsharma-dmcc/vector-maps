@@ -13,7 +13,7 @@ export const initializeMap = (
   
   const mapOptions: mapboxgl.MapboxOptions = {
     container,
-    style: baseLayerStyles.default,
+    style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
     center: showRoutes && baseRoute.length > 0 
       ? [(baseRoute[0][0] + baseRoute[baseRoute.length - 1][0]) / 2, 
          (baseRoute[0][1] + baseRoute[baseRoute.length - 1][1]) / 2] 
