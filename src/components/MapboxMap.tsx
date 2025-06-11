@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -286,24 +285,35 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
           }, beforeId);
         } else if (overlay === 'wind') {
-          // Wind layer should display as symbols showing wind direction and speed
+          // Wind layer should display as directional arrows showing wind direction and speed
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
             source: sourceId,
             "source-layer": sourceLayer,
             layout: {
-              "icon-image": "wind-arrow", // This will need to be added as a sprite
-              "icon-size": 0.8,
-              "icon-rotation-alignment": "map",
-              "icon-rotate": ["get", "direction"], // Assuming direction field exists in data
-              "icon-allow-overlap": true,
-              "icon-ignore-placement": true,
-              "symbol-spacing": 50
+              "text-field": "↑", // Wind direction arrow
+              "text-size": [
+                "interpolate",
+                ["linear"],
+                ["get", "speed"], // Assuming speed field exists
+                0, 12,
+                10, 16,
+                20, 20,
+                30, 24
+              ],
+              "text-rotation-alignment": "map",
+              "text-rotate": ["get", "direction"], // Rotate based on wind direction
+              "text-allow-overlap": true,
+              "text-ignore-placement": true,
+              "symbol-spacing": 80,
+              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"]
             },
             paint: {
-              "icon-opacity": 0.8,
-              "icon-color": layerColors[overlay] || "#ffffff"
+              "text-color": layerColors[overlay] || "#ffffff",
+              "text-opacity": 0.9,
+              "text-halo-color": "#000000",
+              "text-halo-width": 1
             },
           }, beforeId);
         } else if (overlay === 'symbol') {
@@ -653,3 +663,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+}
