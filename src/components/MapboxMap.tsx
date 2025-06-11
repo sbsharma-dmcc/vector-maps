@@ -111,8 +111,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
-      center: [-119.0, 32.8], // Centered on California coast to show vessels
-      zoom: 8, // Higher zoom to better see the vessel markers
+      center: [83.167, 6.887],
+      zoom: 4,
       attributionControl: false
     });
 
