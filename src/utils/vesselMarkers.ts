@@ -1,3 +1,4 @@
+
 import mapboxgl from 'mapbox-gl';
 
 export interface Vessel {
@@ -33,6 +34,18 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   el.style.backgroundSize = 'contain';
   el.style.backgroundRepeat = 'no-repeat';
   el.style.backgroundPosition = 'center';
+  
+  // Add waves effect
+  const wavesEl = document.createElement('div');
+  wavesEl.className = 'vessel-waves';
+  wavesEl.style.position = 'absolute';
+  wavesEl.style.right = '-8px';
+  wavesEl.style.top = '15px';
+  wavesEl.innerHTML = ')))';
+  wavesEl.style.fontSize = '12px';
+  wavesEl.style.color = vessel.type === 'green' ? '#4ade80' : '#fb923c';
+  wavesEl.style.fontWeight = 'bold';
+  el.appendChild(wavesEl);
   
   // Create a mapbox marker
   const marker = new mapboxgl.Marker(el)
