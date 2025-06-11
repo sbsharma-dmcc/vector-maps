@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Lock, Unlock } from 'lucide-react';
 import MapTopControls from './MapTopControls';
 import { dtnToken } from '@/utils/mapConstants';
 import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
@@ -43,6 +43,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
+  const [swellConfigLocked, setSwellConfigLocked] = useState(true); // Lock swell config by default
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -685,16 +686,41 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       <div className="space-y-4">
         {selectedWeatherType === 'swell' && (
           <>
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-sm font-medium text-gray-700">Swell Configuration</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSwellConfigLocked(!swellConfigLocked)}
+                className="p-2"
+              >
+                {swellConfigLocked ? (
+                  <Lock className="h-4 w-4 text-red-500" />
+                ) : (
+                  <Unlock className="h-4 w-4 text-green-500" />
+                )}
+              </Button>
+            </div>
+
+            {swellConfigLocked && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-800">
+                  Swell configuration is temporarily locked. Click the lock icon to unlock and make changes.
+                </p>
+              </div>
+            )}
+
             <div>
               <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
               <div className="flex items-center gap-2">
                 <Slider
                   value={[config.fillOpacity]}
-                  onValueChange={([value]) => updateConfigValue('swell', 'fillOpacity', value)}
+                  onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'fillOpacity', value)}
                   min={0}
                   max={1}
                   step={0.1}
                   className="flex-1"
+                  disabled={swellConfigLocked}
                 />
                 <span className="text-xs w-12">{config.fillOpacity}</span>
               </div>
@@ -705,15 +731,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <Input
                 type="color"
                 value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
-                onChange={(e) => updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
+                onChange={(e) => !swellConfigLocked && updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
                 className="w-full h-8"
+                disabled={swellConfigLocked}
               />
             </div>
 
             <div className="flex items-center gap-2">
               <Switch
                 checked={config.fillAntialias}
-                onCheckedChange={(checked) => updateConfigValue('swell', 'fillAntialias', checked)}
+                onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'fillAntialias', checked)}
+                disabled={swellConfigLocked}
               />
               <Label className="text-xs">Anti-aliasing</Label>
             </div>
@@ -721,7 +749,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             <div className="flex items-center gap-2">
               <Switch
                 checked={config.animationEnabled}
-                onCheckedChange={(checked) => updateConfigValue('swell', 'animationEnabled', checked)}
+                onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'animationEnabled', checked)}
+                disabled={swellConfigLocked}
               />
               <Label className="text-xs">Animation</Label>
             </div>
@@ -731,11 +760,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 <Label className="text-xs font-medium text-gray-700">Animation Speed</Label>
                 <Slider
                   value={[config.animationSpeed * 1000]}
-                  onValueChange={([value]) => updateConfigValue('swell', 'animationSpeed', value / 1000)}
+                  onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'animationSpeed', value / 1000)}
                   min={0.1}
                   max={5}
                   step={0.1}
                   className="flex-1"
+                  disabled={swellConfigLocked}
                 />
               </div>
             )}
@@ -744,16 +774,19 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient with Individual Opacity</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {config.gradient.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 border rounded">
+                  <div key={index} className={`flex items-center gap-2 p-2 border rounded ${swellConfigLocked ? 'bg-gray-50' : ''}`}>
                     <Input
                       type="color"
                       value={convertRgbToHex(item.color)}
                       onChange={(e) => {
-                        const newGradient = [...config.gradient];
-                        newGradient[index].color = convertHexToRgb(e.target.value);
-                        updateConfigValue('swell', 'gradient', newGradient);
+                        if (!swellConfigLocked) {
+                          const newGradient = [...config.gradient];
+                          newGradient[index].color = convertHexToRgb(e.target.value);
+                          updateConfigValue('swell', 'gradient', newGradient);
+                        }
                       }}
                       className="w-8 h-6 p-0"
+                      disabled={swellConfigLocked}
                     />
                     <span className="text-xs w-12 font-medium">{item.value}</span>
                     <div className="flex-1">
@@ -761,14 +794,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                       <Slider
                         value={[item.opacity]}
                         onValueChange={([value]) => {
-                          const newGradient = [...config.gradient];
-                          newGradient[index].opacity = value;
-                          updateConfigValue('swell', 'gradient', newGradient);
+                          if (!swellConfigLocked) {
+                            const newGradient = [...config.gradient];
+                            newGradient[index].opacity = value;
+                            updateConfigValue('swell', 'gradient', newGradient);
+                          }
                         }}
                         min={0}
                         max={1}
                         step={0.1}
                         className="w-full"
+                        disabled={swellConfigLocked}
                       />
                     </div>
                   </div>
@@ -1216,3 +1252,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+}
