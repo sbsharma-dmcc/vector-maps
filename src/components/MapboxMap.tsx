@@ -285,8 +285,50 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "fill-outline-color": "transparent"
             },
           }, beforeId);
+        } else if (overlay === 'wind') {
+          // Wind layer should display as symbols showing wind direction and speed
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "icon-image": "wind-arrow", // This will need to be added as a sprite
+              "icon-size": 0.8,
+              "icon-rotation-alignment": "map",
+              "icon-rotate": ["get", "direction"], // Assuming direction field exists in data
+              "icon-allow-overlap": true,
+              "icon-ignore-placement": true,
+              "symbol-spacing": 50
+            },
+            paint: {
+              "icon-opacity": 0.8,
+              "icon-color": layerColors[overlay] || "#ffffff"
+            },
+          }, beforeId);
+        } else if (overlay === 'symbol') {
+          // Symbol layer for wind symbols grid
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "text-field": "→", // Simple arrow symbol
+              "text-size": 16,
+              "text-rotation-alignment": "map",
+              "text-rotate": ["get", "direction"], // Rotate based on wind direction
+              "text-allow-overlap": true,
+              "text-ignore-placement": true,
+              "symbol-spacing": 100
+            },
+            paint: {
+              "text-color": layerColors[overlay] || "#ff0000",
+              "text-opacity": 0.8
+            },
+          }, beforeId);
         } else {
-          // Line layers (pressure, wind, symbol) go above heatmaps but below vessels
+          // Line layers (pressure) go above heatmaps but below vessels
           mapref.current.addLayer({
             id: layerId,
             type: "line",
