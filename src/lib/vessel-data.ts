@@ -1,6 +1,30 @@
 
 import { Vessel } from '@/utils/vesselMarkers';
 
+export { Vessel } from '@/utils/vesselMarkers';
+
+export type VesselType = 'green' | 'orange' | 'circle';
+
+export interface VesselEvent {
+  id: string;
+  vesselId: string;
+  timestamp: Date;
+  type: 'departure' | 'arrival' | 'maintenance' | 'alert';
+  location: string;
+  description: string;
+}
+
+export interface Route {
+  id: string;
+  name: string;
+  startPort: string;
+  endPort: string;
+  distance: number;
+  estimatedTime: string;
+  coordinates: [number, number][];
+  vessels: string[];
+}
+
 export const vessels: Vessel[] = [
   // Green vessels (ships)
   {
@@ -92,3 +116,69 @@ export const vessels: Vessel[] = [
     position: [139.7890, 35.9876] // Northern waters
   }
 ];
+
+export const generateMockVessels = (count: number = 20): Vessel[] => {
+  return vessels.slice(0, count);
+};
+
+export const getVesselStats = () => {
+  const totalVessels = vessels.length;
+  const greenVessels = vessels.filter(v => v.type === 'green').length;
+  const orangeVessels = vessels.filter(v => v.type === 'orange').length;
+  const circleVessels = vessels.filter(v => v.type === 'circle').length;
+  
+  return {
+    total: totalVessels,
+    green: greenVessels,
+    orange: orangeVessels,
+    circle: circleVessels,
+    active: Math.floor(totalVessels * 0.8),
+    inactive: Math.floor(totalVessels * 0.2)
+  };
+};
+
+export const generateMockHistory = (): VesselEvent[] => {
+  const events: VesselEvent[] = [];
+  const eventTypes: VesselEvent['type'][] = ['departure', 'arrival', 'maintenance', 'alert'];
+  const locations = ['Tokyo Bay', 'Yokohama Port', 'Osaka Bay', 'Kobe Port', 'Nagoya Port'];
+  
+  vessels.forEach((vessel, index) => {
+    for (let i = 0; i < 3; i++) {
+      events.push({
+        id: `event-${vessel.id}-${i}`,
+        vesselId: vessel.id,
+        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
+        type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+        location: locations[Math.floor(Math.random() * locations.length)],
+        description: `${vessel.name} ${eventTypes[Math.floor(Math.random() * eventTypes.length)]} event`
+      });
+    }
+  });
+  
+  return events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+};
+
+export const generateMockRoutes = (): Route[] => {
+  return [
+    {
+      id: 'route-1',
+      name: 'Tokyo - Osaka Express',
+      startPort: 'Tokyo Bay',
+      endPort: 'Osaka Bay',
+      distance: 500,
+      estimatedTime: '24 hours',
+      coordinates: [[139.7514, 35.6851], [135.5023, 34.6937]],
+      vessels: ['vessel-1', 'vessel-4']
+    },
+    {
+      id: 'route-2',
+      name: 'Coastal Navigation Route',
+      startPort: 'Yokohama Port',
+      endPort: 'Kobe Port',
+      distance: 450,
+      estimatedTime: '20 hours',
+      coordinates: [[139.6380, 35.4437], [135.1955, 34.6901]],
+      vessels: ['vessel-2', 'vessel-5']
+    }
+  ];
+};
