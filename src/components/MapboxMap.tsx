@@ -44,7 +44,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
-  const [swellConfigLocked, setSwellConfigLocked] = useState(true); // Lock swell config by default
+  const [swellConfigLocked, setSwellConfigLocked] = useState(true);
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -116,27 +116,26 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   // Enhanced vessel coordinates with circle vessels added
   const mockVessels: Vessel[] = [
-    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [72.5, 15.2] }, // Arabian Sea Central
-    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [78.8, 12.1] }, // Indian Ocean West Central
-    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [85.2, 18.5] }, // Bay of Bengal Central
-    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [80.1, 6.8] }, // Indian Ocean South of India
-    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [90.5, 14.3] }, // Bay of Bengal East
-    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [75.2, 20.1] }, // Arabian Sea North
-    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [68.7, 18.9] }, // Arabian Sea West
-    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [82.4, 10.5] }, // Tamil Nadu Waters
-    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [87.9, 21.7] }, // Bay of Bengal North
-    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [76.8, 8.3] }, // Kerala Waters
-    { id: 'vessel-11', name: 'Green Vessel 6', type: 'green', position: [81.6, 16.4] }, // Sri Lanka North
-    { id: 'vessel-12', name: 'Orange Vessel 6', type: 'orange', position: [88.2, 11.7] }, // Bay of Bengal South
-    { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [74.1, 13.6] }, // Goa Waters
-    { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [79.5, 22.4] }, // Gujarat Waters
-    { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [84.7, 7.2] }, // Indian Ocean East
-    // New circle vessels
-    { id: 'circle-1', name: 'Circle Vessel 1', type: 'circle', position: [70.5, 12.8] }, // Arabian Sea
-    { id: 'circle-2', name: 'Circle Vessel 2', type: 'circle', position: [83.2, 15.7] }, // Bay of Bengal
-    { id: 'circle-3', name: 'Circle Vessel 3', type: 'circle', position: [77.1, 9.5] }, // Indian Ocean Central
-    { id: 'circle-4', name: 'Circle Vessel 4', type: 'circle', position: [86.8, 19.2] }, // Bay of Bengal North
-    { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] }, // Arabian Sea East
+    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [72.5, 15.2] },
+    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [78.8, 12.1] },
+    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [85.2, 18.5] },
+    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [80.1, 6.8] },
+    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [90.5, 14.3] },
+    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [75.2, 20.1] },
+    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [68.7, 18.9] },
+    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [82.4, 10.5] },
+    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [87.9, 21.7] },
+    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [76.8, 8.3] },
+    { id: 'vessel-11', name: 'Green Vessel 6', type: 'green', position: [81.6, 16.4] },
+    { id: 'vessel-12', name: 'Orange Vessel 6', type: 'orange', position: [88.2, 11.7] },
+    { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [74.1, 13.6] },
+    { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [79.5, 22.4] },
+    { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [84.7, 7.2] },
+    { id: 'circle-1', name: 'Circle Vessel 1', type: 'circle', position: [70.5, 12.8] },
+    { id: 'circle-2', name: 'Circle Vessel 2', type: 'circle', position: [83.2, 15.7] },
+    { id: 'circle-3', name: 'Circle Vessel 3', type: 'circle', position: [77.1, 9.5] },
+    { id: 'circle-4', name: 'Circle Vessel 4', type: 'circle', position: [86.8, 19.2] },
+    { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] },
   ];
 
   // Function to get symbol based on type
@@ -1280,5 +1279,3 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
-
-</edits_to_apply>
