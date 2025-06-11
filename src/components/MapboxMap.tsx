@@ -52,7 +52,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       haloColor: '#000000',
       haloWidth: 1,
       symbolSpacing: 80,
-      allowOverlap: true
+      allowOverlap: true,
+      barbStyle: 'full', // full, half, pennant
+      speedUnit: 'knots' // knots, ms, kmh
     },
     pressure: {
       lineColor: '#ff6b35',
@@ -278,6 +280,43 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
+  // Function to create wind barb symbol based on wind speed
+  const createWindBarb = (speed: number, unit: string = 'knots') => {
+    // Convert speed to knots if needed
+    let speedKnots = speed;
+    if (unit === 'ms') speedKnots = speed * 1.944;
+    if (unit === 'kmh') speedKnots = speed * 0.54;
+
+    // Wind barb components
+    let barb = '│'; // Base staff
+    
+    // Add flags (pennants) for 50+ knots
+    const flags = Math.floor(speedKnots / 50);
+    for (let i = 0; i < flags; i++) {
+      barb = '▲' + barb;
+    }
+    speedKnots = speedKnots % 50;
+    
+    // Add full barbs for 10+ knots
+    const fullBarbs = Math.floor(speedKnots / 10);
+    for (let i = 0; i < fullBarbs; i++) {
+      barb = barb + '━';
+    }
+    speedKnots = speedKnots % 10;
+    
+    // Add half barb for 5+ knots
+    if (speedKnots >= 5) {
+      barb = barb + '╸';
+    }
+    
+    // Calm conditions (less than 5 knots)
+    if (speed < 5) {
+      barb = '○';
+    }
+    
+    return barb;
+  };
+
   const handleOverlayClick = async (overlay) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) {
       console.warn("Map style not yet loaded");
@@ -310,6 +349,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'swell') {
+          // ... keep existing swell layer code the same ...
           const colorExpression: any[] = [
             'interpolate',
             ['linear'],
@@ -341,13 +381,34 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
+          // Create wind barb expression
+          const windBarbExpression = [
+            'case',
+            ['has', 'value'],
+            [
+              'case',
+              ['<', ['to-number', ['get', 'value']], 5], '○',
+              ['<', ['to-number', ['get', 'value']], 10], '│╸',
+              ['<', ['to-number', ['get', 'value']], 15], '│━',
+              ['<', ['to-number', ['get', 'value']], 20], '│━╸',
+              ['<', ['to-number', ['get', 'value']], 25], '│━━',
+              ['<', ['to-number', ['get', 'value']], 30], '│━━╸',
+              ['<', ['to-number', ['get', 'value']], 35], '│━━━',
+              ['<', ['to-number', ['get', 'value']], 40], '│━━━╸',
+              ['<', ['to-number', ['get', 'value']], 45], '│━━━━',
+              ['<', ['to-number', ['get', 'value']], 50], '│━━━━╸',
+              '▲│'
+            ],
+            '│'
+          ];
+
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
             source: sourceId,
             "source-layer": sourceLayer,
             layout: {
-              "text-field": "↑",
+              "text-field": windBarbExpression,
               "text-size": layerConfigs.wind.textSize,
               "text-rotation-alignment": "map",
               "text-rotate": ["get", "direction"],
@@ -364,6 +425,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
           }, beforeId);
         } else if (overlay === 'symbol') {
+          // ... keep existing symbol layer code the same ...
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
@@ -386,6 +448,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
           }, beforeId);
         } else {
+          // ... keep existing pressure layer code the same ...
           mapref.current.addLayer({
             id: layerId,
             type: "line",
@@ -724,23 +787,23 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           </>
         )}
 
-        {(selectedWeatherType === 'wind' || selectedWeatherType === 'symbol') && (
+        {selectedWeatherType === 'wind' && (
           <>
             <div>
-              <Label className="text-xs font-medium text-gray-700">Text Color</Label>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Color</Label>
               <Input
                 type="color"
                 value={config.textColor}
-                onChange={(e) => updateConfigValue(selectedWeatherType, 'textColor', e.target.value)}
+                onChange={(e) => updateConfigValue('wind', 'textColor', e.target.value)}
                 className="w-full h-8"
               />
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Text Size</Label>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Size</Label>
               <Slider
                 value={[config.textSize]}
-                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'textSize', value)}
+                onValueChange={([value]) => updateConfigValue('wind', 'textSize', value)}
                 min={8}
                 max={32}
                 step={1}
@@ -749,10 +812,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Text Opacity</Label>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Opacity</Label>
               <Slider
                 value={[config.textOpacity]}
-                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'textOpacity', value)}
+                onValueChange={([value]) => updateConfigValue('wind', 'textOpacity', value)}
                 min={0}
                 max={1}
                 step={0.1}
@@ -765,7 +828,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <Input
                 type="color"
                 value={config.haloColor}
-                onChange={(e) => updateConfigValue(selectedWeatherType, 'haloColor', e.target.value)}
+                onChange={(e) => updateConfigValue('wind', 'haloColor', e.target.value)}
                 className="w-full h-8"
               />
             </div>
@@ -774,7 +837,121 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
               <Slider
                 value={[config.haloWidth]}
-                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'haloWidth', value)}
+                onValueChange={([value]) => updateConfigValue('wind', 'haloWidth', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Barb Spacing</Label>
+              <Slider
+                value={[config.symbolSpacing]}
+                onValueChange={([value]) => updateConfigValue('wind', 'symbolSpacing', value)}
+                min={20}
+                max={200}
+                step={10}
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.allowOverlap}
+                onCheckedChange={(checked) => updateConfigValue('wind', 'allowOverlap', checked)}
+              />
+              <Label className="text-xs">Allow Overlap</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Speed Unit</Label>
+              <Select 
+                value={config.speedUnit} 
+                onValueChange={(value) => updateConfigValue('wind', 'speedUnit', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="knots">Knots</SelectItem>
+                  <SelectItem value="ms">m/s</SelectItem>
+                  <SelectItem value="kmh">km/h</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Barb Style</Label>
+              <Select 
+                value={config.barbStyle} 
+                onValueChange={(value) => updateConfigValue('wind', 'barbStyle', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Full Barbs</SelectItem>
+                  <SelectItem value="half">Half Barbs</SelectItem>
+                  <SelectItem value="pennant">Pennant Style</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'symbol' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Text Color</Label>
+              <Input
+                type="color"
+                value={config.textColor}
+                onChange={(e) => updateConfigValue('symbol', 'textColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Text Size</Label>
+              <Slider
+                value={[config.textSize]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
+                min={8}
+                max={32}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Text Opacity</Label>
+              <Slider
+                value={[config.textOpacity]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'textOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
+              <Input
+                type="color"
+                value={config.haloColor}
+                onChange={(e) => updateConfigValue('symbol', 'haloColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
+              <Slider
+                value={[config.haloWidth]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'haloWidth', value)}
                 min={0}
                 max={5}
                 step={0.5}
@@ -786,7 +963,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <Label className="text-xs font-medium text-gray-700">Symbol Spacing</Label>
               <Slider
                 value={[config.symbolSpacing]}
-                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'symbolSpacing', value)}
+                onValueChange={([value]) => updateConfigValue('symbol', 'symbolSpacing', value)}
                 min={20}
                 max={200}
                 step={10}
@@ -797,29 +974,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             <div className="flex items-center gap-2">
               <Switch
                 checked={config.allowOverlap}
-                onCheckedChange={(checked) => updateConfigValue(selectedWeatherType, 'allowOverlap', checked)}
+                onCheckedChange={(checked) => updateConfigValue('symbol', 'allowOverlap', checked)}
               />
               <Label className="text-xs">Allow Overlap</Label>
             </div>
 
-            {selectedWeatherType === 'symbol' && (
-              <div>
-                <Label className="text-xs font-medium text-gray-700">Rotation Alignment</Label>
-                <Select 
-                  value={config.rotationAlignment} 
-                  onValueChange={(value) => updateConfigValue('symbol', 'rotationAlignment', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="map">Map</SelectItem>
-                    <SelectItem value="viewport">Viewport</SelectItem>
-                    <SelectItem value="auto">Auto</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Rotation Alignment</Label>
+              <Select 
+                value={config.rotationAlignment} 
+                onValueChange={(value) => updateConfigValue('symbol', 'rotationAlignment', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="map">Map</SelectItem>
+                  <SelectItem value="viewport">Viewport</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </>
         )}
       </div>
@@ -879,7 +1054,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 <SelectValue placeholder="Select weather type" />
               </SelectTrigger>
               <SelectContent className="bg-white border shadow-lg z-50">
-                <SelectItem value="wind">Wind</SelectItem>
+                <SelectItem value="wind">Wind Barbs</SelectItem>
                 <SelectItem value="pressure">Pressure</SelectItem>
                 <SelectItem value="swell">Swell (Filled)</SelectItem>
                 <SelectItem value="symbol">Symbol</SelectItem>
@@ -912,3 +1087,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+}
