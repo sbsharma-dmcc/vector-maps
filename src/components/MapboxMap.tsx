@@ -94,7 +94,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       haloWidth: 1,
       symbolSpacing: 100,
       allowOverlap: true,
-      rotationAlignment: 'map'
+      rotationAlignment: 'map',
+      symbolType: 'arrow', // arrow, triangle, circle, square
+      customSymbol: '→'
     }
   });
 
@@ -128,9 +130,26 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [84.7, 7.2] }, // Indian Ocean East
   ];
 
+  // Function to get symbol based on type
+  const getSymbolByType = (symbolType: string, customSymbol?: string) => {
+    switch (symbolType) {
+      case 'arrow':
+        return '→';
+      case 'triangle':
+        return '▲';
+      case 'circle':
+        return '●';
+      case 'square':
+        return '■';
+      case 'custom':
+        return customSymbol || '→';
+      default:
+        return '→';
+    }
+  };
+
   // Function to ensure vessels are always on top
   const ensureVesselsOnTop = () => {
-    // Small delay to ensure all layers are loaded
     setTimeout(() => {
       if (mapref.current) {
         cleanupVesselMarkers(markersRef);
@@ -163,7 +182,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       setIsMapLoaded(true);
       console.log("Map fully loaded");
       
-      // Ensure vessels are created on top after map loads
       ensureVesselsOnTop();
       
       toast({
@@ -280,38 +298,43 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-  // Function to create wind barb symbol based on wind speed
-  const createWindBarb = (speed: number, unit: string = 'knots') => {
+  // Enhanced wind barb function to match meteorological standards
+  const createStandardWindBarb = (speed: number, unit: string = 'knots') => {
     // Convert speed to knots if needed
     let speedKnots = speed;
     if (unit === 'ms') speedKnots = speed * 1.944;
     if (unit === 'kmh') speedKnots = speed * 0.54;
 
-    // Wind barb components
+    // Calm conditions (0-2 knots) - Circle
+    if (speedKnots < 3) {
+      return '○';
+    }
+
+    // Light air (3-7 knots) - Staff only
+    if (speedKnots < 8) {
+      return '│';
+    }
+
     let barb = '│'; // Base staff
+    let remainingSpeed = Math.round(speedKnots);
     
-    // Add flags (pennants) for 50+ knots
-    const flags = Math.floor(speedKnots / 50);
-    for (let i = 0; i < flags; i++) {
+    // Add pennants for every 50 knots (triangular flags)
+    const pennants = Math.floor(remainingSpeed / 50);
+    for (let i = 0; i < pennants; i++) {
       barb = '▲' + barb;
     }
-    speedKnots = speedKnots % 50;
+    remainingSpeed = remainingSpeed % 50;
     
-    // Add full barbs for 10+ knots
-    const fullBarbs = Math.floor(speedKnots / 10);
+    // Add full barbs for every 10 knots
+    const fullBarbs = Math.floor(remainingSpeed / 10);
     for (let i = 0; i < fullBarbs; i++) {
       barb = barb + '━';
     }
-    speedKnots = speedKnots % 10;
+    remainingSpeed = remainingSpeed % 10;
     
-    // Add half barb for 5+ knots
-    if (speedKnots >= 5) {
+    // Add half barb for 5-9 knots remainder
+    if (remainingSpeed >= 5) {
       barb = barb + '╸';
-    }
-    
-    // Calm conditions (less than 5 knots)
-    if (speed < 5) {
-      barb = '○';
     }
     
     return barb;
@@ -385,18 +408,32 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             'case',
             ['has', 'value'],
             [
-              'case',
-              ['<', ['to-number', ['get', 'value']], 5], '○',
-              ['<', ['to-number', ['get', 'value']], 10], '│╸',
-              ['<', ['to-number', ['get', 'value']], 15], '│━',
-              ['<', ['to-number', ['get', 'value']], 20], '│━╸',
-              ['<', ['to-number', ['get', 'value']], 25], '│━━',
-              ['<', ['to-number', ['get', 'value']], 30], '│━━╸',
-              ['<', ['to-number', ['get', 'value']], 35], '│━━━',
-              ['<', ['to-number', ['get', 'value']], 40], '│━━━╸',
-              ['<', ['to-number', ['get', 'value']], 45], '│━━━━',
-              ['<', ['to-number', ['get', 'value']], 50], '│━━━━╸',
-              '▲│'
+              'let',
+              ['speed', ['to-number', ['get', 'value']]],
+              [
+                'case',
+                ['<', ['var', 'speed'], 3], '○',
+                ['<', ['var', 'speed'], 8], '│',
+                ['<', ['var', 'speed'], 13], '│╸',
+                ['<', ['var', 'speed'], 18], '│━',
+                ['<', ['var', 'speed'], 23], '│━╸',
+                ['<', ['var', 'speed'], 28], '│━━',
+                ['<', ['var', 'speed'], 33], '│━━╸',
+                ['<', ['var', 'speed'], 38], '│━━━',
+                ['<', ['var', 'speed'], 43], '│━━━╸',
+                ['<', ['var', 'speed'], 48], '│━━━━',
+                ['<', ['var', 'speed'], 53], '│━━━━╸',
+                ['<', ['var', 'speed'], 63], '▲│',
+                ['<', ['var', 'speed'], 68], '▲│╸',
+                ['<', ['var', 'speed'], 73], '▲│━',
+                ['<', ['var', 'speed'], 78], '▲│━╸',
+                ['<', ['var', 'speed'], 83], '▲│━━',
+                ['<', ['var', 'speed'], 88], '▲│━━╸',
+                ['<', ['var', 'speed'], 93], '▲│━━━',
+                ['<', ['var', 'speed'], 98], '▲│━━━╸',
+                ['<', ['var', 'speed'], 103], '▲│━━━━',
+                '▲▲│'
+              ]
             ],
             '│'
           ];
@@ -424,25 +461,28 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
           }, beforeId);
         } else if (overlay === 'symbol') {
+          const symbolConfig = layerConfigs.symbol;
+          const symbolText = getSymbolByType(symbolConfig.symbolType, symbolConfig.customSymbol);
+          
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
             source: sourceId,
             "source-layer": sourceLayer,
             layout: {
-              "text-field": "→",
-              "text-size": layerConfigs.symbol.textSize,
-              "text-rotation-alignment": layerConfigs.symbol.rotationAlignment,
+              "text-field": symbolText,
+              "text-size": symbolConfig.textSize,
+              "text-rotation-alignment": symbolConfig.rotationAlignment,
               "text-rotate": ["get", "direction"],
-              "text-allow-overlap": layerConfigs.symbol.allowOverlap,
+              "text-allow-overlap": symbolConfig.allowOverlap,
               "text-ignore-placement": true,
-              "symbol-spacing": layerConfigs.symbol.symbolSpacing
+              "symbol-spacing": symbolConfig.symbolSpacing
             },
             paint: {
-              "text-color": layerConfigs.symbol.textColor,
-              "text-opacity": layerConfigs.symbol.textOpacity,
-              "text-halo-color": layerConfigs.symbol.haloColor,
-              "text-halo-width": layerConfigs.symbol.haloWidth
+              "text-color": symbolConfig.textColor,
+              "text-opacity": symbolConfig.textOpacity,
+              "text-halo-color": symbolConfig.haloColor,
+              "text-halo-width": symbolConfig.haloWidth
             },
           }, beforeId);
         } else {
@@ -559,7 +599,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'line-cap': config.lineCap,
         'line-join': config.lineJoin
       });
-    } else if (selectedWeatherType === 'wind' || selectedWeatherType === 'symbol') {
+    } else if (selectedWeatherType === 'wind') {
+      updateLayerProperties(selectedWeatherType, {
+        'text-color': config.textColor,
+        'text-opacity': config.textOpacity,
+        'text-halo-color': config.haloColor,
+        'text-halo-width': config.haloWidth
+      });
+      
+      updateLayoutProperties(selectedWeatherType, {
+        'text-size': config.textSize,
+        'text-allow-overlap': config.allowOverlap,
+        'symbol-spacing': config.symbolSpacing
+      });
+    } else if (selectedWeatherType === 'symbol') {
+      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
+      
       updateLayerProperties(selectedWeatherType, {
         'text-color': config.textColor,
         'text-opacity': config.textOpacity,
@@ -571,7 +626,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'text-size': config.textSize,
         'text-allow-overlap': config.allowOverlap,
         'symbol-spacing': config.symbolSpacing,
-        ...(selectedWeatherType === 'symbol' && { 'text-rotation-alignment': config.rotationAlignment })
+        'text-rotation-alignment': config.rotationAlignment,
+        'text-field': symbolText
       });
     }
 
@@ -895,13 +951,55 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+              <div className="font-semibold mb-1">Wind Barb Legend:</div>
+              <div>○ = Calm (0-2 kts)</div>
+              <div>│ = Light air (3-7 kts)</div>
+              <div>│╸ = Half barb (5 kts)</div>
+              <div>│━ = Full barb (10 kts)</div>
+              <div>▲ = Pennant (50 kts)</div>
+            </div>
           </>
         )}
 
         {selectedWeatherType === 'symbol' && (
           <>
             <div>
-              <Label className="text-xs font-medium text-gray-700">Text Color</Label>
+              <Label className="text-xs font-medium text-gray-700">Symbol Type</Label>
+              <Select 
+                value={config.symbolType} 
+                onValueChange={(value) => updateConfigValue('symbol', 'symbolType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="arrow">Arrow (→)</SelectItem>
+                  <SelectItem value="triangle">Triangle (▲)</SelectItem>
+                  <SelectItem value="circle">Circle (●)</SelectItem>
+                  <SelectItem value="square">Square (■)</SelectItem>
+                  <SelectItem value="custom">Custom Symbol</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {config.symbolType === 'custom' && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Custom Symbol</Label>
+                <Input
+                  type="text"
+                  value={config.customSymbol}
+                  onChange={(e) => updateConfigValue('symbol', 'customSymbol', e.target.value)}
+                  placeholder="Enter custom symbol (e.g., ★, ✈, ⚡)"
+                  maxLength={3}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Color</Label>
               <Input
                 type="color"
                 value={config.textColor}
@@ -911,7 +1009,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Text Size</Label>
+              <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
               <Slider
                 value={[config.textSize]}
                 onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
@@ -923,7 +1021,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Text Opacity</Label>
+              <Label className="text-xs font-medium text-gray-700">Symbol Opacity</Label>
               <Slider
                 value={[config.textOpacity]}
                 onValueChange={([value]) => updateConfigValue('symbol', 'textOpacity', value)}
