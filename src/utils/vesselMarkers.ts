@@ -44,7 +44,7 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
     // Scale: higher zoom = larger size, lower zoom = smaller size (2x reduction)
     const baseSize = 24;
     const baseZoom = 6;
-    const scaleFactor = Math.pow(1.5, zoom - baseZoom); // Direct scaling
+    const scaleFactor = Math.pow(0.75, zoom - baseZoom); // Inverse scaling for 2x reduction on zoom out
     const size = Math.max(6, Math.min(48, baseSize * scaleFactor)); // Clamp between 6px and 48px
     
     el.style.width = `${size}px`;
@@ -55,31 +55,10 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
     } else {
       el.style.height = `${size * 2}px`; // Height is double width for ship vessels
     }
-    
-    // Update waves position relative to new size (only for non-circle vessels)
-    if (vessel.type !== 'circle') {
-      const wavesEl = el.querySelector('.vessel-waves') as HTMLElement;
-      if (wavesEl) {
-        wavesEl.style.right = `${-size * 0.3}px`;
-        wavesEl.style.top = `${size * 0.6}px`;
-        wavesEl.style.fontSize = `${Math.max(8, size * 0.5)}px`;
-      }
-    }
   };
   
   // Set initial size
   updateVesselSize();
-  
-  // Add waves effect only for non-circle vessels
-  if (vessel.type !== 'circle') {
-    const wavesEl = document.createElement('div');
-    wavesEl.className = 'vessel-waves';
-    wavesEl.style.position = 'absolute';
-    wavesEl.innerHTML = ')))';
-    wavesEl.style.color = vessel.type === 'green' ? '#4ade80' : '#fb923c';
-    wavesEl.style.fontWeight = 'bold';
-    el.appendChild(wavesEl);
-  }
   
   // Create a mapbox marker with draggable disabled to lock position
   const marker = new mapboxgl.Marker({
@@ -129,7 +108,7 @@ export const createVesselMarkers = (
   vessels: Vessel[],
   markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }>
 ) => {
-  // Add CSS for vessel marker without animations
+  // Add CSS for vessel marker without animations or waves
   if (!document.getElementById('vessel-marker-styles')) {
     const styleSheet = document.createElement('style');
     styleSheet.id = 'vessel-marker-styles';
@@ -143,11 +122,6 @@ export const createVesselMarkers = (
       
       .vessel-marker:hover {
         transform: rotate(45deg) scale(1.1);
-      }
-      
-      .vessel-waves {
-        transform: rotate(-45deg);
-        transition: right 0.2s ease, top 0.2s ease, font-size 0.2s ease;
       }
     `;
     document.head.appendChild(styleSheet);
