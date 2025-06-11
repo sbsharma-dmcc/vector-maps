@@ -169,17 +169,17 @@ const WeatherConfigDrafts: React.FC<WeatherConfigDraftsProps> = ({
           >
             <Download className="h-3 w-3" />
           </Button>
-          <label>
-            <input
-              type="file"
-              accept=".json"
-              onChange={importDrafts}
-              className="hidden"
-            />
-            <Button variant="outline" size="sm" as="span">
+          <Button variant="outline" size="sm" asChild>
+            <label>
+              <input
+                type="file"
+                accept=".json"
+                onChange={importDrafts}
+                className="hidden"
+              />
               <Upload className="h-3 w-3" />
-            </Button>
-          </label>
+            </label>
+          </Button>
         </div>
       </div>
 
