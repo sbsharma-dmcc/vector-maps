@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell } from 'lucide-react';
@@ -225,13 +226,13 @@ const RouteDetail = () => {
             <h1 className="text-xl font-semibold flex items-center">
               {route?.name}
               <span className="bg-green-500 text-xs font-medium ml-2 px-2 py-0.5 rounded">
-                Loaded
+                {route?.status}
               </span>
             </h1>
             <div className="flex text-sm text-gray-300">
               <span>29° 52' 43.2" N</span>
               <span className="mx-2">•</span>
-              <span>Chiba</span>
+              <span>{route?.startPort}</span>
             </div>
             <div className="text-sm text-gray-300">
               <span>121° 08' 29.5" E</span>
@@ -240,12 +241,12 @@ const RouteDetail = () => {
 
           <div className="grid grid-cols-3 gap-6 mt-4">
             <div className="border-r border-gray-700 pr-4">
-              <p className="text-xs text-gray-400">Voyage ID</p>
+              <p className="text-xs text-gray-400">Route ID</p>
               <p className="font-bold">#{id}</p>
             </div>
             <div className="border-r border-gray-700 pr-4">
               <p className="text-xs text-gray-400">Start Date</p>
-              <p className="font-bold">15th May 25</p>
+              <p className="font-bold">{new Date(route?.departureDate).toLocaleDateString()}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400">Time</p>
@@ -253,12 +254,12 @@ const RouteDetail = () => {
             </div>
 
             <div className="border-r border-gray-700 pr-4">
-              <p className="text-xs text-gray-400">Hire Rate</p>
-              <p className="font-bold">$0</p>
+              <p className="text-xs text-gray-400">Distance</p>
+              <p className="font-bold">{route?.distance} nm</p>
             </div>
             <div className="border-r border-gray-700 pr-4">
-              <p className="text-xs text-gray-400">Fuel Price</p>
-              <p className="font-bold">$0</p>
+              <p className="text-xs text-gray-400">Est. Time</p>
+              <p className="font-bold">{route?.estimatedTime}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400">Planned Speed</p>

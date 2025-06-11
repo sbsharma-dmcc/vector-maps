@@ -74,8 +74,8 @@ const History = () => {
     return vessel ? vessel.name : 'Unknown Vessel';
   };
 
-  // Get vessel type by ID
-  const getVesselType = (id: string): 'green' | 'orange' | 'unknown' => {
+  // Get vessel type by ID - updated to handle 'circle' type
+  const getVesselType = (id: string): 'green' | 'orange' | 'circle' | 'unknown' => {
     const vessel = vessels.find(v => v.id === id);
     return vessel ? vessel.type : 'unknown';
   };

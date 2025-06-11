@@ -1,4 +1,3 @@
-
 import mapboxgl from 'mapbox-gl';
 
 export interface Vessel {
@@ -7,6 +6,8 @@ export interface Vessel {
   type: 'green' | 'orange' | 'circle';
   position: [number, number];
 }
+
+export type VesselType = 'green' | 'orange' | 'circle';
 
 // Function to add a vessel to the Mapbox map with zoom-responsive sizing
 const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {

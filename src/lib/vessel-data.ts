@@ -8,8 +8,8 @@ export type VesselType = 'green' | 'orange' | 'circle';
 export interface VesselEvent {
   id: string;
   vesselId: string;
-  timestamp: Date;
-  type: 'departure' | 'arrival' | 'maintenance' | 'alert';
+  timestamp: string;  // Changed from Date to string to match usage
+  eventType: 'departure' | 'arrival' | 'position' | 'status' | 'alert';  // Changed from 'type' to 'eventType' and added missing types
   location: string;
   description: string;
 }
@@ -17,8 +17,12 @@ export interface VesselEvent {
 export interface Route {
   id: string;
   name: string;
+  vesselId: string;  // Added vesselId property
   startPort: string;
   endPort: string;
+  departureDate: string;  // Added departureDate property
+  arrivalDate: string;    // Added arrivalDate property
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';  // Added status property
   distance: number;
   estimatedTime: string;
   coordinates: [number, number][];
@@ -185,48 +189,56 @@ export const getVesselStats = () => {
   };
 };
 
-export const generateMockHistory = (): VesselEvent[] => {
+export const generateMockHistory = (vessels: Vessel[], count: number = 50): VesselEvent[] => {
   const events: VesselEvent[] = [];
-  const eventTypes: VesselEvent['type'][] = ['departure', 'arrival', 'maintenance', 'alert'];
-  const locations = ['Tokyo Bay', 'Yokohama Port', 'Osaka Bay', 'Kobe Port', 'Nagoya Port'];
+  const eventTypes: VesselEvent['eventType'][] = ['departure', 'arrival', 'position', 'status', 'alert'];
+  const locations = ['Tokyo Bay', 'Yokohama Port', 'Osaka Bay', 'Kobe Port', 'Nagoya Port', 'Chiba Port', 'Kawasaki Port'];
   
-  vessels.forEach((vessel, index) => {
-    for (let i = 0; i < 3; i++) {
-      events.push({
-        id: `event-${vessel.id}-${i}`,
-        vesselId: vessel.id,
-        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-        type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
-        location: locations[Math.floor(Math.random() * locations.length)],
-        description: `${vessel.name} ${eventTypes[Math.floor(Math.random() * eventTypes.length)]} event`
-      });
-    }
-  });
+  for (let i = 0; i < count; i++) {
+    const vessel = vessels[Math.floor(Math.random() * vessels.length)];
+    const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+    const location = locations[Math.floor(Math.random() * locations.length)];
+    
+    events.push({
+      id: `event-${i + 1}`,
+      vesselId: vessel.id,
+      timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+      eventType,
+      location,
+      description: `${vessel.name} ${eventType} at ${location}`
+    });
+  }
   
-  return events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 };
 
-export const generateMockRoutes = (): Route[] => {
-  return [
-    {
-      id: 'route-1',
-      name: 'Tokyo - Osaka Express',
-      startPort: 'Tokyo Bay',
-      endPort: 'Osaka Bay',
-      distance: 500,
-      estimatedTime: '24 hours',
-      coordinates: [[139.7514, 35.6851], [135.5023, 34.6937]],
-      vessels: ['vessel-1', 'vessel-6']
-    },
-    {
-      id: 'route-2',
-      name: 'Coastal Navigation Route',
-      startPort: 'Yokohama Port',
-      endPort: 'Kobe Port',
-      distance: 450,
-      estimatedTime: '20 hours',
-      coordinates: [[139.6380, 35.4437], [135.1955, 34.6901]],
-      vessels: ['vessel-2', 'vessel-7']
+export const generateMockRoutes = (vessels: Vessel[]): Route[] => {
+  const statuses: Route['status'][] = ['scheduled', 'in-progress', 'completed', 'cancelled'];
+  const ports = ['Tokyo Bay', 'Yokohama Port', 'Osaka Bay', 'Kobe Port', 'Nagoya Port', 'Chiba Port'];
+  
+  return vessels.slice(0, 10).map((vessel, index) => {
+    const startPort = ports[Math.floor(Math.random() * ports.length)];
+    let endPort = ports[Math.floor(Math.random() * ports.length)];
+    while (endPort === startPort) {
+      endPort = ports[Math.floor(Math.random() * ports.length)];
     }
-  ];
+    
+    const departureDate = new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000);
+    const arrivalDate = new Date(departureDate.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000);
+    
+    return {
+      id: `RT-${String(index + 1).padStart(3, '0')}`,
+      name: `Route ${vessel.name}`,
+      vesselId: vessel.id,
+      startPort,
+      endPort,
+      departureDate: departureDate.toISOString(),
+      arrivalDate: arrivalDate.toISOString(),
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      distance: Math.floor(Math.random() * 1000) + 100,
+      estimatedTime: `${Math.floor(Math.random() * 72) + 12} hours`,
+      coordinates: [vessel.position, [vessel.position[0] + Math.random() * 2 - 1, vessel.position[1] + Math.random() * 2 - 1]],
+      vessels: [vessel.id]
+    };
+  });
 };
