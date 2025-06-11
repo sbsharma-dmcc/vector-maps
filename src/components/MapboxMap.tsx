@@ -46,7 +46,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   activeBaseLayer = 'default'
 }) => {
   const mapContainerRef = useRef(null);
-  const mapref = useRef(null);
+  const mapref = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
@@ -86,17 +86,36 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       fillAntialias: true,
       gradient: [
         { value: '0m', color: 'rgb(0, 0, 139)', opacity: 0.8 },      
+        { value: '0.5m', color: 'rgb(0, 50, 200)', opacity: 0.8 },   
         { value: '1m', color: 'rgb(0, 100, 255)', opacity: 0.8 },    
+        { value: '1.5m', color: 'rgb(0, 125, 255)', opacity: 0.8 },  
         { value: '2m', color: 'rgb(0, 150, 255)', opacity: 0.8 },    
+        { value: '2.5m', color: 'rgb(0, 175, 255)', opacity: 0.8 },  
         { value: '3m', color: 'rgb(0, 200, 255)', opacity: 0.8 },    
+        { value: '3.5m', color: 'rgb(0, 225, 255)', opacity: 0.8 },  
         { value: '4m', color: 'rgb(0, 255, 200)', opacity: 0.8 },    
+        { value: '4.5m', color: 'rgb(50, 255, 150)', opacity: 0.8 }, 
         { value: '5m', color: 'rgb(100, 255, 100)', opacity: 0.8 },  
+        { value: '5.5m', color: 'rgb(150, 255, 50)', opacity: 0.8 }, 
         { value: '6m', color: 'rgb(200, 255, 0)', opacity: 0.8 },    
-        { value: '8m', color: 'rgb(255, 255, 0)', opacity: 0.8 },    
-        { value: '10m', color: 'rgb(255, 200, 0)', opacity: 0.8 },   
-        { value: '12m', color: 'rgb(255, 150, 0)', opacity: 0.8 },   
-        { value: '14m', color: 'rgb(255, 100, 100)', opacity: 0.8 }, 
-        { value: '15m+', color: 'rgb(200, 0, 200)', opacity: 0.8 }   
+        { value: '6.5m', color: 'rgb(225, 255, 0)', opacity: 0.8 },  
+        { value: '7m', color: 'rgb(255, 255, 0)', opacity: 0.8 },    
+        { value: '7.5m', color: 'rgb(255, 225, 0)', opacity: 0.8 },  
+        { value: '8m', color: 'rgb(255, 200, 0)', opacity: 0.8 },    
+        { value: '8.5m', color: 'rgb(255, 175, 0)', opacity: 0.8 },  
+        { value: '9m', color: 'rgb(255, 150, 0)', opacity: 0.8 },    
+        { value: '9.5m', color: 'rgb(255, 125, 0)', opacity: 0.8 },  
+        { value: '10m', color: 'rgb(255, 100, 0)', opacity: 0.8 },   
+        { value: '10.5m', color: 'rgb(255, 75, 50)', opacity: 0.8 }, 
+        { value: '11m', color: 'rgb(255, 50, 100)', opacity: 0.8 },  
+        { value: '11.5m', color: 'rgb(255, 25, 150)', opacity: 0.8 },
+        { value: '12m', color: 'rgb(255, 0, 200)', opacity: 0.8 },   
+        { value: '12.5m', color: 'rgb(225, 0, 200)', opacity: 0.8 }, 
+        { value: '13m', color: 'rgb(200, 0, 200)', opacity: 0.8 },   
+        { value: '13.5m', color: 'rgb(175, 0, 200)', opacity: 0.8 }, 
+        { value: '14m', color: 'rgb(150, 0, 200)', opacity: 0.8 },   
+        { value: '14.5m', color: 'rgb(125, 0, 200)', opacity: 0.8 }, 
+        { value: '15m+', color: 'rgb(100, 0, 200)', opacity: 0.8 }   
       ]
     },
     symbol: {
@@ -275,7 +294,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     console.log("Initializing new map");
 
     const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
+      container: mapContainerRef.current!,
       style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
       center: [83.167, 6.887],
       zoom: 4,
@@ -337,7 +356,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     setSelectedDraft('');
   }, [selectedWeatherType]);
 
-  const fetchDTNSourceLayer = async (layerId) => {
+  const fetchDTNSourceLayer = async (layerId: string) => {
     const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
       headers: {
         Authorization: dtnToken,
@@ -351,7 +370,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
   // Enhanced layer update functions
-  const updateLayerProperties = (layerType, properties) => {
+  const updateLayerProperties = (layerType: string, properties: Record<string, any>) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
     
     const layerId = `dtn-layer-${layerType}`;
@@ -360,7 +379,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     Object.entries(properties).forEach(([property, value]) => {
       try {
-        mapref.current.setPaintProperty(layerId, property, value);
+        mapref.current!.setPaintProperty(layerId, property, value);
         console.log(`Updated ${layerType} ${property} to`, value);
       } catch (error) {
         console.warn(`Failed to update ${property}:`, error);
@@ -368,7 +387,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
-  const updateLayoutProperties = (layerType, properties) => {
+  const updateLayoutProperties = (layerType: string, properties: Record<string, any>) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
     
     const layerId = `dtn-layer-${layerType}`;
@@ -377,7 +396,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     Object.entries(properties).forEach(([property, value]) => {
       try {
-        mapref.current.setLayoutProperty(layerId, property, value);
+        mapref.current!.setLayoutProperty(layerId, property, value);
         console.log(`Updated ${layerType} layout ${property} to`, value);
       } catch (error) {
         console.warn(`Failed to update layout ${property}:`, error);
@@ -456,7 +475,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     return barb;
   };
 
-  const handleOverlayClick = async (overlay) => {
+  const handleOverlayClick = async (overlay: string) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) {
       console.warn("Map style not yet loaded");
       return;
@@ -634,7 +653,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       } else {
         console.log(`Layer "${overlay}" already exists`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error adding ${overlay} layer:`, error);
       toast({
         title: "Layer Error",
@@ -644,7 +663,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-  const removeOverlay = (overlay) => {
+  const removeOverlay = (overlay: string) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
 
     const sourceId = `dtn-source-${overlay}`;
@@ -673,7 +692,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
   // Enhanced configuration update functions
-  const updateConfigValue = (layerType, property, value) => {
+  const updateConfigValue = (layerType: string, property: string, value: any) => {
     setLayerConfigs(prev => ({
       ...prev,
       [layerType]: {
@@ -787,7 +806,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
-  const convertRgbToHex = (rgbString) => {
+  const convertRgbToHex = (rgbString: string) => {
     const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (!match) return rgbString;
     
@@ -798,7 +817,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   };
 
-  const convertHexToRgb = (hex) => {
+  const convertHexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (!result) return hex;
     
