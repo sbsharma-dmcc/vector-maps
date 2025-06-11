@@ -8,7 +8,7 @@ export interface Vessel {
   position: [number, number];
 }
 
-// Function to add a vessel to the Mapbox map (similar to your addVessel function)
+// Function to add a vessel to the Mapbox map with zoom-responsive sizing
 const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   if (!map) return null;
   
@@ -26,8 +26,6 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   // Create a vessel marker element using the uploaded images
   const el = document.createElement('div');
   el.className = 'vessel-marker';
-  el.style.width = '24px';
-  el.style.height = '48px';
   el.style.position = 'relative';
   el.style.cursor = 'pointer';
   el.style.backgroundImage = `url(${vesselIcon})`;
@@ -35,14 +33,36 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   el.style.backgroundRepeat = 'no-repeat';
   el.style.backgroundPosition = 'center';
   
+  // Function to calculate size based on zoom level
+  const updateVesselSize = () => {
+    const zoom = map.getZoom();
+    // Base size is 24px at zoom level 6
+    // Scale inversely: higher zoom = smaller size, lower zoom = larger size
+    const baseSize = 24;
+    const baseZoom = 6;
+    const scaleFactor = Math.pow(0.8, zoom - baseZoom); // Inverse scaling
+    const size = Math.max(12, Math.min(48, baseSize * scaleFactor)); // Clamp between 12px and 48px
+    
+    el.style.width = `${size}px`;
+    el.style.height = `${size * 2}px`; // Height is double width to maintain ship proportions
+    
+    // Update waves position relative to new size
+    const wavesEl = el.querySelector('.vessel-waves') as HTMLElement;
+    if (wavesEl) {
+      wavesEl.style.right = `${-size * 0.3}px`;
+      wavesEl.style.top = `${size * 0.6}px`;
+      wavesEl.style.fontSize = `${Math.max(8, size * 0.5)}px`;
+    }
+  };
+  
+  // Set initial size
+  updateVesselSize();
+  
   // Add waves effect
   const wavesEl = document.createElement('div');
   wavesEl.className = 'vessel-waves';
   wavesEl.style.position = 'absolute';
-  wavesEl.style.right = '-8px';
-  wavesEl.style.top = '15px';
   wavesEl.innerHTML = ')))';
-  wavesEl.style.fontSize = '12px';
   wavesEl.style.color = vessel.type === 'green' ? '#4ade80' : '#fb923c';
   wavesEl.style.fontWeight = 'bold';
   el.appendChild(wavesEl);
@@ -51,6 +71,18 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   const marker = new mapboxgl.Marker(el)
     .setLngLat(vessel.position)
     .addTo(map);
+  
+  // Add zoom event listener to update size
+  const handleZoom = () => {
+    updateVesselSize();
+  };
+  
+  map.on('zoom', handleZoom);
+  
+  // Store the cleanup function on the marker element for later removal
+  (marker as any)._cleanupZoomListener = () => {
+    map.off('zoom', handleZoom);
+  };
   
   // Add click event handler for vessel popup
   marker.getElement().addEventListener('click', () => {
@@ -89,7 +121,7 @@ export const createVesselMarkers = (
         transform: rotate(45deg);
         transform-origin: center;
         cursor: pointer;
-        transition: transform 0.2s ease;
+        transition: width 0.2s ease, height 0.2s ease;
       }
       
       .vessel-marker:hover {
@@ -98,6 +130,7 @@ export const createVesselMarkers = (
       
       .vessel-waves {
         transform: rotate(-45deg);
+        transition: right 0.2s ease, top 0.2s ease, font-size 0.2s ease;
       }
       
       @keyframes pulse {
@@ -139,13 +172,19 @@ export const createVesselMarkers = (
     }
   });
 
-  console.log(`Created ${vessels.length} vessel markers on the map`);
+  console.log(`Created ${vessels.length} vessel markers on the map with zoom-responsive sizing`);
 };
 
 export const cleanupVesselMarkers = (
   markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }>
 ) => {
-  Object.values(markersRef.current).forEach(marker => marker.remove());
+  Object.values(markersRef.current).forEach(marker => {
+    // Clean up zoom listener if it exists
+    if ((marker as any)._cleanupZoomListener) {
+      (marker as any)._cleanupZoomListener();
+    }
+    marker.remove();
+  });
   markersRef.current = {};
   
   // Remove the styles to keep DOM clean
