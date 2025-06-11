@@ -349,7 +349,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'swell') {
-          // ... keep existing swell layer code the same ...
           const colorExpression: any[] = [
             'interpolate',
             ['linear'],
@@ -425,7 +424,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
           }, beforeId);
         } else if (overlay === 'symbol') {
-          // ... keep existing symbol layer code the same ...
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
@@ -448,7 +446,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
           }, beforeId);
         } else {
-          // ... keep existing pressure layer code the same ...
           mapref.current.addLayer({
             id: layerId,
             type: "line",
@@ -1087,5 +1084,3 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
-
-}
