@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell } from 'lucide-react';
@@ -200,8 +201,11 @@ const RouteDetail = () => {
     id: route.vesselId,
     name: route.name,
     type: 'green' as const,
-    position: vesselPosition || activeRouteCoordinates[0]
+    position: vesselPosition || baseRouteCoordinates[0]
   };
+
+  // Check if this is the RT-001 route to show the uploaded map
+  const isRT001 = id === 'RT-001';
 
   return (
     <div className="absolute inset-0 flex">
@@ -404,16 +408,27 @@ const RouteDetail = () => {
           </Button>
         </div>
         
-        {/* Customize MapboxMap to handle routes and layers */}
-        <MapboxMap 
-          vessels={[routeVessel]} 
-          showRoutes={true}
-          baseRoute={baseRouteCoordinates}
-          weatherRoute={weatherRouteCoordinates}
-          activeRouteType={activeTab}
-          activeLayers={activeLayers}
-          activeBaseLayer={activeBaseLayer}
-        />
+        {/* Conditional rendering based on route ID */}
+        {isRT001 ? (
+          <div className="absolute inset-0">
+            <img 
+              src="/lovable-uploads/63290a59-d389-41e8-8b6c-bff2439cfd41.png"
+              alt="Route RT-001 Map"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          /* Customize MapboxMap to handle routes and layers */
+          <MapboxMap 
+            vessels={[routeVessel]} 
+            showRoutes={true}
+            baseRoute={baseRouteCoordinates}
+            weatherRoute={weatherRouteCoordinates}
+            activeRouteType={activeTab}
+            activeLayers={activeLayers}
+            activeBaseLayer={activeBaseLayer}
+          />
+        )}
         
         {/* Timeline Navigation */}
         <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-80 text-white">
