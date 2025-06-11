@@ -5,6 +5,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import MapTopControls from './MapTopControls';
 import { dtnToken } from '@/utils/mapConstants';
 import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
@@ -39,28 +42,60 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
-  const [lineColor, setLineColor] = useState('#ffffff');
-  const [heatmapIntensity, setHeatmapIntensity] = useState(1);
-  const [layerColors, setLayerColors] = useState({
-    wind: '#ffffff',
-    pressure: '#ff6b35',
-    swell: '#00ff00',
-    symbol: '#ff0000'
+  
+  // Enhanced configuration state for each layer type
+  const [layerConfigs, setLayerConfigs] = useState({
+    wind: {
+      textColor: '#ffffff',
+      textSize: 16,
+      textOpacity: 0.9,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 80,
+      allowOverlap: true
+    },
+    pressure: {
+      lineColor: '#ff6b35',
+      lineWidth: 1,
+      lineOpacity: 0.6,
+      lineCap: 'round',
+      lineJoin: 'round',
+      lineBlur: 0,
+      lineGapWidth: 0
+    },
+    swell: {
+      fillOpacity: 0.8,
+      fillOutlineColor: 'transparent',
+      animationSpeed: 0.001,
+      animationEnabled: true,
+      fillAntialias: true,
+      gradient: [
+        { value: '0m', color: 'rgb(0, 0, 139)' },      
+        { value: '1m', color: 'rgb(0, 100, 255)' },    
+        { value: '2m', color: 'rgb(0, 150, 255)' },    
+        { value: '3m', color: 'rgb(0, 200, 255)' },    
+        { value: '4m', color: 'rgb(0, 255, 200)' },    
+        { value: '5m', color: 'rgb(100, 255, 100)' },  
+        { value: '6m', color: 'rgb(200, 255, 0)' },    
+        { value: '8m', color: 'rgb(255, 255, 0)' },    
+        { value: '10m', color: 'rgb(255, 200, 0)' },   
+        { value: '12m', color: 'rgb(255, 150, 0)' },   
+        { value: '14m', color: 'rgb(255, 100, 100)' }, 
+        { value: '15m+', color: 'rgb(200, 0, 200)' }   
+      ]
+    },
+    symbol: {
+      textColor: '#ff0000',
+      textSize: 16,
+      textOpacity: 0.8,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 100,
+      allowOverlap: true,
+      rotationAlignment: 'map'
+    }
   });
-  const [heatmapGradient, setHeatmapGradient] = useState([
-    { value: '0m', color: 'rgb(0, 0, 139)' },      
-    { value: '1m', color: 'rgb(0, 100, 255)' },    
-    { value: '2m', color: 'rgb(0, 150, 255)' },    
-    { value: '3m', color: 'rgb(0, 200, 255)' },    
-    { value: '4m', color: 'rgb(0, 255, 200)' },    
-    { value: '5m', color: 'rgb(100, 255, 100)' },  
-    { value: '6m', color: 'rgb(200, 255, 0)' },    
-    { value: '8m', color: 'rgb(255, 255, 0)' },    
-    { value: '10m', color: 'rgb(255, 200, 0)' },   
-    { value: '12m', color: 'rgb(255, 150, 0)' },   
-    { value: '14m', color: 'rgb(255, 100, 100)' }, 
-    { value: '15m+', color: 'rgb(200, 0, 200)' }   
-  ]);
+
   const { toast } = useToast();
 
   const token = dtnToken.replace('Bearer ', '');
@@ -179,57 +214,39 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     return sourceLayerName;
   };
 
-  const updateLayerColor = (layerType, color) => {
+  // Enhanced layer update functions
+  const updateLayerProperties = (layerType, properties) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
     
     const layerId = `dtn-layer-${layerType}`;
     
-    if (mapref.current.getLayer(layerId)) {
-      if (layerType === 'swell') {
-        console.log(`Swell is a filled layer with gradient colors`);
-      } else if (layerType === 'wind' || layerType === 'symbol') {
-        // Wind and symbol layers use text-color property
-        mapref.current.setPaintProperty(layerId, 'text-color', color);
-        console.log(`Updated ${layerType} layer text color to ${color}`);
-      } else {
-        // Line layers use line-color
-        mapref.current.setPaintProperty(layerId, 'line-color', color);
-        console.log(`Updated ${layerType} layer color to ${color}`);
+    if (!mapref.current.getLayer(layerId)) return;
+
+    Object.entries(properties).forEach(([property, value]) => {
+      try {
+        mapref.current.setPaintProperty(layerId, property, value);
+        console.log(`Updated ${layerType} ${property} to`, value);
+      } catch (error) {
+        console.warn(`Failed to update ${property}:`, error);
       }
-    }
+    });
   };
 
-  const updateHeatmapIntensity = (intensity) => {
+  const updateLayoutProperties = (layerType, properties) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
     
-    const layerId = `dtn-layer-swell`;
+    const layerId = `dtn-layer-${layerType}`;
     
-    if (mapref.current.getLayer(layerId)) {
-      mapref.current.setPaintProperty(layerId, 'fill-opacity', intensity * 0.8);
-      console.log(`Updated swell fill opacity to ${intensity * 0.8}`);
-    }
-  };
+    if (!mapref.current.getLayer(layerId)) return;
 
-  const updateHeatmapGradient = () => {
-    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
-    
-    const layerId = `dtn-layer-swell`;
-    
-    if (mapref.current.getLayer(layerId)) {
-      const colorExpression: any[] = [
-        'interpolate',
-        ['linear'],
-        ['to-number', ['get', 'value'], 0]
-      ];
-
-      heatmapGradient.forEach((item) => {
-        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-        colorExpression.push(heightValue, item.color);
-      });
-
-      mapref.current.setPaintProperty(layerId, 'fill-color', colorExpression);
-      console.log('Updated swell gradient colors');
-    }
+    Object.entries(properties).forEach(([property, value]) => {
+      try {
+        mapref.current.setLayoutProperty(layerId, property, value);
+        console.log(`Updated ${layerType} layout ${property} to`, value);
+      } catch (error) {
+        console.warn(`Failed to update layout ${property}:`, error);
+      }
+    });
   };
 
   // Add animation to swell layer
@@ -244,13 +261,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       const animate = () => {
         if (!mapref.current || !mapref.current.getLayer(layerId)) return;
         
-        offset += 0.001; // Speed of animation
+        offset += layerConfigs.swell.animationSpeed;
         
-        // Create animated fill pattern
-        mapref.current.setPaintProperty(layerId, 'fill-translate', [
-          Math.sin(offset * 2) * 2,
-          Math.cos(offset) * 1
-        ]);
+        if (layerConfigs.swell.animationEnabled) {
+          mapref.current.setPaintProperty(layerId, 'fill-translate', [
+            Math.sin(offset * 2) * 2,
+            Math.cos(offset) * 1
+          ]);
+        }
         
         requestAnimationFrame(animate);
       };
@@ -266,7 +284,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       return;
     }
 
-    // Toggle layer - if it exists, remove it; if not, add it
     if (activeOverlays.includes(overlay)) {
       removeOverlay(overlay);
       return;
@@ -290,18 +307,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
-        // Determine layer insertion order - all layers go below vessels
         let beforeId = undefined;
 
         if (overlay === 'swell') {
-          // Heatmap should be the base layer - insert at the bottom
           const colorExpression: any[] = [
             'interpolate',
             ['linear'],
             ['to-number', ['get', 'value'], 0]
           ];
 
-          heatmapGradient.forEach((item) => {
+          layerConfigs.swell.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
             colorExpression.push(heightValue, item.color);
           });
@@ -313,95 +328,84 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "source-layer": sourceLayer,
             paint: {
               "fill-color": colorExpression,
-              "fill-opacity": heatmapIntensity * 0.8,
-              "fill-outline-color": "transparent",
+              "fill-opacity": layerConfigs.swell.fillOpacity,
+              "fill-outline-color": layerConfigs.swell.fillOutlineColor,
               "fill-translate": [0, 0],
               "fill-translate-transition": {
                 "duration": 0,
                 "delay": 0
-              }
+              },
+              "fill-antialias": layerConfigs.swell.fillAntialias
             },
           }, beforeId);
           
-          // Start animation for swell
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
-          // Wind layer should display as directional arrows showing wind direction and speed
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
             source: sourceId,
             "source-layer": sourceLayer,
             layout: {
-              "text-field": "↑", // Wind direction arrow
-              "text-size": [
-                "interpolate",
-                ["linear"],
-                ["get", "speed"], // Assuming speed field exists
-                0, 12,
-                10, 16,
-                20, 20,
-                30, 24
-              ],
+              "text-field": "↑",
+              "text-size": layerConfigs.wind.textSize,
               "text-rotation-alignment": "map",
-              "text-rotate": ["get", "direction"], // Rotate based on wind direction
-              "text-allow-overlap": true,
+              "text-rotate": ["get", "direction"],
+              "text-allow-overlap": layerConfigs.wind.allowOverlap,
               "text-ignore-placement": true,
-              "symbol-spacing": 80,
+              "symbol-spacing": layerConfigs.wind.symbolSpacing,
               "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"]
             },
             paint: {
-              "text-color": layerColors[overlay] || "#ffffff",
-              "text-opacity": 0.9,
-              "text-halo-color": "#000000",
-              "text-halo-width": 1
+              "text-color": layerConfigs.wind.textColor,
+              "text-opacity": layerConfigs.wind.textOpacity,
+              "text-halo-color": layerConfigs.wind.haloColor,
+              "text-halo-width": layerConfigs.wind.haloWidth
             },
           }, beforeId);
         } else if (overlay === 'symbol') {
-          // Symbol layer for wind symbols grid
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
             source: sourceId,
             "source-layer": sourceLayer,
             layout: {
-              "text-field": "→", // Simple arrow symbol
-              "text-size": 16,
-              "text-rotation-alignment": "map",
-              "text-rotate": ["get", "direction"], // Rotate based on wind direction
-              "text-allow-overlap": true,
+              "text-field": "→",
+              "text-size": layerConfigs.symbol.textSize,
+              "text-rotation-alignment": layerConfigs.symbol.rotationAlignment,
+              "text-rotate": ["get", "direction"],
+              "text-allow-overlap": layerConfigs.symbol.allowOverlap,
               "text-ignore-placement": true,
-              "symbol-spacing": 100
+              "symbol-spacing": layerConfigs.symbol.symbolSpacing
             },
             paint: {
-              "text-color": layerColors[overlay] || "#ff0000",
-              "text-opacity": 0.8,
-              "text-halo-color": "#000000",
-              "text-halo-width": 1
+              "text-color": layerConfigs.symbol.textColor,
+              "text-opacity": layerConfigs.symbol.textOpacity,
+              "text-halo-color": layerConfigs.symbol.haloColor,
+              "text-halo-width": layerConfigs.symbol.haloWidth
             },
           }, beforeId);
         } else {
-          // Line layers (pressure) go above heatmaps but below vessels
           mapref.current.addLayer({
             id: layerId,
             type: "line",
             source: sourceId,
             "source-layer": sourceLayer,
             layout: {
-              "line-cap": "round",
-              "line-join": "round",
+              "line-cap": layerConfigs.pressure.lineCap,
+              "line-join": layerConfigs.pressure.lineJoin,
             },
             paint: {
-              "line-color": layerColors[overlay] || "#64748b",
-              "line-width": 1,
-              "line-opacity": 0.6,
+              "line-color": layerConfigs.pressure.lineColor,
+              "line-width": layerConfigs.pressure.lineWidth,
+              "line-opacity": layerConfigs.pressure.lineOpacity,
+              "line-blur": layerConfigs.pressure.lineBlur,
+              "line-gap-width": layerConfigs.pressure.lineGapWidth
             },
           }, beforeId);
         }
 
-        // Always ensure vessels are on top after adding any layer
         ensureVesselsOnTop();
-
         setActiveOverlays(prev => [...prev, overlay]);
         console.log(`Successfully added ${overlay} layer`);
         
@@ -435,17 +439,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       mapref.current.removeSource(sourceId);
     }
 
-    // Ensure vessels stay on top after removing layers
     ensureVesselsOnTop();
-
     setActiveOverlays(prev => prev.filter(item => item !== overlay));
   };
 
   const removeAllOverlays = () => {
     activeOverlays.forEach(overlay => removeOverlay(overlay));
     setActiveOverlays([]);
-    
-    // Ensure vessels are visible after removing all layers
     ensureVesselsOnTop();
     
     toast({
@@ -454,39 +454,71 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
-  const handleColorUpdate = () => {
-    const newColors = { ...layerColors, [selectedWeatherType]: lineColor };
-    setLayerColors(newColors);
-    updateLayerColor(selectedWeatherType, lineColor);
-    
-    toast({
-      title: "Color Updated",
-      description: `${selectedWeatherType} layer color updated to ${lineColor}`
-    });
+  // Enhanced configuration update functions
+  const updateConfigValue = (layerType, property, value) => {
+    setLayerConfigs(prev => ({
+      ...prev,
+      [layerType]: {
+        ...prev[layerType],
+        [property]: value
+      }
+    }));
   };
 
-  const handleIntensityUpdate = () => {
-    updateHeatmapIntensity(heatmapIntensity);
+  const applyLayerConfiguration = () => {
+    const config = layerConfigs[selectedWeatherType];
     
-    toast({
-      title: "Intensity Updated",
-      description: `Swell opacity updated to ${heatmapIntensity}`
-    });
-  };
+    if (selectedWeatherType === 'swell') {
+      const colorExpression: any[] = [
+        'interpolate',
+        ['linear'],
+        ['to-number', ['get', 'value'], 0]
+      ];
 
-  const handleGradientUpdate = () => {
-    updateHeatmapGradient();
-    
-    toast({
-      title: "Gradient Updated",
-      description: "Swell gradient colors updated"
-    });
-  };
+      config.gradient.forEach((item) => {
+        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+        colorExpression.push(heightValue, item.color);
+      });
 
-  const updateGradientColor = (index, newColor) => {
-    const updatedGradient = [...heatmapGradient];
-    updatedGradient[index].color = newColor;
-    setHeatmapGradient(updatedGradient);
+      updateLayerProperties(selectedWeatherType, {
+        'fill-color': colorExpression,
+        'fill-opacity': config.fillOpacity,
+        'fill-outline-color': config.fillOutlineColor,
+        'fill-antialias': config.fillAntialias
+      });
+    } else if (selectedWeatherType === 'pressure') {
+      updateLayerProperties(selectedWeatherType, {
+        'line-color': config.lineColor,
+        'line-width': config.lineWidth,
+        'line-opacity': config.lineOpacity,
+        'line-blur': config.lineBlur,
+        'line-gap-width': config.lineGapWidth
+      });
+      
+      updateLayoutProperties(selectedWeatherType, {
+        'line-cap': config.lineCap,
+        'line-join': config.lineJoin
+      });
+    } else if (selectedWeatherType === 'wind' || selectedWeatherType === 'symbol') {
+      updateLayerProperties(selectedWeatherType, {
+        'text-color': config.textColor,
+        'text-opacity': config.textOpacity,
+        'text-halo-color': config.haloColor,
+        'text-halo-width': config.haloWidth
+      });
+      
+      updateLayoutProperties(selectedWeatherType, {
+        'text-size': config.textSize,
+        'text-allow-overlap': config.allowOverlap,
+        'symbol-spacing': config.symbolSpacing,
+        ...(selectedWeatherType === 'symbol' && { 'text-rotation-alignment': config.rotationAlignment })
+      });
+    }
+
+    toast({
+      title: "Configuration Applied",
+      description: `${selectedWeatherType} layer configuration updated successfully`
+    });
   };
 
   const convertRgbToHex = (rgbString) => {
@@ -509,6 +541,289 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const b = parseInt(result[3], 16);
     
     return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  const renderConfigurationPanel = () => {
+    const config = layerConfigs[selectedWeatherType];
+
+    return (
+      <div className="space-y-4">
+        {selectedWeatherType === 'swell' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.fillOpacity]}
+                  onValueChange={([value]) => updateConfigValue('swell', 'fillOpacity', value)}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.fillOpacity}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Outline Color</Label>
+              <Input
+                type="color"
+                value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
+                onChange={(e) => updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.fillAntialias}
+                onCheckedChange={(checked) => updateConfigValue('swell', 'fillAntialias', checked)}
+              />
+              <Label className="text-xs">Anti-aliasing</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.animationEnabled}
+                onCheckedChange={(checked) => updateConfigValue('swell', 'animationEnabled', checked)}
+              />
+              <Label className="text-xs">Animation</Label>
+            </div>
+
+            {config.animationEnabled && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Animation Speed</Label>
+                <Slider
+                  value={[config.animationSpeed * 1000]}
+                  onValueChange={([value]) => updateConfigValue('swell', 'animationSpeed', value / 1000)}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  className="flex-1"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient</Label>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {config.gradient.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      type="color"
+                      value={convertRgbToHex(item.color)}
+                      onChange={(e) => {
+                        const newGradient = [...config.gradient];
+                        newGradient[index].color = convertHexToRgb(e.target.value);
+                        updateConfigValue('swell', 'gradient', newGradient);
+                      }}
+                      className="w-8 h-6 p-0"
+                    />
+                    <span className="text-xs w-10">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'pressure' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Color</Label>
+              <Input
+                type="color"
+                value={config.lineColor}
+                onChange={(e) => updateConfigValue('pressure', 'lineColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Width</Label>
+              <Slider
+                value={[config.lineWidth]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineWidth', value)}
+                min={0.5}
+                max={10}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Opacity</Label>
+              <Slider
+                value={[config.lineOpacity]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Blur</Label>
+              <Slider
+                value={[config.lineBlur]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineBlur', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Gap Width</Label>
+              <Slider
+                value={[config.lineGapWidth]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineGapWidth', value)}
+                min={0}
+                max={10}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Cap</Label>
+              <Select 
+                value={config.lineCap} 
+                onValueChange={(value) => updateConfigValue('pressure', 'lineCap', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="butt">Butt</SelectItem>
+                  <SelectItem value="round">Round</SelectItem>
+                  <SelectItem value="square">Square</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Join</Label>
+              <Select 
+                value={config.lineJoin} 
+                onValueChange={(value) => updateConfigValue('pressure', 'lineJoin', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bevel">Bevel</SelectItem>
+                  <SelectItem value="round">Round</SelectItem>
+                  <SelectItem value="miter">Miter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+
+        {(selectedWeatherType === 'wind' || selectedWeatherType === 'symbol') && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Text Color</Label>
+              <Input
+                type="color"
+                value={config.textColor}
+                onChange={(e) => updateConfigValue(selectedWeatherType, 'textColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Text Size</Label>
+              <Slider
+                value={[config.textSize]}
+                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'textSize', value)}
+                min={8}
+                max={32}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Text Opacity</Label>
+              <Slider
+                value={[config.textOpacity]}
+                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'textOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
+              <Input
+                type="color"
+                value={config.haloColor}
+                onChange={(e) => updateConfigValue(selectedWeatherType, 'haloColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
+              <Slider
+                value={[config.haloWidth]}
+                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'haloWidth', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Spacing</Label>
+              <Slider
+                value={[config.symbolSpacing]}
+                onValueChange={([value]) => updateConfigValue(selectedWeatherType, 'symbolSpacing', value)}
+                min={20}
+                max={200}
+                step={10}
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.allowOverlap}
+                onCheckedChange={(checked) => updateConfigValue(selectedWeatherType, 'allowOverlap', checked)}
+              />
+              <Label className="text-xs">Allow Overlap</Label>
+            </div>
+
+            {selectedWeatherType === 'symbol' && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Rotation Alignment</Label>
+                <Select 
+                  value={config.rotationAlignment} 
+                  onValueChange={(value) => updateConfigValue('symbol', 'rotationAlignment', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="map">Map</SelectItem>
+                    <SelectItem value="viewport">Viewport</SelectItem>
+                    <SelectItem value="auto">Auto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -551,14 +866,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         </div>
       )}
 
-      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[320px] max-h-[80vh] overflow-y-auto">
+      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[360px] max-h-[80vh] overflow-y-auto">
         <h3 className="text-sm font-semibold mb-3">Weather Layer Configuration</h3>
         
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <Label className="block text-xs font-medium text-gray-700 mb-1">
               Weather Type
-            </label>
+            </Label>
             <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select weather type" />
@@ -572,130 +887,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </Select>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Line Color {selectedWeatherType === 'swell' && '(N/A for filled)'}
-            </label>
-            <div className="flex gap-2">
-              <Input
-                type="color"
-                value={lineColor}
-                onChange={(e) => setLineColor(e.target.value)}
-                className="w-16 h-8 p-1 border rounded"
-                disabled={selectedWeatherType === 'swell'}
-              />
-              <Input
-                type="text"
-                value={lineColor}
-                onChange={(e) => setLineColor(e.target.value)}
-                placeholder="#ffffff"
-                className="flex-1 text-xs"
-                disabled={selectedWeatherType === 'swell'}
-              />
-            </div>
-          </div>
+          {renderConfigurationPanel()}
 
-          {selectedWeatherType === 'swell' && (
-            <>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Fill Opacity
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="range"
-                    min="0.1"
-                    max="1"
-                    step="0.1"
-                    value={heatmapIntensity}
-                    onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
-                    className="flex-1"
-                  />
-                  <Input
-                    type="number"
-                    min="0.1"
-                    max="1"
-                    step="0.1"
-                    value={heatmapIntensity}
-                    onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
-                    className="w-16 text-xs"
-                  />
-                </div>
-              </div>
+          <Button 
+            onClick={applyLayerConfiguration}
+            className="w-full"
+            size="sm"
+          >
+            Apply Configuration
+          </Button>
 
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
-                  Wave Height Gradient Colors
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {heatmapGradient.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Input
-                        type="color"
-                        value={convertRgbToHex(item.color)}
-                        onChange={(e) => updateGradientColor(index, convertHexToRgb(e.target.value))}
-                        className="w-8 h-6 p-0 border rounded cursor-pointer"
-                      />
-                      <span className="text-xs text-gray-600 w-10 text-center">{item.value}</span>
-                      <Input
-                        type="text"
-                        value={item.color}
-                        onChange={(e) => updateGradientColor(index, e.target.value)}
-                        className="flex-1 text-xs"
-                        placeholder="rgb(255, 255, 255)"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleIntensityUpdate}
-                  className="flex-1"
-                  size="sm"
-                >
-                  Apply Opacity
-                </Button>
-                <Button 
-                  onClick={handleGradientUpdate}
-                  className="flex-1"
-                  size="sm"
-                >
-                  Apply Gradient
-                </Button>
-              </div>
-            </>
-          )}
-
-          {selectedWeatherType !== 'swell' && (
-            <Button 
-              onClick={handleColorUpdate}
-              className="w-full"
-              size="sm"
-            >
-              Apply Color
-            </Button>
-          )}
-
-          <div className="text-xs text-gray-500 mt-2">
-            <div className="font-medium mb-1">Current Settings:</div>
-            {Object.entries(layerColors).map(([type, color]) => (
-              <div key={type} className="flex items-center justify-between">
-                <span className="capitalize">{type}:</span>
-                <div className="flex items-center gap-1">
-                  {type === 'swell' ? (
-                    <span className="text-xs">Opacity: {heatmapIntensity}</span>
-                  ) : (
-                    <>
-                      <div 
-                        className="w-3 h-3 rounded border" 
-                        style={{ backgroundColor: color }}
-                      ></div>
-                      <span className="text-xs">{color}</span>
-                    </>
-                  )}
-                </div>
+          <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
+            <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
+            {activeOverlays.map(layer => (
+              <div key={layer} className="text-xs capitalize">
+                • {layer}
               </div>
             ))}
           </div>
@@ -706,3 +912,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+</initial_code>
