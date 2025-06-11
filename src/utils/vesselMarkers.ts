@@ -1,3 +1,4 @@
+
 import mapboxgl from 'mapbox-gl';
 
 export interface Vessel {
@@ -20,11 +21,11 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   // Determine vessel icon based on type
   let vesselIcon;
   if (vessel.type === 'circle') {
-    vesselIcon = '/lovable-uploads/058b7a1f-520f-4fa9-86d5-18290e34ba95.png'; // Orange circle icon
+    vesselIcon = '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'; // Orange circle icon
   } else {
     vesselIcon = vessel.type === 'green' 
-      ? '/lovable-uploads/3412ff3e-3f5b-40d9-9e58-82c3aadb0f87.png' // Green vessel icon
-      : '/lovable-uploads/c7ec5352-98e3-4d7a-9def-51dc534f4385.png'; // Orange vessel icon
+      ? '/lovable-uploads/0f873953-504d-4dad-92ca-1beb7dcadb7e.png' // New green vessel icon
+      : '/lovable-uploads/014473a7-fb4d-4278-a424-5697503bb89a.png'; // New orange vessel icon
   }
   
   // Create a vessel marker element using the uploaded images
