@@ -38,15 +38,15 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   el.style.backgroundRepeat = 'no-repeat';
   el.style.backgroundPosition = 'center';
   
-  // Function to calculate size based on zoom level - reduced by 2x
+  // Function to calculate size based on zoom level - reduced by another 1x (3x total reduction)
   const updateVesselSize = () => {
     const zoom = map.getZoom();
-    // Base size reduced from 24px to 12px at zoom level 6
-    // Scale: higher zoom = larger size, lower zoom = smaller size (2x reduction)
-    const baseSize = 12; // Reduced from 24 to 12
+    // Base size reduced from 12px to 6px at zoom level 6 (3x total reduction from original 24px)
+    // Scale: higher zoom = larger size, lower zoom = smaller size
+    const baseSize = 6; // Reduced from 12 to 6
     const baseZoom = 6;
-    const scaleFactor = Math.pow(0.75, zoom - baseZoom); // Inverse scaling for 2x reduction on zoom out
-    const size = Math.max(3, Math.min(24, baseSize * scaleFactor)); // Clamp between 3px and 24px (reduced from 6-48px)
+    const scaleFactor = Math.pow(0.75, zoom - baseZoom); // Inverse scaling for smaller sizes on zoom out
+    const size = Math.max(2, Math.min(12, baseSize * scaleFactor)); // Clamp between 2px and 12px (reduced from 3-24px)
     
     el.style.width = `${size}px`;
     

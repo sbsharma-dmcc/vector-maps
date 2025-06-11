@@ -1,7 +1,7 @@
 
 import { Vessel } from '@/utils/vesselMarkers';
 
-export { Vessel } from '@/utils/vesselMarkers';
+export type { Vessel } from '@/utils/vesselMarkers';
 
 export type VesselType = 'green' | 'orange' | 'circle';
 
@@ -26,7 +26,7 @@ export interface Route {
 }
 
 export const vessels: Vessel[] = [
-  // Green vessels (ships)
+  // Green vessels (ships) - spread across ocean bed
   {
     id: 'vessel-1',
     name: 'Green Cargo Ship Alpha',
@@ -45,28 +45,52 @@ export const vessels: Vessel[] = [
     type: 'green',
     position: [139.2345, 35.8901] // West of Tokyo
   },
-  
-  // Orange vessels (ships)
   {
     id: 'vessel-4',
-    name: 'Orange Freight Delta',
+    name: 'Green Cargo Ship Delta',
+    type: 'green',
+    position: [138.5432, 34.9876] // Southwest waters
+  },
+  {
+    id: 'vessel-5',
+    name: 'Green Cargo Ship Epsilon',
+    type: 'green',
+    position: [141.2345, 36.1234] // Northeast waters
+  },
+  
+  // Orange vessels (ships) - spread across ocean bed
+  {
+    id: 'vessel-6',
+    name: 'Orange Freight Alpha',
     type: 'orange',
     position: [139.9876, 35.2345] // South of Tokyo
   },
   {
-    id: 'vessel-5',
-    name: 'Orange Freight Epsilon',
+    id: 'vessel-7',
+    name: 'Orange Freight Beta',
     type: 'orange',
     position: [140.5432, 35.7890] // Northeast of Tokyo
   },
   {
-    id: 'vessel-6',
-    name: 'Orange Freight Zeta',
+    id: 'vessel-8',
+    name: 'Orange Freight Gamma',
     type: 'orange',
     position: [138.8765, 35.5432] // Southwest of Tokyo
   },
+  {
+    id: 'vessel-9',
+    name: 'Orange Freight Delta',
+    type: 'orange',
+    position: [140.8765, 34.7654] // Southeast waters
+  },
+  {
+    id: 'vessel-10',
+    name: 'Orange Freight Epsilon',
+    type: 'orange',
+    position: [138.1234, 36.3456] // Northwest waters
+  },
   
-  // Circle vessels (floating objects/buoys)
+  // Circle vessels (floating objects/buoys) - well distributed across ocean bed
   {
     id: 'circle-1',
     name: 'Navigation Buoy Alpha',
@@ -114,6 +138,30 @@ export const vessels: Vessel[] = [
     name: 'Navigation Buoy Theta',
     type: 'circle',
     position: [139.7890, 35.9876] // Northern waters
+  },
+  {
+    id: 'circle-9',
+    name: 'Navigation Buoy Iota',
+    type: 'circle',
+    position: [141.0123, 35.6789] // Far eastern waters
+  },
+  {
+    id: 'circle-10',
+    name: 'Navigation Buoy Kappa',
+    type: 'circle',
+    position: [138.4567, 35.2345] // Far western waters
+  },
+  {
+    id: 'circle-11',
+    name: 'Navigation Buoy Lambda',
+    type: 'circle',
+    position: [140.3456, 36.0123] // Northern eastern waters
+  },
+  {
+    id: 'circle-12',
+    name: 'Navigation Buoy Mu',
+    type: 'circle',
+    position: [139.1234, 34.8765] // Southern western waters
   }
 ];
 
@@ -168,7 +216,7 @@ export const generateMockRoutes = (): Route[] => {
       distance: 500,
       estimatedTime: '24 hours',
       coordinates: [[139.7514, 35.6851], [135.5023, 34.6937]],
-      vessels: ['vessel-1', 'vessel-4']
+      vessels: ['vessel-1', 'vessel-6']
     },
     {
       id: 'route-2',
@@ -178,7 +226,7 @@ export const generateMockRoutes = (): Route[] => {
       distance: 450,
       estimatedTime: '20 hours',
       coordinates: [[139.6380, 35.4437], [135.1955, 34.6901]],
-      vessels: ['vessel-2', 'vessel-5']
+      vessels: ['vessel-2', 'vessel-7']
     }
   ];
 };
