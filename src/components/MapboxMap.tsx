@@ -1179,4 +1179,4 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
 export default MapboxMap;
 
-</edits_to_apply>
+}
