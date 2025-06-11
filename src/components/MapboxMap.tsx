@@ -105,17 +105,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         { value: '8.5m', color: 'rgb(255, 175, 0)', opacity: 0.8 },  
         { value: '9m', color: 'rgb(255, 150, 0)', opacity: 0.8 },    
         { value: '9.5m', color: 'rgb(255, 125, 0)', opacity: 0.8 },  
-        { value: '10m', color: 'rgb(255, 100, 0)', opacity: 0.8 },   
-        { value: '10.5m', color: 'rgb(255, 75, 50)', opacity: 0.8 }, 
-        { value: '11m', color: 'rgb(255, 50, 100)', opacity: 0.8 },  
-        { value: '11.5m', color: 'rgb(255, 25, 150)', opacity: 0.8 },
-        { value: '12m', color: 'rgb(255, 0, 200)', opacity: 0.8 },   
-        { value: '12.5m', color: 'rgb(225, 0, 200)', opacity: 0.8 }, 
-        { value: '13m', color: 'rgb(200, 0, 200)', opacity: 0.8 },   
-        { value: '13.5m', color: 'rgb(175, 0, 200)', opacity: 0.8 }, 
-        { value: '14m', color: 'rgb(150, 0, 200)', opacity: 0.8 },   
-        { value: '14.5m', color: 'rgb(125, 0, 200)', opacity: 0.8 }, 
-        { value: '15m+', color: 'rgb(100, 0, 200)', opacity: 0.8 }   
+        { value: '10m+', color: 'rgb(255, 100, 0)', opacity: 0.8 }   
       ]
     },
     symbol: {
