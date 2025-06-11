@@ -403,37 +403,33 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
-          // Create wind barb expression
+          // Fixed wind barb expression with proper Mapbox GL JS syntax
           const windBarbExpression = [
             'case',
             ['has', 'value'],
             [
-              'let',
-              ['speed', ['to-number', ['get', 'value']]],
-              [
-                'case',
-                ['<', ['var', 'speed'], 3], '○',
-                ['<', ['var', 'speed'], 8], '│',
-                ['<', ['var', 'speed'], 13], '│╸',
-                ['<', ['var', 'speed'], 18], '│━',
-                ['<', ['var', 'speed'], 23], '│━╸',
-                ['<', ['var', 'speed'], 28], '│━━',
-                ['<', ['var', 'speed'], 33], '│━━╸',
-                ['<', ['var', 'speed'], 38], '│━━━',
-                ['<', ['var', 'speed'], 43], '│━━━╸',
-                ['<', ['var', 'speed'], 48], '│━━━━',
-                ['<', ['var', 'speed'], 53], '│━━━━╸',
-                ['<', ['var', 'speed'], 63], '▲│',
-                ['<', ['var', 'speed'], 68], '▲│╸',
-                ['<', ['var', 'speed'], 73], '▲│━',
-                ['<', ['var', 'speed'], 78], '▲│━╸',
-                ['<', ['var', 'speed'], 83], '▲│━━',
-                ['<', ['var', 'speed'], 88], '▲│━━╸',
-                ['<', ['var', 'speed'], 93], '▲│━━━',
-                ['<', ['var', 'speed'], 98], '▲│━━━╸',
-                ['<', ['var', 'speed'], 103], '▲│━━━━',
-                '▲▲│'
-              ]
+              'case',
+              ['<', ['to-number', ['get', 'value']], 3], '○',
+              ['<', ['to-number', ['get', 'value']], 8], '│',
+              ['<', ['to-number', ['get', 'value']], 13], '│╸',
+              ['<', ['to-number', ['get', 'value']], 18], '│━',
+              ['<', ['to-number', ['get', 'value']], 23], '│━╸',
+              ['<', ['to-number', ['get', 'value']], 28], '│━━',
+              ['<', ['to-number', ['get', 'value']], 33], '│━━╸',
+              ['<', ['to-number', ['get', 'value']], 38], '│━━━',
+              ['<', ['to-number', ['get', 'value']], 43], '│━━━╸',
+              ['<', ['to-number', ['get', 'value']], 48], '│━━━━',
+              ['<', ['to-number', ['get', 'value']], 53], '│━━━━╸',
+              ['<', ['to-number', ['get', 'value']], 63], '▲│',
+              ['<', ['to-number', ['get', 'value']], 68], '▲│╸',
+              ['<', ['to-number', ['get', 'value']], 73], '▲│━',
+              ['<', ['to-number', ['get', 'value']], 78], '▲│━╸',
+              ['<', ['to-number', ['get', 'value']], 83], '▲│━━',
+              ['<', ['to-number', ['get', 'value']], 88], '▲│━━╸',
+              ['<', ['to-number', ['get', 'value']], 93], '▲│━━━',
+              ['<', ['to-number', ['get', 'value']], 98], '▲│━━━╸',
+              ['<', ['to-number', ['get', 'value']], 103], '▲│━━━━',
+              '▲▲│'
             ],
             '│'
           ];
@@ -1182,3 +1178,5 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 };
 
 export default MapboxMap;
+
+</edits_to_apply>
