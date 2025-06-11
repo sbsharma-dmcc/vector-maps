@@ -1,4 +1,3 @@
-
 import mapboxgl from 'mapbox-gl';
 
 export interface Vessel {
@@ -18,29 +17,22 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
     return null;
   }
   
-  // Determine vessel color based on type
-  const vesselColor = vessel.type === 'green' ? '#99cc33' : '#ffaa33';
+  // Determine vessel icon based on type
+  const vesselIcon = vessel.type === 'green' 
+    ? '/lovable-uploads/3412ff3e-3f5b-40d9-9e58-82c3aadb0f87.png' // Green vessel icon
+    : '/lovable-uploads/c7ec5352-98e3-4d7a-9def-51dc534f4385.png'; // Orange vessel icon
   
-  // Create a vessel marker element
+  // Create a vessel marker element using the uploaded images
   const el = document.createElement('div');
   el.className = 'vessel-marker';
-  el.style.backgroundColor = vesselColor;
-  el.style.width = '15px';
-  el.style.height = '40px';
-  el.style.borderRadius = '10px';
+  el.style.width = '24px';
+  el.style.height = '48px';
   el.style.position = 'relative';
   el.style.cursor = 'pointer';
-  
-  // Add waves effect
-  const wavesEl = document.createElement('div');
-  wavesEl.className = 'vessel-waves';
-  wavesEl.style.position = 'absolute';
-  wavesEl.style.right = '-3px';
-  wavesEl.style.top = '5px';
-  wavesEl.innerHTML = ')))';
-  wavesEl.style.fontSize = '10px';
-  wavesEl.style.color = vesselColor;
-  el.appendChild(wavesEl);
+  el.style.backgroundImage = `url(${vesselIcon})`;
+  el.style.backgroundSize = 'contain';
+  el.style.backgroundRepeat = 'no-repeat';
+  el.style.backgroundPosition = 'center';
   
   // Create a mapbox marker
   const marker = new mapboxgl.Marker(el)
