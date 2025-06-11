@@ -86,7 +86,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [76.8, 8.3] }, // Kerala Waters
     { id: 'vessel-11', name: 'Green Vessel 6', type: 'green', position: [81.6, 16.4] }, // Sri Lanka North
     { id: 'vessel-12', name: 'Orange Vessel 6', type: 'orange', position: [88.2, 11.7] }, // Bay of Bengal South
-    { id: 'vessel-13', name: 'Green Vessel 7', name: 'green', position: [74.1, 13.6] }, // Goa Waters
+    { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [74.1, 13.6] }, // Goa Waters
     { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [79.5, 22.4] }, // Gujarat Waters
     { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [84.7, 7.2] }, // Indian Ocean East
   ];
