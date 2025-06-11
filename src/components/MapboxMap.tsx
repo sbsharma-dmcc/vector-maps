@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -111,7 +112,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
-  // Well-distributed vessel coordinates across the Indian Ocean region
+  // Enhanced vessel coordinates with circle vessels added
   const mockVessels: Vessel[] = [
     { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [72.5, 15.2] }, // Arabian Sea Central
     { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [78.8, 12.1] }, // Indian Ocean West Central
@@ -128,6 +129,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [74.1, 13.6] }, // Goa Waters
     { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [79.5, 22.4] }, // Gujarat Waters
     { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [84.7, 7.2] }, // Indian Ocean East
+    // New circle vessels
+    { id: 'circle-1', name: 'Circle Vessel 1', type: 'circle', position: [70.5, 12.8] }, // Arabian Sea
+    { id: 'circle-2', name: 'Circle Vessel 2', type: 'circle', position: [83.2, 15.7] }, // Bay of Bengal
+    { id: 'circle-3', name: 'Circle Vessel 3', type: 'circle', position: [77.1, 9.5] }, // Indian Ocean Central
+    { id: 'circle-4', name: 'Circle Vessel 4', type: 'circle', position: [86.8, 19.2] }, // Bay of Bengal North
+    { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] }, // Arabian Sea East
   ];
 
   // Function to get symbol based on type

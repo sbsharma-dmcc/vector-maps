@@ -1,10 +1,9 @@
-
 import mapboxgl from 'mapbox-gl';
 
 export interface Vessel {
   id: string;
   name: string;
-  type: 'green' | 'orange';
+  type: 'green' | 'orange' | 'circle';
   position: [number, number];
 }
 
@@ -19,9 +18,14 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   }
   
   // Determine vessel icon based on type
-  const vesselIcon = vessel.type === 'green' 
-    ? '/lovable-uploads/3412ff3e-3f5b-40d9-9e58-82c3aadb0f87.png' // Green vessel icon
-    : '/lovable-uploads/c7ec5352-98e3-4d7a-9def-51dc534f4385.png'; // Orange vessel icon
+  let vesselIcon;
+  if (vessel.type === 'circle') {
+    vesselIcon = '/lovable-uploads/058b7a1f-520f-4fa9-86d5-18290e34ba95.png'; // Orange circle icon
+  } else {
+    vesselIcon = vessel.type === 'green' 
+      ? '/lovable-uploads/3412ff3e-3f5b-40d9-9e58-82c3aadb0f87.png' // Green vessel icon
+      : '/lovable-uploads/c7ec5352-98e3-4d7a-9def-51dc534f4385.png'; // Orange vessel icon
+  }
   
   // Create a vessel marker element using the uploaded images
   const el = document.createElement('div');
@@ -37,38 +41,51 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
   const updateVesselSize = () => {
     const zoom = map.getZoom();
     // Base size is 24px at zoom level 6
-    // Scale inversely: higher zoom = smaller size, lower zoom = larger size
+    // Scale: higher zoom = larger size, lower zoom = smaller size (2x reduction)
     const baseSize = 24;
     const baseZoom = 6;
-    const scaleFactor = Math.pow(0.8, zoom - baseZoom); // Inverse scaling
-    const size = Math.max(12, Math.min(48, baseSize * scaleFactor)); // Clamp between 12px and 48px
+    const scaleFactor = Math.pow(1.5, zoom - baseZoom); // Direct scaling
+    const size = Math.max(6, Math.min(48, baseSize * scaleFactor)); // Clamp between 6px and 48px
     
     el.style.width = `${size}px`;
-    el.style.height = `${size * 2}px`; // Height is double width to maintain ship proportions
     
-    // Update waves position relative to new size
-    const wavesEl = el.querySelector('.vessel-waves') as HTMLElement;
-    if (wavesEl) {
-      wavesEl.style.right = `${-size * 0.3}px`;
-      wavesEl.style.top = `${size * 0.6}px`;
-      wavesEl.style.fontSize = `${Math.max(8, size * 0.5)}px`;
+    // Different height ratios for different vessel types
+    if (vessel.type === 'circle') {
+      el.style.height = `${size}px`; // Square for circle vessels
+    } else {
+      el.style.height = `${size * 2}px`; // Height is double width for ship vessels
+    }
+    
+    // Update waves position relative to new size (only for non-circle vessels)
+    if (vessel.type !== 'circle') {
+      const wavesEl = el.querySelector('.vessel-waves') as HTMLElement;
+      if (wavesEl) {
+        wavesEl.style.right = `${-size * 0.3}px`;
+        wavesEl.style.top = `${size * 0.6}px`;
+        wavesEl.style.fontSize = `${Math.max(8, size * 0.5)}px`;
+      }
     }
   };
   
   // Set initial size
   updateVesselSize();
   
-  // Add waves effect
-  const wavesEl = document.createElement('div');
-  wavesEl.className = 'vessel-waves';
-  wavesEl.style.position = 'absolute';
-  wavesEl.innerHTML = ')))';
-  wavesEl.style.color = vessel.type === 'green' ? '#4ade80' : '#fb923c';
-  wavesEl.style.fontWeight = 'bold';
-  el.appendChild(wavesEl);
+  // Add waves effect only for non-circle vessels
+  if (vessel.type !== 'circle') {
+    const wavesEl = document.createElement('div');
+    wavesEl.className = 'vessel-waves';
+    wavesEl.style.position = 'absolute';
+    wavesEl.innerHTML = ')))';
+    wavesEl.style.color = vessel.type === 'green' ? '#4ade80' : '#fb923c';
+    wavesEl.style.fontWeight = 'bold';
+    el.appendChild(wavesEl);
+  }
   
-  // Create a mapbox marker
-  const marker = new mapboxgl.Marker(el)
+  // Create a mapbox marker with draggable disabled to lock position
+  const marker = new mapboxgl.Marker({
+    element: el,
+    draggable: false // Lock the position
+  })
     .setLngLat(vessel.position)
     .addTo(map);
   
@@ -112,7 +129,7 @@ export const createVesselMarkers = (
   vessels: Vessel[],
   markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }>
 ) => {
-  // Add CSS for vessel marker animation if not already in document
+  // Add CSS for vessel marker without animations
   if (!document.getElementById('vessel-marker-styles')) {
     const styleSheet = document.createElement('style');
     styleSheet.id = 'vessel-marker-styles';
@@ -131,16 +148,6 @@ export const createVesselMarkers = (
       .vessel-waves {
         transform: rotate(-45deg);
         transition: right 0.2s ease, top 0.2s ease, font-size 0.2s ease;
-      }
-      
-      @keyframes pulse {
-        0% { opacity: 0.4; }
-        50% { opacity: 1; }
-        100% { opacity: 0.4; }
-      }
-      
-      .vessel-waves {
-        animation: pulse 1.5s infinite;
       }
     `;
     document.head.appendChild(styleSheet);
@@ -172,7 +179,7 @@ export const createVesselMarkers = (
     }
   });
 
-  console.log(`Created ${vessels.length} vessel markers on the map with zoom-responsive sizing`);
+  console.log(`Created ${vessels.length} vessel markers on the map with locked positions and zoom-responsive sizing`);
 };
 
 export const cleanupVesselMarkers = (
