@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
+import RT001MapInterface from '../components/RT001MapInterface';
 import { Button } from '@/components/ui/button';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
 import { useToast } from '@/hooks/use-toast';
@@ -153,18 +153,6 @@ const RouteDetail = () => {
     });
   };
 
-  // For the timeline dates
-  const today = new Date();
-  const days = Array.from({ length: 5 }, (_, i) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
-    return {
-      day: i === 0 ? 'Today' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
-      date: date.getDate(),
-      active: i === 0
-    };
-  });
-
   const handleLayerToggle = (layerType: string, enabled: boolean) => {
     console.log(`Layer ${layerType} ${enabled ? 'enabled' : 'disabled'}`);
     
@@ -204,7 +192,7 @@ const RouteDetail = () => {
     position: vesselPosition || baseRouteCoordinates[0]
   };
 
-  // Check if this is the RT-001 route to show the uploaded map
+  // Check if this is the RT-001 route to show the custom map interface
   const isRT001 = id === 'RT-001';
 
   return (
@@ -396,59 +384,68 @@ const RouteDetail = () => {
           activeLayer={activeBaseLayer}
           onBaseLayerChange={handleBaseLayerChange}
         />
-
-        {/* Layers toggle button - positioned in bottom-left corner */}
-        <div className="absolute bottom-20 left-4 z-10">
-          <Button 
-            onClick={() => setLayersPanelOpen(!layersPanelOpen)}
-            className="bg-white hover:bg-gray-50 text-gray-800 shadow-lg border border-gray-200 w-12 h-12 p-0"
-            size="icon"
-          >
-            <Layers className="h-5 w-5" />
-          </Button>
-        </div>
         
         {/* Conditional rendering based on route ID */}
         {isRT001 ? (
-          <div className="absolute inset-0">
-            <img 
-              src="/lovable-uploads/63290a59-d389-41e8-8b6c-bff2439cfd41.png"
-              alt="Route RT-001 Map"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          /* Customize MapboxMap to handle routes and layers */
-          <MapboxMap 
-            vessels={[routeVessel]} 
-            showRoutes={true}
-            baseRoute={baseRouteCoordinates}
-            weatherRoute={weatherRouteCoordinates}
-            activeRouteType={activeTab}
+          <RT001MapInterface
+            activeTab={activeTab}
+            onDayClick={animateVessel}
+            onLayersToggle={() => setLayersPanelOpen(!layersPanelOpen)}
             activeLayers={activeLayers}
-            activeBaseLayer={activeBaseLayer}
           />
-        )}
-        
-        {/* Timeline Navigation */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-80 text-white">
-          <div className="flex overflow-x-auto">
-            {days.map((day, index) => (
-              <div 
-                key={index} 
-                className={`flex-1 p-4 text-center cursor-pointer border-t-2 ${
-                  day.active ? 'bg-gray-900 border-blue-500' : 'border-transparent'
-                } hover:bg-gray-700 transition-colors`}
-                onClick={() => animateVessel(index)}
+        ) : (
+          <>
+            {/* Layers toggle button - positioned in bottom-left corner */}
+            <div className="absolute bottom-20 left-4 z-10">
+              <Button 
+                onClick={() => setLayersPanelOpen(!layersPanelOpen)}
+                className="bg-white hover:bg-gray-50 text-gray-800 shadow-lg border border-gray-200 w-12 h-12 p-0"
+                size="icon"
               >
-                <div className="text-sm">{day.date} {day.day}</div>
-              </div>
-            ))}
-            <div className="p-4 flex items-center justify-center cursor-pointer">
-              <ChevronRight className="h-5 w-5" />
+                <Layers className="h-5 w-5" />
+              </Button>
             </div>
-          </div>
-        </div>
+            
+            {/* Customize MapboxMap to handle routes and layers */}
+            <MapboxMap 
+              vessels={[routeVessel]} 
+              showRoutes={true}
+              baseRoute={baseRouteCoordinates}
+              weatherRoute={weatherRouteCoordinates}
+              activeRouteType={activeTab}
+              activeLayers={activeLayers}
+              activeBaseLayer={activeBaseLayer}
+            />
+            
+            {/* Timeline Navigation */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-80 text-white">
+              <div className="flex overflow-x-auto">
+                {Array.from({ length: 5 }, (_, i) => {
+                  const date = new Date();
+                  date.setDate(date.getDate() + i);
+                  return {
+                    day: i === 0 ? 'Today' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
+                    date: date.getDate(),
+                    active: i === 0
+                  };
+                }).map((day, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex-1 p-4 text-center cursor-pointer border-t-2 ${
+                      day.active ? 'bg-gray-900 border-blue-500' : 'border-transparent'
+                    } hover:bg-gray-700 transition-colors`}
+                    onClick={() => animateVessel(index)}
+                  >
+                    <div className="text-sm">{day.date} {day.day}</div>
+                  </div>
+                ))}
+                <div className="p-4 flex items-center justify-center cursor-pointer">
+                  <ChevronRight className="h-5 w-5" />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
