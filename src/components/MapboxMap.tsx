@@ -54,7 +54,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
   const [selectedDraft, setSelectedDraft] = useState<string>('');
   const [weatherDrafts, setWeatherDrafts] = useState<WeatherLayerDraft[]>([]);
-  const [swellConfigLocked, setSwellConfigLocked] = useState(true);
+  const [swellConfigLocked, setSwellConfigLocked] = useState(false);
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -844,7 +844,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             {swellConfigLocked && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-yellow-800">
-                  Swell configuration is temporarily locked. Click the lock icon to unlock and make changes.
+                  Swell configuration is locked. Click the lock icon to unlock and make changes.
                 </p>
               </div>
             )}
@@ -910,10 +910,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             )}
 
             <div>
-              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient with Individual Opacity</Label>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
+              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient (0m to 10m+)</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
                 {config.gradient.map((item, index) => (
-                  <div key={index} className={`flex items-center gap-2 p-2 border rounded ${swellConfigLocked ? 'bg-gray-50' : ''}`}>
+                  <div key={index} className={`flex items-center gap-2 p-2 border rounded ${swellConfigLocked ? 'bg-gray-50' : 'bg-white'}`}>
                     <Input
                       type="color"
                       value={convertRgbToHex(item.color)}
@@ -924,12 +924,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                           updateConfigValue('swell', 'gradient', newGradient);
                         }
                       }}
-                      className="w-8 h-6 p-0"
+                      className="w-10 h-8 p-0 border-2"
                       disabled={swellConfigLocked}
                     />
-                    <span className="text-xs w-12 font-medium">{item.value}</span>
+                    <span className="text-xs w-14 font-medium text-gray-700">{item.value}</span>
                     <div className="flex-1">
-                      <Label className="text-xs text-gray-600">Opacity: {item.opacity}</Label>
+                      <Label className="text-xs text-gray-600 mb-1 block">Opacity: {item.opacity.toFixed(1)}</Label>
                       <Slider
                         value={[item.opacity]}
                         onValueChange={([value]) => {
@@ -949,6 +949,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   </div>
                 ))}
               </div>
+              {!swellConfigLocked && (
+                <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                  <strong>Tip:</strong> Click the color boxes to change wave height colors and adjust the sliders to modify individual opacity for each height range.
+                </div>
+              )}
             </div>
           </>
         )}
