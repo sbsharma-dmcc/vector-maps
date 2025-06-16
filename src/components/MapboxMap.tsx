@@ -79,33 +79,33 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       lineGapWidth: 0
     },
     swell: {
-      fillOpacity: 0.8,
+      fillOpacity: 0.85,
       fillOutlineColor: 'transparent',
-      animationSpeed: 0.001,
+      animationSpeed: 0.002,
       animationEnabled: true,
       fillAntialias: true,
       gradient: [
-        { value: '0m', color: 'rgb(0, 0, 139)', opacity: 0.8 },      
-        { value: '0.5m', color: 'rgb(0, 50, 200)', opacity: 0.8 },   
-        { value: '1m', color: 'rgb(0, 100, 255)', opacity: 0.8 },    
-        { value: '1.5m', color: 'rgb(0, 125, 255)', opacity: 0.8 },  
-        { value: '2m', color: 'rgb(0, 150, 255)', opacity: 0.8 },    
-        { value: '2.5m', color: 'rgb(0, 175, 255)', opacity: 0.8 },  
-        { value: '3m', color: 'rgb(0, 200, 255)', opacity: 0.8 },    
-        { value: '3.5m', color: 'rgb(0, 225, 255)', opacity: 0.8 },  
-        { value: '4m', color: 'rgb(0, 255, 200)', opacity: 0.8 },    
-        { value: '4.5m', color: 'rgb(50, 255, 150)', opacity: 0.8 }, 
-        { value: '5m', color: 'rgb(100, 255, 100)', opacity: 0.8 },  
-        { value: '5.5m', color: 'rgb(150, 255, 50)', opacity: 0.8 }, 
-        { value: '6m', color: 'rgb(200, 255, 0)', opacity: 0.8 },    
-        { value: '6.5m', color: 'rgb(225, 255, 0)', opacity: 0.8 },  
-        { value: '7m', color: 'rgb(255, 255, 0)', opacity: 0.8 },    
-        { value: '7.5m', color: 'rgb(255, 225, 0)', opacity: 0.8 },  
-        { value: '8m', color: 'rgb(255, 200, 0)', opacity: 0.8 },    
-        { value: '8.5m', color: 'rgb(255, 175, 0)', opacity: 0.8 },  
-        { value: '9m', color: 'rgb(255, 150, 0)', opacity: 0.8 },    
-        { value: '9.5m', color: 'rgb(255, 125, 0)', opacity: 0.8 },  
-        { value: '10m+', color: 'rgb(255, 100, 0)', opacity: 0.8 }   
+        { value: '0m', color: 'rgb(64, 224, 208)', opacity: 0.7 },      // Light turquoise
+        { value: '0.5m', color: 'rgb(72, 209, 204)', opacity: 0.75 },   // Medium sea green
+        { value: '1m', color: 'rgb(85, 189, 185)', opacity: 0.8 },      // Teal
+        { value: '1.5m', color: 'rgb(102, 168, 155)', opacity: 0.82 },  // Dark teal
+        { value: '2m', color: 'rgb(119, 149, 135)', opacity: 0.84 },    // Green-gray
+        { value: '2.5m', color: 'rgb(138, 130, 115)', opacity: 0.86 },  // Brownish
+        { value: '3m', color: 'rgb(156, 111, 95)', opacity: 0.88 },     // Brown-red
+        { value: '3.5m', color: 'rgb(174, 92, 75)', opacity: 0.9 },     // Red-brown
+        { value: '4m', color: 'rgb(192, 73, 55)', opacity: 0.9 },       // Red
+        { value: '4.5m', color: 'rgb(210, 54, 35)', opacity: 0.9 },     // Bright red
+        { value: '5m', color: 'rgb(228, 58, 58)', opacity: 0.9 },       // Red-pink
+        { value: '5.5m', color: 'rgb(235, 78, 88)', opacity: 0.9 },     // Pink-red
+        { value: '6m', color: 'rgb(242, 98, 118)', opacity: 0.9 },      // Pink
+        { value: '6.5m', color: 'rgb(249, 118, 148)', opacity: 0.9 },   // Light pink
+        { value: '7m', color: 'rgb(255, 138, 178)', opacity: 0.9 },     // Magenta-pink
+        { value: '7.5m', color: 'rgb(255, 158, 195)', opacity: 0.9 },   // Light magenta
+        { value: '8m', color: 'rgb(255, 178, 212)', opacity: 0.9 },     // Very light pink
+        { value: '8.5m', color: 'rgb(245, 195, 220)', opacity: 0.9 },   // Pale pink
+        { value: '9m', color: 'rgb(235, 212, 228)', opacity: 0.9 },     // Very pale pink
+        { value: '9.5m', color: 'rgb(225, 229, 236)', opacity: 0.9 },   // Almost white
+        { value: '10m+', color: 'rgb(215, 246, 244)', opacity: 0.9 }    // Light cyan
       ]
     },
     symbol: {
@@ -556,11 +556,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "source-layer": sourceLayer,
             paint: {
               "fill-color": colorExpression,
-              "fill-opacity": 1.0,
+              "fill-opacity": layerConfigs.swell.fillOpacity,
               "fill-outline-color": layerConfigs.swell.fillOutlineColor,
               "fill-translate": [0, 0],
               "fill-translate-transition": {
-                "duration": 0,
+                "duration": 300,
                 "delay": 0
               },
               "fill-antialias": layerConfigs.swell.fillAntialias
@@ -785,7 +785,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       updateLayerProperties(layerType, {
         'fill-color': colorExpression,
-        'fill-opacity': 1.0,
+        'fill-opacity': layerConfigs.swell.fillOpacity,
         'fill-outline-color': config.fillOutlineColor,
         'fill-antialias': config.fillAntialias
       });
