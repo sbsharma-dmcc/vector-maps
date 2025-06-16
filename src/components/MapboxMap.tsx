@@ -142,6 +142,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   }, [weatherDrafts]);
 
   const token = dtnToken.replace('Bearer ', '');
+  console.log('DTN Token being used:', token.substring(0, 50) + '...');
 
   const dtnOverlays = {
     wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
@@ -466,12 +467,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
   const handleOverlayClick = async (overlay: string) => {
+    console.log(`Attempting to add overlay: ${overlay}`);
+    
     if (!mapref.current || !mapref.current.isStyleLoaded()) {
       console.warn("Map style not yet loaded");
+      toast({
+        title: "Map Loading",
+        description: "Please wait for the map to fully load before adding layers",
+        variant: "destructive"
+      });
       return;
     }
 
     if (activeOverlays.includes(overlay)) {
+      console.log(`Removing overlay: ${overlay}`);
       removeOverlay(overlay);
       return;
     }
@@ -480,13 +489,25 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
 
-    console.log(`Adding overlay: ${overlay}, DTN Layer: ${dtnLayerId}, TileSet: ${tileSetId}`);
+    console.log(`Adding overlay details:`, {
+      overlay,
+      dtnLayerId,
+      tileSetId,
+      sourceId,
+      layerId,
+      token: token.substring(0, 20) + '...'
+    });
 
     try {
+      console.log(`Fetching source layer for: ${dtnLayerId}`);
       const sourceLayer = await fetchDTNSourceLayer(dtnLayerId);
+      console.log(`Source layer found: ${sourceLayer}`);
+      
       const tileURL = `https://map.api.dtn.com/v2/tiles/${dtnLayerId}/${tileSetId}/{z}/{x}/{y}.pbf?token=${token}`;
+      console.log(`Tile URL: ${tileURL}`);
       
       if (!mapref.current.getSource(sourceId)) {
+        console.log(`Adding source: ${sourceId}`);
         mapref.current.addSource(sourceId, {
           type: "vector",
           tiles: [tileURL],
@@ -642,12 +663,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         });
       } else {
         console.log(`Layer "${overlay}" already exists`);
+        toast({
+          title: "Layer Already Active",
+          description: `${overlay} layer is already active on the map`
+        });
       }
     } catch (error: any) {
       console.error(`Error adding ${overlay} layer:`, error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
+      
       toast({
         title: "Layer Error",
-        description: `Failed to add ${overlay} layer: ${error.message}`,
+        description: `Failed to add ${overlay} layer. Please check the console for details.`,
         variant: "destructive"
       });
     }
