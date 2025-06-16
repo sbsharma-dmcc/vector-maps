@@ -595,7 +595,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-field": windBarbExpression,
               "text-size": layerConfigs.wind.textSize,
               "text-rotation-alignment": "map",
-              "text-rotate": ["get", "direction"],
+              "text-rotate": [
+                "case",
+                ["has", "direction"],
+                ["get", "direction"],
+                ["has", "value1"], 
+                ["get", "value1"],
+                0
+              ],
               "text-allow-overlap": layerConfigs.wind.allowOverlap,
               "text-ignore-placement": true,
               "symbol-spacing": layerConfigs.wind.symbolSpacing,
@@ -621,7 +628,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-field": symbolText,
               "text-size": symbolConfig.textSize,
               "text-rotation-alignment": symbolConfig.rotationAlignment,
-              "text-rotate": ["get", "direction"],
+              "text-rotate": [
+                "case",
+                ["has", "direction"],
+                ["get", "direction"],
+                ["has", "value1"], 
+                ["get", "value1"],
+                0
+              ],
               "text-allow-overlap": symbolConfig.allowOverlap,
               "text-ignore-placement": true,
               "symbol-spacing": symbolConfig.symbolSpacing
