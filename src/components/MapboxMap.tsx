@@ -79,33 +79,36 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       lineGapWidth: 0
     },
     swell: {
-      fillOpacity: 0.85,
+      fillOpacity: 0.9,
       fillOutlineColor: 'transparent',
-      animationSpeed: 0.002,
+      animationSpeed: 0.0008,
       animationEnabled: true,
       fillAntialias: true,
+      smoothing: true,
+      blurRadius: 2,
+      edgeFeathering: 1.5,
       gradient: [
-        { value: '0m', color: 'rgb(64, 224, 208)', opacity: 0.7 },      // Light turquoise
-        { value: '0.5m', color: 'rgb(72, 209, 204)', opacity: 0.75 },   // Medium sea green
-        { value: '1m', color: 'rgb(85, 189, 185)', opacity: 0.8 },      // Teal
-        { value: '1.5m', color: 'rgb(102, 168, 155)', opacity: 0.82 },  // Dark teal
-        { value: '2m', color: 'rgb(119, 149, 135)', opacity: 0.84 },    // Green-gray
-        { value: '2.5m', color: 'rgb(138, 130, 115)', opacity: 0.86 },  // Brownish
-        { value: '3m', color: 'rgb(156, 111, 95)', opacity: 0.88 },     // Brown-red
-        { value: '3.5m', color: 'rgb(174, 92, 75)', opacity: 0.9 },     // Red-brown
-        { value: '4m', color: 'rgb(192, 73, 55)', opacity: 0.9 },       // Red
-        { value: '4.5m', color: 'rgb(210, 54, 35)', opacity: 0.9 },     // Bright red
-        { value: '5m', color: 'rgb(228, 58, 58)', opacity: 0.9 },       // Red-pink
-        { value: '5.5m', color: 'rgb(235, 78, 88)', opacity: 0.9 },     // Pink-red
-        { value: '6m', color: 'rgb(242, 98, 118)', opacity: 0.9 },      // Pink
-        { value: '6.5m', color: 'rgb(249, 118, 148)', opacity: 0.9 },   // Light pink
-        { value: '7m', color: 'rgb(255, 138, 178)', opacity: 0.9 },     // Magenta-pink
-        { value: '7.5m', color: 'rgb(255, 158, 195)', opacity: 0.9 },   // Light magenta
-        { value: '8m', color: 'rgb(255, 178, 212)', opacity: 0.9 },     // Very light pink
-        { value: '8.5m', color: 'rgb(245, 195, 220)', opacity: 0.9 },   // Pale pink
-        { value: '9m', color: 'rgb(235, 212, 228)', opacity: 0.9 },     // Very pale pink
-        { value: '9.5m', color: 'rgb(225, 229, 236)', opacity: 0.9 },   // Almost white
-        { value: '10m+', color: 'rgb(215, 246, 244)', opacity: 0.9 }    // Light cyan
+        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },        // Deep blue (very light)
+        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },     // Dark blue
+        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },      // Medium blue
+        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },  // Light blue
+        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },     // Cyan-blue
+        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 }, // Blue-green
+        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },     // Green-blue
+        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 }, // Light green
+        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },     // Yellow-green
+        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 }, // Yellow
+        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },    // Orange-yellow
+        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },  // Orange
+        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },    // Dark orange
+        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },    // Red-orange
+        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },      // Red
+        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },    // Bright red
+        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },      // Dark red
+        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },     // Deep red
+        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },       // Crimson
+        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },     // Dark crimson
+        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }       // Very dark red
       ]
     },
     symbol: {
@@ -531,22 +534,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'swell') {
+          // Enhanced color expression with smoother transitions
           const colorExpression: any[] = [
             'interpolate',
-            ['linear'],
+            ['exponential', 1.5], // Use exponential interpolation for smoother gradients
             ['to-number', ['get', 'value'], 0]
           ];
 
           layerConfigs.swell.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-            const rgbMatch = item.color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-            if (rgbMatch) {
-              const [, r, g, b] = rgbMatch;
-              const colorWithOpacity = `rgba(${r}, ${g}, ${b}, ${item.opacity})`;
-              colorExpression.push(heightValue, colorWithOpacity);
-            } else {
-              colorExpression.push(heightValue, item.color);
-            }
+            colorExpression.push(heightValue, item.color);
           });
 
           mapref.current.addLayer({
@@ -556,16 +553,52 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "source-layer": sourceLayer,
             paint: {
               "fill-color": colorExpression,
-              "fill-opacity": layerConfigs.swell.fillOpacity,
+              "fill-opacity": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                2, 0.4,  // Lower opacity at far zoom levels
+                6, layerConfigs.swell.fillOpacity,
+                14, layerConfigs.swell.fillOpacity * 1.1
+              ],
               "fill-outline-color": layerConfigs.swell.fillOutlineColor,
               "fill-translate": [0, 0],
               "fill-translate-transition": {
-                "duration": 300,
+                "duration": 1000,
                 "delay": 0
               },
-              "fill-antialias": layerConfigs.swell.fillAntialias
+              "fill-antialias": true,
+              // Add blur for smoother edges
+              "fill-pattern": undefined // Ensure no pattern interference
             },
+            layout: {
+              "visibility": "visible"
+            }
           }, beforeId);
+
+          // Add a secondary blur layer for enhanced smoothing
+          mapref.current.addLayer({
+            id: `${layerId}-blur`,
+            type: "fill",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "fill-color": colorExpression,
+              "fill-opacity": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'value'], 0],
+                0, 0.1,
+                5, 0.15,
+                10, 0.2
+              ],
+              "fill-translate": [1, 1],
+              "fill-antialias": true
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          }, layerId);
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
@@ -711,7 +744,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
+    const blurLayerId = `${layerId}-blur`;
 
+    // Remove both main and blur layers for swell
+    if (overlay === 'swell') {
+      if (mapref.current.getLayer(blurLayerId)) {
+        mapref.current.removeLayer(blurLayerId);
+      }
+    }
+    
     if (mapref.current.getLayer(layerId)) {
       mapref.current.removeLayer(layerId);
     }
@@ -767,20 +808,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     if (layerType === 'swell') {
       const colorExpression: any[] = [
         'interpolate',
-        ['linear'],
+        ['exponential', 1.5], // Use exponential interpolation for smoother gradients
         ['to-number', ['get', 'value'], 0]
       ];
 
       config.gradient.forEach((item: any) => {
         const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-        const rgbMatch = item.color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        if (rgbMatch) {
-          const [, r, g, b] = rgbMatch;
-          const colorWithOpacity = `rgba(${r}, ${g}, ${b}, ${item.opacity})`;
-          colorExpression.push(heightValue, colorWithOpacity);
-        } else {
-          colorExpression.push(heightValue, item.color);
-        }
+        colorExpression.push(heightValue, item.color);
       });
 
       updateLayerProperties(layerType, {
