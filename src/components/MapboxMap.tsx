@@ -424,8 +424,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-  // Enhanced wind barb function to match meteorological standards
-  const createStandardWindBarb = (speed: number, unit: string = 'knots') => {
+  // Enhanced meteorological wind barb function
+  const createMeteorologicalWindBarb = (speed: number, direction: number, unit: string = 'knots') => {
     // Convert speed to knots if needed
     let speedKnots = speed;
     if (unit === 'ms') speedKnots = speed * 1.944;
@@ -433,37 +433,50 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     // Calm conditions (0-2 knots) - Circle
     if (speedKnots < 3) {
-      return '○';
+      return {
+        symbol: '○',
+        rotation: 0
+      };
     }
 
     // Light air (3-7 knots) - Staff only
     if (speedKnots < 8) {
-      return '│';
+      return {
+        symbol: '│',
+        rotation: direction
+      };
     }
 
-    let barb = '│'; // Base staff
+    let barb = '';
     let remainingSpeed = Math.round(speedKnots);
     
+    // Build barb from left to right based on meteorological standards
     // Add pennants for every 50 knots (triangular flags)
     const pennants = Math.floor(remainingSpeed / 50);
     for (let i = 0; i < pennants; i++) {
-      barb = '▲' + barb;
+      barb += '◤';
     }
     remainingSpeed = remainingSpeed % 50;
     
     // Add full barbs for every 10 knots
     const fullBarbs = Math.floor(remainingSpeed / 10);
     for (let i = 0; i < fullBarbs; i++) {
-      barb = barb + '━';
+      barb += '━';
     }
     remainingSpeed = remainingSpeed % 10;
     
     // Add half barb for 5-9 knots remainder
     if (remainingSpeed >= 5) {
-      barb = barb + '╸';
+      barb += '╸';
     }
     
-    return barb;
+    // Add the staff
+    barb += '│';
+    
+    return {
+      symbol: barb,
+      rotation: direction
+    };
   };
 
   const handleOverlayClick = async (overlay: string) => {
@@ -556,43 +569,37 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
-          const windBarbExpression = [
-            'case',
-            ['has', 'value'],
-            [
-              'case',
-              ['<', ['to-number', ['get', 'value']], 3], '○',
-              ['<', ['to-number', ['get', 'value']], 8], '│',
-              ['<', ['to-number', ['get', 'value']], 13], '│╸',
-              ['<', ['to-number', ['get', 'value']], 18], '│━',
-              ['<', ['to-number', ['get', 'value']], 23], '│━╸',
-              ['<', ['to-number', ['get', 'value']], 28], '│━━',
-              ['<', ['to-number', ['get', 'value']], 33], '│━━╸',
-              ['<', ['to-number', ['get', 'value']], 38], '│━━━',
-              ['<', ['to-number', ['get', 'value']], 43], '│━━━╸',
-              ['<', ['to-number', ['get', 'value']], 48], '│━━━━',
-              ['<', ['to-number', ['get', 'value']], 53], '│━━━━╸',
-              ['<', ['to-number', ['get', 'value']], 63], '▲│',
-              ['<', ['to-number', ['get', 'value']], 68], '▲│╸',
-              ['<', ['to-number', ['get', 'value']], 73], '▲│━',
-              ['<', ['to-number', ['get', 'value']], 78], '▲│━╸',
-              ['<', ['to-number', ['get', 'value']], 83], '▲│━━',
-              ['<', ['to-number', ['get', 'value']], 88], '▲│━━╸',
-              ['<', ['to-number', ['get', 'value']], 93], '▲│━━━',
-              ['<', ['to-number', ['get', 'value']], 98], '▲│━━━╸',
-              ['<', ['to-number', ['get', 'value']], 103], '▲│━━━━',
-              '▲▲│'
-            ],
-            '│'
-          ];
-
+          // Enhanced meteorological wind barb implementation
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
             source: sourceId,
             "source-layer": sourceLayer,
             layout: {
-              "text-field": windBarbExpression,
+              "text-field": [
+                "case",
+                ["<", ["to-number", ["get", "value"], 0], 3], "○",
+                ["<", ["to-number", ["get", "value"], 0], 8], "│",
+                ["<", ["to-number", ["get", "value"], 0], 13], "╸│",
+                ["<", ["to-number", ["get", "value"], 0], 18], "━│",
+                ["<", ["to-number", ["get", "value"], 0], 23], "━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 28], "━━│",
+                ["<", ["to-number", ["get", "value"], 0], 33], "━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 38], "━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 43], "━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 48], "━━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 53], "━━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 63], "◤│",
+                ["<", ["to-number", ["get", "value"], 0], 68], "◤╸│",
+                ["<", ["to-number", ["get", "value"], 0], 73], "◤━│",
+                ["<", ["to-number", ["get", "value"], 0], 78], "◤━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 83], "◤━━│",
+                ["<", ["to-number", ["get", "value"], 0], 88], "◤━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 93], "◤━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 98], "◤━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 103], "◤━━━━│",
+                "◤◤│"
+              ],
               "text-size": layerConfigs.wind.textSize,
               "text-rotation-alignment": "map",
               "text-rotate": [
@@ -606,7 +613,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-allow-overlap": layerConfigs.wind.allowOverlap,
               "text-ignore-placement": true,
               "symbol-spacing": layerConfigs.wind.symbolSpacing,
-              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"]
+              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+              "text-anchor": "bottom"
             },
             paint: {
               "text-color": layerConfigs.wind.textColor,
@@ -1194,30 +1202,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               </Select>
             </div>
 
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Barb Style</Label>
-              <Select 
-                value={config.barbStyle} 
-                onValueChange={(value) => updateConfigValue('wind', 'barbStyle', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full">Full Barbs</SelectItem>
-                  <SelectItem value="half">Half Barbs</SelectItem>
-                  <SelectItem value="pennant">Pennant Style</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
-              <div className="font-semibold mb-1">Wind Barb Legend:</div>
+              <div className="font-semibold mb-1">Meteorological Wind Barb Legend:</div>
               <div>○ = Calm (0-2 kts)</div>
               <div>│ = Light air (3-7 kts)</div>
-              <div>│╸ = Half barb (5 kts)</div>
-              <div>│━ = Full barb (10 kts)</div>
-              <div>▲ = Pennant (50 kts)</div>
+              <div>╸│ = Half barb (5 kts)</div>
+              <div>━│ = Full barb (10 kts)</div>
+              <div>◤│ = Pennant (50 kts)</div>
+              <div className="mt-1 text-xs text-blue-600">
+                Wind direction: Points toward where wind is blowing
+              </div>
             </div>
           </>
         )}
