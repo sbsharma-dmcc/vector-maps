@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Save } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Save, ChevronDown, ChevronUp } from 'lucide-react';
 import MapTopControls from './MapTopControls';
 import { getValidDTNToken } from '@/utils/dtnTokenManager';
 
@@ -41,6 +42,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -213,26 +215,31 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   }, [activeLayers, isMapLoaded]);
 
   const fetchDTNSourceLayer = async (layerId: string) => {
-    const token = await getValidDTNToken();
-    const authToken = token.replace('Bearer ', '');
-    
-    console.log(`Fetching source layer for: ${layerId} with token: ${authToken.substring(0, 20)}...`);
-    
-    const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
-      headers: {
-        Authorization: token,
-        Accept: "application/json",
-      },
-    });
+    try {
+      const token = await getValidDTNToken();
+      const authToken = token.replace('Bearer ', '');
+      
+      console.log(`Fetching source layer for: ${layerId} with token: ${authToken.substring(0, 20)}...`);
+      
+      const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
+        headers: {
+          Authorization: token,
+          Accept: "application/json",
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch source layer: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch source layer: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
+      console.log(`Source layer found: ${sourceLayerName}`);
+      return sourceLayerName;
+    } catch (error) {
+      console.error('Error fetching DTN source layer:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
-    console.log(`Source layer found: ${sourceLayerName}`);
-    return sourceLayerName;
   };
 
   // Enhanced layer update functions
@@ -1213,47 +1220,54 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         </div>
       )}
 
-      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[360px] max-h-[80vh] overflow-y-auto">
-        <h3 className="text-sm font-semibold mb-3">Weather Layer Configuration</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <Label className="block text-xs font-medium text-gray-700 mb-1">
-              Weather Type
-            </Label>
-            <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select weather type" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border shadow-lg z-50">
-                <SelectItem value="wind">Wind Barbs</SelectItem>
-                <SelectItem value="pressure">Pressure</SelectItem>
-                <SelectItem value="swell">Swell (Filled)</SelectItem>
-                <SelectItem value="symbol">Symbol</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {renderConfigurationPanel()}
-
-          <Button 
-            onClick={applyLayerConfiguration}
-            className="w-full"
-            size="sm"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Apply Configuration
-          </Button>
-
-          <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
-            <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
-            {activeOverlays.map(layer => (
-              <div key={layer} className="text-xs capitalize">
-                • {layer}
+      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg min-w-[360px] max-h-[80vh] overflow-hidden">
+        <Collapsible open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+          <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+            <h3 className="text-sm font-semibold">Weather Layer Configuration</h3>
+            {isConfigOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="overflow-y-auto max-h-[calc(80vh-60px)]">
+            <div className="p-4 pt-0 space-y-4">
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Weather Type
+                </Label>
+                <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select weather type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border shadow-lg z-50">
+                    <SelectItem value="wind">Wind Barbs</SelectItem>
+                    <SelectItem value="pressure">Pressure</SelectItem>
+                    <SelectItem value="swell">Swell (Filled)</SelectItem>
+                    <SelectItem value="symbol">Symbol</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-          </div>
-        </div>
+
+              {renderConfigurationPanel()}
+
+              <Button 
+                onClick={applyLayerConfiguration}
+                className="w-full"
+                size="sm"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Apply Configuration
+              </Button>
+
+              <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
+                <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
+                {activeOverlays.map(layer => (
+                  <div key={layer} className="text-xs capitalize">
+                    • {layer}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );
