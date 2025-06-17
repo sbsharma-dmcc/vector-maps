@@ -1,7 +1,9 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Route, History, Ship, Search, Plus } from "lucide-react";
+import { LayoutDashboard, Route, History, Ship, Search, Plus, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import DirectTokenInput from "./DirectTokenInput";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +23,7 @@ const navigationItems = [
 const AppSidebar = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const [showTokenInput, setShowTokenInput] = useState(false);
 
   // Helper function
   const isActive = (path: string) => 
@@ -61,6 +64,18 @@ const AppSidebar = () => {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
+
+              <div className="mt-4">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="w-full bg-white"
+                  onClick={() => setShowTokenInput(!showTokenInput)}
+                  title="DTN Token"
+                >
+                  <Key className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -71,6 +86,8 @@ const AppSidebar = () => {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      {showTokenInput && <DirectTokenInput />}
     </Sidebar>
   );
 };
