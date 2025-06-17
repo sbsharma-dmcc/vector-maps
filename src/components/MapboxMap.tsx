@@ -12,7 +12,6 @@ import { Lock, Unlock, Save, Trash2 } from 'lucide-react';
 import MapTopControls from './MapTopControls';
 import { dtnToken } from '@/utils/mapConstants';
 import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
-import WeatherConfigDrafts from './WeatherConfigDrafts';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -25,14 +24,6 @@ interface MapboxMapProps {
   activeRouteType?: 'base' | 'weather';
   activeLayers?: Record<string, boolean>;
   activeBaseLayer?: string;
-}
-
-interface WeatherLayerDraft {
-  id: string;
-  name: string;
-  weatherType: string;
-  config: any;
-  createdAt: string;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -52,8 +43,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
-  const [selectedDraft, setSelectedDraft] = useState<string>('');
-  const [weatherDrafts, setWeatherDrafts] = useState<WeatherLayerDraft[]>([]);
   const [swellConfigLocked, setSwellConfigLocked] = useState(false);
   
   // Enhanced configuration state for each layer type
@@ -70,13 +59,25 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       speedUnit: 'knots'
     },
     pressure: {
-      lineColor: '#ff6b35',
-      lineWidth: 1,
-      lineOpacity: 0.6,
-      lineCap: 'round',
-      lineJoin: 'round',
-      lineBlur: 0,
-      lineGapWidth: 0
+      fillOpacity: 0.7,
+      fillOutlineColor: 'transparent',
+      gradient: [
+        { value: '980mb', color: 'rgba(128, 0, 128, 0.8)', opacity: 0.8 },     // Purple - very low pressure
+        { value: '990mb', color: 'rgba(0, 0, 255, 0.7)', opacity: 0.7 },       // Blue - low pressure
+        { value: '1000mb', color: 'rgba(0, 128, 255, 0.6)', opacity: 0.6 },    // Light blue
+        { value: '1010mb', color: 'rgba(0, 255, 255, 0.5)', opacity: 0.5 },    // Cyan
+        { value: '1013mb', color: 'rgba(128, 255, 128, 0.4)', opacity: 0.4 },  // Light green - standard pressure
+        { value: '1020mb', color: 'rgba(255, 255, 0, 0.5)', opacity: 0.5 },    // Yellow
+        { value: '1030mb', color: 'rgba(255, 128, 0, 0.6)', opacity: 0.6 },    // Orange
+        { value: '1040mb', color: 'rgba(255, 0, 0, 0.7)', opacity: 0.7 },      // Red - high pressure
+        { value: '1050mb+', color: 'rgba(128, 0, 0, 0.8)', opacity: 0.8 }      // Dark red - very high pressure
+      ],
+      smoothing: true,
+      blurRadius: 3,
+      contourLines: true,
+      contourColor: '#333333',
+      contourWidth: 1,
+      contourOpacity: 0.4
     },
     swell: {
       fillOpacity: 0.9,
@@ -126,23 +127,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   });
 
   const { toast } = useToast();
-
-  // Load weather drafts from localStorage on component mount
-  useEffect(() => {
-    const savedDrafts = localStorage.getItem('weatherLayerDrafts');
-    if (savedDrafts) {
-      try {
-        setWeatherDrafts(JSON.parse(savedDrafts));
-      } catch (error) {
-        console.error('Error loading weather drafts:', error);
-      }
-    }
-  }, []);
-
-  // Save weather drafts to localStorage whenever drafts change
-  useEffect(() => {
-    localStorage.setItem('weatherLayerDrafts', JSON.stringify(weatherDrafts));
-  }, [weatherDrafts]);
 
   const [currentDTNToken, setCurrentDTNToken] = useState<string>('');
 
@@ -196,82 +180,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'circle-4', name: 'Circle Vessel 4', type: 'circle', position: [86.8, 19.2] },
     { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] },
   ];
-
-  // Get the next available draft number for a weather type
-  const getNextDraftNumber = (weatherType: string) => {
-    const existingDrafts = weatherDrafts.filter(draft => draft.weatherType === weatherType);
-    const numbers = existingDrafts.map(draft => {
-      const match = draft.name.match(/Draft (\d+)/);
-      return match ? parseInt(match[1]) : 0;
-    });
-    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
-    return maxNumber + 1;
-  };
-
-  // Save current configuration as a draft
-  const saveConfigurationAsDraft = () => {
-    const currentConfig = layerConfigs[selectedWeatherType];
-    const draftNumber = getNextDraftNumber(selectedWeatherType);
-    
-    const newDraft: WeatherLayerDraft = {
-      id: `${selectedWeatherType}-${Date.now()}`,
-      name: `Draft ${draftNumber}`,
-      weatherType: selectedWeatherType,
-      config: JSON.parse(JSON.stringify(currentConfig)),
-      createdAt: new Date().toISOString()
-    };
-
-    setWeatherDrafts(prev => [...prev, newDraft]);
-    
-    toast({
-      title: "Configuration Saved",
-      description: `${selectedWeatherType} configuration saved as ${newDraft.name}`
-    });
-  };
-
-  // Load a draft configuration
-  const loadDraft = (draftId: string) => {
-    const draft = weatherDrafts.find(d => d.id === draftId);
-    if (draft) {
-      setLayerConfigs(prev => ({
-        ...prev,
-        [draft.weatherType]: draft.config
-      }));
-      
-      // Apply the configuration if the layer is active
-      if (activeOverlays.includes(draft.weatherType)) {
-        applySpecificLayerConfiguration(draft.weatherType, draft.config);
-      }
-      
-      setSelectedDraft(draftId);
-      
-      toast({
-        title: "Draft Loaded",
-        description: `${draft.weatherType} ${draft.name} has been loaded`
-      });
-    }
-  };
-
-  // Delete a draft
-  const deleteDraft = (draftId: string) => {
-    const draft = weatherDrafts.find(d => d.id === draftId);
-    if (draft) {
-      setWeatherDrafts(prev => prev.filter(d => d.id !== draftId));
-      if (selectedDraft === draftId) {
-        setSelectedDraft('');
-      }
-      
-      toast({
-        title: "Draft Deleted",
-        description: `${draft.weatherType} ${draft.name} has been deleted`
-      });
-    }
-  };
-
-  // Get drafts for the currently selected weather type
-  const getCurrentWeatherTypeDrafts = () => {
-    return weatherDrafts.filter(draft => draft.weatherType === selectedWeatherType);
-  };
 
   // Function to get symbol based on type
   const getSymbolByType = (symbolType: string, customSymbol?: string) => {
@@ -364,11 +272,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   }, [activeLayers, isMapLoaded]);
 
-  // Clear selected draft when weather type changes
-  useEffect(() => {
-    setSelectedDraft('');
-  }, [selectedWeatherType]);
-
   const fetchDTNSourceLayer = async (layerId: string, token?: string) => {
     const authToken = token || currentDTNToken;
     const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
@@ -451,61 +354,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-  // Enhanced meteorological wind barb function
-  const createMeteorologicalWindBarb = (speed: number, direction: number, unit: string = 'knots') => {
-    // Convert speed to knots if needed
-    let speedKnots = speed;
-    if (unit === 'ms') speedKnots = speed * 1.944;
-    if (unit === 'kmh') speedKnots = speed * 0.54;
-
-    // Calm conditions (0-2 knots) - Circle
-    if (speedKnots < 3) {
-      return {
-        symbol: '○',
-        rotation: 0
-      };
-    }
-
-    // Light air (3-7 knots) - Staff only
-    if (speedKnots < 8) {
-      return {
-        symbol: '│',
-        rotation: direction
-      };
-    }
-
-    let barb = '';
-    let remainingSpeed = Math.round(speedKnots);
-    
-    // Build barb from left to right based on meteorological standards
-    // Add pennants for every 50 knots (triangular flags)
-    const pennants = Math.floor(remainingSpeed / 50);
-    for (let i = 0; i < pennants; i++) {
-      barb += '◤';
-    }
-    remainingSpeed = remainingSpeed % 50;
-    
-    // Add full barbs for every 10 knots
-    const fullBarbs = Math.floor(remainingSpeed / 10);
-    for (let i = 0; i < fullBarbs; i++) {
-      barb += '━';
-    }
-    remainingSpeed = remainingSpeed % 10;
-    
-    // Add half barb for 5-9 knots remainder
-    if (remainingSpeed >= 5) {
-      barb += '╸';
-    }
-    
-    // Add the staff
-    barb += '│';
-    
-    return {
-      symbol: barb,
-      rotation: direction
-    };
-  };
-
   const handleOverlayClick = async (overlay: string) => {
     console.log(`Attempting to add overlay: ${overlay}`);
     
@@ -578,11 +426,93 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
         let beforeId = undefined;
 
-        if (overlay === 'swell') {
-          // Enhanced color expression with smoother transitions
+        if (overlay === 'pressure') {
+          // Enhanced pressure gradient implementation
           const colorExpression: any[] = [
             'interpolate',
-            ['exponential', 1.5], // Use exponential interpolation for smoother gradients
+            ['exponential', 1.5],
+            ['to-number', ['get', 'value'], 1013]
+          ];
+
+          layerConfigs.pressure.gradient.forEach((item) => {
+            const pressureValue = parseFloat(item.value.replace('mb', '').replace('+', ''));
+            colorExpression.push(pressureValue, item.color);
+          });
+
+          // Main pressure fill layer with gradient
+          mapref.current.addLayer({
+            id: layerId,
+            type: "fill",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "fill-color": colorExpression,
+              "fill-opacity": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                2, 0.3,
+                6, layerConfigs.pressure.fillOpacity,
+                14, layerConfigs.pressure.fillOpacity * 1.1
+              ],
+              "fill-outline-color": layerConfigs.pressure.fillOutlineColor,
+              "fill-antialias": true
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          }, beforeId);
+
+          // Add pressure contour lines if enabled
+          if (layerConfigs.pressure.contourLines) {
+            mapref.current.addLayer({
+              id: `${layerId}-contours`,
+              type: "line",
+              source: sourceId,
+              "source-layer": sourceLayer,
+              paint: {
+                "line-color": layerConfigs.pressure.contourColor,
+                "line-width": layerConfigs.pressure.contourWidth,
+                "line-opacity": layerConfigs.pressure.contourOpacity,
+                "line-blur": 0.5
+              },
+              layout: {
+                "line-cap": "round",
+                "line-join": "round",
+                "visibility": "visible"
+              }
+            }, layerId);
+          }
+
+          // Add pressure blur layer for enhanced smoothing
+          if (layerConfigs.pressure.smoothing) {
+            mapref.current.addLayer({
+              id: `${layerId}-blur`,
+              type: "fill",
+              source: sourceId,
+              "source-layer": sourceLayer,
+              paint: {
+                "fill-color": colorExpression,
+                "fill-opacity": [
+                  'interpolate',
+                  ['linear'],
+                  ['to-number', ['get', 'value'], 1013],
+                  980, 0.1,
+                  1013, 0.05,
+                  1050, 0.1
+                ],
+                "fill-translate": [layerConfigs.pressure.blurRadius, layerConfigs.pressure.blurRadius],
+                "fill-antialias": true
+              },
+              layout: {
+                "visibility": "visible"
+              }
+            }, layerId);
+          }
+        } else if (overlay === 'swell') {
+          const colorExpression: any[] = [
+            'interpolate',
+            ['exponential', 1.5],
             ['to-number', ['get', 'value'], 0]
           ];
 
@@ -602,7 +532,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                2, 0.4,  // Lower opacity at far zoom levels
+                2, 0.4,
                 6, layerConfigs.swell.fillOpacity,
                 14, layerConfigs.swell.fillOpacity * 1.1
               ],
@@ -619,7 +549,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             }
           }, beforeId);
 
-          // Add a secondary blur layer for enhanced smoothing
           mapref.current.addLayer({
             id: `${layerId}-blur`,
             type: "fill",
@@ -645,7 +574,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
-          // Enhanced meteorological wind barb implementation
           mapref.current.addLayer({
             id: layerId,
             type: "symbol",
@@ -731,24 +659,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-halo-width": symbolConfig.haloWidth
             },
           }, beforeId);
-        } else {
-          mapref.current.addLayer({
-            id: layerId,
-            type: "line",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            layout: {
-              "line-cap": layerConfigs.pressure.lineCap,
-              "line-join": layerConfigs.pressure.lineJoin,
-            },
-            paint: {
-              "line-color": layerConfigs.pressure.lineColor,
-              "line-width": layerConfigs.pressure.lineWidth,
-              "line-opacity": layerConfigs.pressure.lineOpacity,
-              "line-blur": layerConfigs.pressure.lineBlur,
-              "line-gap-width": layerConfigs.pressure.lineGapWidth
-            },
-          }, beforeId);
         }
 
         ensureVesselsOnTop();
@@ -774,7 +684,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         response: error.response
       });
       
-      // If it's a 401 error, try to refresh the token
       if (error.message?.includes('401') || error.status === 401) {
         console.log('401 error detected, attempting to refresh token...');
         try {
@@ -810,14 +719,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
     const blurLayerId = `${layerId}-blur`;
+    const contourLayerId = `${layerId}-contours`;
 
-    // Remove both main and blur layers for swell
-    if (overlay === 'swell') {
-      if (mapref.current.getLayer(blurLayerId)) {
-        mapref.current.removeLayer(blurLayerId);
-      }
+    // Remove all related layers
+    if (mapref.current.getLayer(contourLayerId)) {
+      mapref.current.removeLayer(contourLayerId);
     }
-    
+    if (mapref.current.getLayer(blurLayerId)) {
+      mapref.current.removeLayer(blurLayerId);
+    }
     if (mapref.current.getLayer(layerId)) {
       mapref.current.removeLayer(layerId);
     }
@@ -851,29 +761,39 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }));
   };
 
-  // Function to load configuration from drafts
-  const loadConfigFromDraft = (config: any) => {
-    setLayerConfigs(config);
+  const applyLayerConfiguration = () => {
+    const config = layerConfigs[selectedWeatherType];
     
-    // Apply all configurations that are currently active
-    Object.keys(config).forEach(layerType => {
-      if (activeOverlays.includes(layerType)) {
-        applySpecificLayerConfiguration(layerType, config[layerType]);
-      }
-    });
-
-    toast({
-      title: "Configuration Loaded",
-      description: "Weather layer configuration has been loaded from draft"
-    });
-  };
-
-  // Enhanced function to apply specific layer configuration
-  const applySpecificLayerConfiguration = (layerType: string, config: any) => {
-    if (layerType === 'swell') {
+    if (selectedWeatherType === 'pressure') {
       const colorExpression: any[] = [
         'interpolate',
-        ['exponential', 1.5], // Use exponential interpolation for smoother gradients
+        ['exponential', 1.5],
+        ['to-number', ['get', 'value'], 1013]
+      ];
+
+      config.gradient.forEach((item: any) => {
+        const pressureValue = parseFloat(item.value.replace('mb', '').replace('+', ''));
+        colorExpression.push(pressureValue, item.color);
+      });
+
+      updateLayerProperties(selectedWeatherType, {
+        'fill-color': colorExpression,
+        'fill-opacity': config.fillOpacity,
+        'fill-outline-color': config.fillOutlineColor,
+        'fill-antialias': true
+      });
+
+      // Update contour lines if they exist
+      const contourLayerId = `dtn-layer-${selectedWeatherType}-contours`;
+      if (mapref.current && mapref.current.getLayer(contourLayerId)) {
+        mapref.current.setPaintProperty(contourLayerId, 'line-color', config.contourColor);
+        mapref.current.setPaintProperty(contourLayerId, 'line-width', config.contourWidth);
+        mapref.current.setPaintProperty(contourLayerId, 'line-opacity', config.contourOpacity);
+      }
+    } else if (selectedWeatherType === 'swell') {
+      const colorExpression: any[] = [
+        'interpolate',
+        ['exponential', 1.5],
         ['to-number', ['get', 'value'], 0]
       ];
 
@@ -882,49 +802,36 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         colorExpression.push(heightValue, item.color);
       });
 
-      updateLayerProperties(layerType, {
+      updateLayerProperties(selectedWeatherType, {
         'fill-color': colorExpression,
-        'fill-opacity': layerConfigs.swell.fillOpacity,
+        'fill-opacity': config.fillOpacity,
         'fill-outline-color': config.fillOutlineColor,
         'fill-antialias': config.fillAntialias
       });
-    } else if (layerType === 'pressure') {
-      updateLayerProperties(layerType, {
-        'line-color': config.lineColor,
-        'line-width': config.lineWidth,
-        'line-opacity': config.lineOpacity,
-        'line-blur': config.lineBlur,
-        'line-gap-width': config.lineGapWidth
-      });
-      
-      updateLayoutProperties(layerType, {
-        'line-cap': config.lineCap,
-        'line-join': config.lineJoin
-      });
-    } else if (layerType === 'wind') {
-      updateLayerProperties(layerType, {
+    } else if (selectedWeatherType === 'wind') {
+      updateLayerProperties(selectedWeatherType, {
         'text-color': config.textColor,
         'text-opacity': config.textOpacity,
         'text-halo-color': config.haloColor,
         'text-halo-width': config.haloWidth
       });
       
-      updateLayoutProperties(layerType, {
+      updateLayoutProperties(selectedWeatherType, {
         'text-size': config.textSize,
         'text-allow-overlap': config.allowOverlap,
         'symbol-spacing': config.symbolSpacing
       });
-    } else if (layerType === 'symbol') {
+    } else if (selectedWeatherType === 'symbol') {
       const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
       
-      updateLayerProperties(layerType, {
+      updateLayerProperties(selectedWeatherType, {
         'text-color': config.textColor,
         'text-opacity': config.textOpacity,
         'text-halo-color': config.haloColor,
         'text-halo-width': config.haloWidth
       });
       
-      updateLayoutProperties(layerType, {
+      updateLayoutProperties(selectedWeatherType, {
         'text-size': config.textSize,
         'text-allow-overlap': config.allowOverlap,
         'symbol-spacing': config.symbolSpacing,
@@ -932,19 +839,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'text-field': symbolText
       });
     }
-  };
-
-  // Update the existing applyLayerConfiguration function
-  const applyLayerConfiguration = () => {
-    const config = layerConfigs[selectedWeatherType];
-    applySpecificLayerConfiguration(selectedWeatherType, config);
-
-    // Automatically save as draft after applying
-    saveConfigurationAsDraft();
 
     toast({
       title: "Configuration Applied",
-      description: `${selectedWeatherType} layer configuration updated and saved as draft`
+      description: `${selectedWeatherType} layer configuration updated`
     });
   };
 
@@ -975,6 +873,143 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return (
       <div className="space-y-4">
+        {selectedWeatherType === 'pressure' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-sm font-medium text-gray-700">Pressure Configuration</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.fillOpacity]}
+                  onValueChange={([value]) => updateConfigValue('pressure', 'fillOpacity', value)}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.fillOpacity}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Outline Color</Label>
+              <Input
+                type="color"
+                value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
+                onChange={(e) => updateConfigValue('pressure', 'fillOutlineColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.contourLines}
+                onCheckedChange={(checked) => updateConfigValue('pressure', 'contourLines', checked)}
+              />
+              <Label className="text-xs">Show Contour Lines</Label>
+            </div>
+
+            {config.contourLines && (
+              <>
+                <div>
+                  <Label className="text-xs font-medium text-gray-700">Contour Color</Label>
+                  <Input
+                    type="color"
+                    value={config.contourColor}
+                    onChange={(e) => updateConfigValue('pressure', 'contourColor', e.target.value)}
+                    className="w-full h-8"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-gray-700">Contour Width</Label>
+                  <Slider
+                    value={[config.contourWidth]}
+                    onValueChange={([value]) => updateConfigValue('pressure', 'contourWidth', value)}
+                    min={0.5}
+                    max={5}
+                    step={0.5}
+                    className="flex-1"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-gray-700">Contour Opacity</Label>
+                  <Slider
+                    value={[config.contourOpacity]}
+                    onValueChange={([value]) => updateConfigValue('pressure', 'contourOpacity', value)}
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    className="flex-1"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.smoothing}
+                onCheckedChange={(checked) => updateConfigValue('pressure', 'smoothing', checked)}
+              />
+              <Label className="text-xs">Enhanced Smoothing</Label>
+            </div>
+
+            {config.smoothing && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Blur Radius</Label>
+                <Slider
+                  value={[config.blurRadius]}
+                  onValueChange={([value]) => updateConfigValue('pressure', 'blurRadius', value)}
+                  min={0}
+                  max={10}
+                  step={1}
+                  className="flex-1"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-2">Pressure Gradient (980mb to 1050mb+)</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {config.gradient.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 border rounded bg-white">
+                    <Input
+                      type="color"
+                      value={convertRgbToHex(item.color)}
+                      onChange={(e) => {
+                        const newGradient = [...config.gradient];
+                        newGradient[index].color = convertHexToRgb(e.target.value);
+                        updateConfigValue('pressure', 'gradient', newGradient);
+                      }}
+                      className="w-10 h-8 p-0 border-2"
+                    />
+                    <span className="text-xs w-16 font-medium text-gray-700">{item.value}</span>
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-600 mb-1 block">Opacity: {item.opacity.toFixed(1)}</Label>
+                      <Slider
+                        value={[item.opacity]}
+                        onValueChange={([value]) => {
+                          const newGradient = [...config.gradient];
+                          newGradient[index].opacity = value;
+                          updateConfigValue('pressure', 'gradient', newGradient);
+                        }}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
         {selectedWeatherType === 'swell' && (
           <>
             <div className="flex items-center justify-between mb-4">
@@ -1106,102 +1141,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   <strong>Tip:</strong> Click the color boxes to change wave height colors and adjust the sliders to modify individual opacity for each height range.
                 </div>
               )}
-            </div>
-          </>
-        )}
-
-        {selectedWeatherType === 'pressure' && (
-          <>
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Line Color</Label>
-              <Input
-                type="color"
-                value={config.lineColor}
-                onChange={(e) => updateConfigValue('pressure', 'lineColor', e.target.value)}
-                className="w-full h-8"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Line Width</Label>
-              <Slider
-                value={[config.lineWidth]}
-                onValueChange={([value]) => updateConfigValue('pressure', 'lineWidth', value)}
-                min={0.5}
-                max={10}
-                step={0.5}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Line Opacity</Label>
-              <Slider
-                value={[config.lineOpacity]}
-                onValueChange={([value]) => updateConfigValue('pressure', 'lineOpacity', value)}
-                min={0}
-                max={1}
-                step={0.1}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Line Blur</Label>
-              <Slider
-                value={[config.lineBlur]}
-                onValueChange={([value]) => updateConfigValue('pressure', 'lineBlur', value)}
-                min={0}
-                max={5}
-                step={0.5}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Line Gap Width</Label>
-              <Slider
-                value={[config.lineGapWidth]}
-                onValueChange={([value]) => updateConfigValue('pressure', 'lineGapWidth', value)}
-                min={0}
-                max={10}
-                step={1}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Line Cap</Label>
-              <Select 
-                value={config.lineCap} 
-                onValueChange={(value) => updateConfigValue('pressure', 'lineCap', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="butt">Butt</SelectItem>
-                  <SelectItem value="round">Round</SelectItem>
-                  <SelectItem value="square">Square</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Line Join</Label>
-              <Select 
-                value={config.lineJoin} 
-                onValueChange={(value) => updateConfigValue('pressure', 'lineJoin', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bevel">Bevel</SelectItem>
-                  <SelectItem value="round">Round</SelectItem>
-                  <SelectItem value="miter">Miter</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </>
         )}
@@ -1509,49 +1448,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </Select>
           </div>
 
-          {/* Draft Selection */}
-          {getCurrentWeatherTypeDrafts().length > 0 && (
-            <div>
-              <Label className="block text-xs font-medium text-gray-700 mb-1">
-                Load Draft
-              </Label>
-              <div className="flex gap-2">
-                <Select value={selectedDraft} onValueChange={loadDraft}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select a draft" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border shadow-lg z-50">
-                    {getCurrentWeatherTypeDrafts().map((draft) => (
-                      <SelectItem key={draft.id} value={draft.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{draft.name}</span>
-                          <span className="text-xs text-gray-400">
-                            {new Date(draft.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedDraft && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => deleteDraft(selectedDraft)}
-                    className="p-2"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                )}
-              </div>
-              {getCurrentWeatherTypeDrafts().length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {getCurrentWeatherTypeDrafts().length} draft(s) available for {selectedWeatherType}
-                </p>
-              )}
-            </div>
-          )}
-
           {renderConfigurationPanel()}
 
           <Button 
@@ -1560,14 +1456,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             size="sm"
           >
             <Save className="h-4 w-4 mr-2" />
-            Apply & Save as Draft
+            Apply Configuration
           </Button>
-
-          {/* Add the Weather Config Drafts component */}
-          <WeatherConfigDrafts
-            currentConfig={layerConfigs}
-            onLoadConfig={loadConfigFromDraft}
-          />
 
           <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
             <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
