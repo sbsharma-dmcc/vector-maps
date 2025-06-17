@@ -2,14 +2,6 @@ import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Save, ChevronDown, ChevronUp } from 'lucide-react';
 import MapTopControls from './MapTopControls';
 import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
@@ -42,8 +34,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -59,27 +49,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       speedUnit: 'knots'
     },
     pressure: {
-      fillOpacity: 0.8,
-      fillOutlineColor: 'transparent',
-      gradient: [
-        { value: '980mb', color: 'rgba(128, 0, 128, 0.9)', opacity: 0.9 },
-        { value: '990mb', color: 'rgba(0, 0, 255, 0.8)', opacity: 0.8 },
-        { value: '1000mb', color: 'rgba(0, 128, 255, 0.7)', opacity: 0.7 },
-        { value: '1010mb', color: 'rgba(0, 255, 255, 0.6)', opacity: 0.6 },
-        { value: '1013mb', color: 'rgba(128, 255, 128, 0.5)', opacity: 0.5 },
-        { value: '1020mb', color: 'rgba(255, 255, 0, 0.6)', opacity: 0.6 },
-        { value: '1030mb', color: 'rgba(255, 128, 0, 0.7)', opacity: 0.7 },
-        { value: '1040mb', color: 'rgba(255, 0, 0, 0.8)', opacity: 0.8 },
-        { value: '1050mb+', color: 'rgba(128, 0, 0, 0.9)', opacity: 0.9 }
-      ],
-      smoothing: true,
-      blurRadius: 20,
-      contourLines: false,
-      contourColor: '#333333',
       contourWidth: 1,
-      contourOpacity: 0.4,
-      heatmapIntensity: 2.5,
-      heatmapRadius: 25
+      contourOpacity: 0.8,
+      highPressureColor: '#ff0000',
+      mediumPressureColor: '#80ff80',
+      lowPressureColor: '#800080'
     },
     swell: {
       fillOpacity: 0.9,
@@ -138,23 +112,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     'pressure-gradient': { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-gradient', tileSetId: '3fca4d12-8e9a-4c15-9876-1a2b3c4d5e6f' },
   };
 
-  // Function to get symbol based on type
-  const getSymbolByType = (symbolType: string, customSymbol?: string) => {
-    switch (symbolType) {
-      case 'arrow':
-        return '→';
-      case 'triangle':
-        return '▲';
-      case 'circle':
-        return '●';
-      case 'square':
-        return '■';
-      case 'custom':
-        return customSymbol || '→';
-      default:
-        return '→';
-    }
-  };
+  // Listen for configuration updates from sidebar
+  useEffect(() => {
+    const handleConfigUpdate = (event: CustomEvent) => {
+      const { layerType, config } = event.detail;
+      setLayerConfigs(prev => ({
+        ...prev,
+        [layerType]: config
+      }));
+      applyLayerConfiguration(layerType, config);
+    };
+
+    window.addEventListener('weatherConfigUpdate', handleConfigUpdate);
+    return () => {
+      window.removeEventListener('weatherConfigUpdate', handleConfigUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     if (mapref.current) return;
@@ -306,6 +279,94 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
+  // Enhanced configuration application
+  const applyLayerConfiguration = (layerType: string, config: any) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    if (layerType === 'pressure') {
+      updateLayerProperties(layerType, {
+        'line-width': config.contourWidth || 1,
+        'line-opacity': config.contourOpacity || 0.8,
+        'line-color': [
+          'interpolate',
+          ['linear'],
+          ['to-number', ['get', 'value'], 1013],
+          980, config.lowPressureColor,
+          1000, config.lowPressureColor,
+          1013, config.mediumPressureColor,
+          1030, config.highPressureColor,
+          1050, config.highPressureColor
+        ]
+      });
+    } else if (layerType === 'wind') {
+      updateLayerProperties(layerType, {
+        'text-color': config.textColor,
+        'text-opacity': config.textOpacity,
+        'text-halo-color': config.haloColor,
+        'text-halo-width': config.haloWidth
+      });
+      
+      updateLayoutProperties(layerType, {
+        'text-size': config.textSize,
+        'text-allow-overlap': config.allowOverlap,
+        'symbol-spacing': config.symbolSpacing
+      });
+    } else if (layerType === 'swell') {
+      const colorExpression: any[] = [
+        'interpolate',
+        ['exponential', 1.5],
+        ['to-number', ['get', 'value'], 0]
+      ];
+
+      config.gradient.forEach((item: any) => {
+        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+        colorExpression.push(heightValue, item.color);
+      });
+
+      updateLayerProperties(layerType, {
+        'fill-color': colorExpression,
+        'fill-opacity': config.fillOpacity,
+        'fill-outline-color': config.fillOutlineColor,
+        'fill-antialias': config.fillAntialias
+      });
+    } else if (layerType === 'symbol') {
+      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
+      
+      updateLayerProperties(layerType, {
+        'text-color': config.textColor,
+        'text-opacity': config.textOpacity,
+        'text-halo-color': config.haloColor,
+        'text-halo-width': config.haloWidth
+      });
+      
+      updateLayoutProperties(layerType, {
+        'text-size': config.textSize,
+        'text-allow-overlap': config.allowOverlap,
+        'symbol-spacing': config.symbolSpacing,
+        'text-rotation-alignment': config.rotationAlignment,
+        'text-field': symbolText
+      });
+    }
+  };
+
+  // Function to get symbol based on type
+  const getSymbolByType = (symbolType: string, customSymbol?: string) => {
+    switch (symbolType) {
+      case 'arrow':
+        return '→';
+      case 'triangle':
+        return '▲';
+      case 'circle':
+        return '●';
+      case 'square':
+        return '■';
+      case 'custom':
+        return customSymbol || '→';
+      default:
+        return '→';
+    }
+  };
+
   const handleOverlayClick = async (overlay: string) => {
     console.log(`Attempting to add overlay: ${overlay}`);
     
@@ -352,7 +413,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'pressure') {
-          // Create pressure contour lines
+          const config = layerConfigs.pressure;
+          // Create pressure contour lines with configurable colors
           mapref.current.addLayer({
             id: layerId,
             type: "line",
@@ -363,26 +425,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 'interpolate',
                 ['linear'],
                 ['to-number', ['get', 'value'], 1013],
-                980, '#800080',    // Purple for low pressure
-                990, '#0000ff',    // Blue
-                1000, '#0080ff',   // Light blue
-                1010, '#00ffff',   // Cyan
-                1013, '#80ff80',   // Light green (standard pressure)
-                1020, '#ffff00',   // Yellow
-                1030, '#ff8000',   // Orange
-                1040, '#ff0000',   // Red
-                1050, '#800000'    // Dark red for high pressure
+                980, config.lowPressureColor,
+                1000, config.lowPressureColor,
+                1013, config.mediumPressureColor,
+                1030, config.highPressureColor,
+                1050, config.highPressureColor
               ],
               "line-width": [
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                0, layerConfigs.pressure.contourWidth || 1,
-                6, (layerConfigs.pressure.contourWidth || 1) * 1.5,
-                10, (layerConfigs.pressure.contourWidth || 1) * 2,
-                14, (layerConfigs.pressure.contourWidth || 1) * 3
+                0, config.contourWidth,
+                6, config.contourWidth * 1.5,
+                10, config.contourWidth * 2,
+                14, config.contourWidth * 3
               ],
-              "line-opacity": layerConfigs.pressure.contourOpacity || 0.8
+              "line-opacity": config.contourOpacity
             },
             layout: {
               "visibility": "visible",
@@ -608,523 +666,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
-  // Enhanced configuration update functions
-  const updateConfigValue = (layerType: string, property: string, value: any) => {
-    setLayerConfigs(prev => ({
-      ...prev,
-      [layerType]: {
-        ...prev[layerType],
-        [property]: value
-      }
-    }));
-  };
-
-  const applyLayerConfiguration = () => {
-    const config = layerConfigs[selectedWeatherType];
-    
-    if (selectedWeatherType === 'pressure') {
-      updateLayerProperties(selectedWeatherType, {
-        'line-width': config.contourWidth || 1,
-        'line-opacity': config.contourOpacity || 0.8
-      });
-    } else if (selectedWeatherType === 'pressure-gradient') {
-      updateLayerProperties('pressure-gradient', {
-        'heatmap-opacity': config.fillOpacity,
-        'heatmap-intensity': config.heatmapIntensity,
-        'heatmap-radius': config.heatmapRadius
-      });
-    } else if (selectedWeatherType === 'swell') {
-      const colorExpression: any[] = [
-        'interpolate',
-        ['exponential', 1.5],
-        ['to-number', ['get', 'value'], 0]
-      ];
-
-      config.gradient.forEach((item: any) => {
-        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-        colorExpression.push(heightValue, item.color);
-      });
-
-      updateLayerProperties(selectedWeatherType, {
-        'fill-color': colorExpression,
-        'fill-opacity': config.fillOpacity,
-        'fill-outline-color': config.fillOutlineColor,
-        'fill-antialias': config.fillAntialias
-      });
-    } else if (selectedWeatherType === 'wind') {
-      updateLayerProperties(selectedWeatherType, {
-        'text-color': config.textColor,
-        'text-opacity': config.textOpacity,
-        'text-halo-color': config.haloColor,
-        'text-halo-width': config.haloWidth
-      });
-      
-      updateLayoutProperties(selectedWeatherType, {
-        'text-size': config.textSize,
-        'text-allow-overlap': config.allowOverlap,
-        'symbol-spacing': config.symbolSpacing
-      });
-    } else if (selectedWeatherType === 'symbol') {
-      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
-      
-      updateLayerProperties(selectedWeatherType, {
-        'text-color': config.textColor,
-        'text-opacity': config.textOpacity,
-        'text-halo-color': config.haloColor,
-        'text-halo-width': config.haloWidth
-      });
-      
-      updateLayoutProperties(selectedWeatherType, {
-        'text-size': config.textSize,
-        'text-allow-overlap': config.allowOverlap,
-        'symbol-spacing': config.symbolSpacing,
-        'text-rotation-alignment': config.rotationAlignment,
-        'text-field': symbolText
-      });
-    }
-
-    toast({
-      title: "Configuration Applied",
-      description: `${selectedWeatherType} layer configuration updated`
-    });
-  };
-
-  const convertRgbToHex = (rgbString: string) => {
-    const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-    if (!match) return rgbString;
-    
-    const r = parseInt(match[1]);
-    const g = parseInt(match[2]);
-    const b = parseInt(match[3]);
-    
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  };
-
-  const convertHexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return hex;
-    
-    const r = parseInt(result[1], 16);
-    const g = parseInt(result[2], 16);
-    const b = parseInt(result[3], 16);
-    
-    return `rgb(${r}, ${g}, ${b})`;
-  };
-
-  const renderConfigurationPanel = () => {
-    const config = layerConfigs[selectedWeatherType];
-
-    return (
-      <div className="space-y-4">
-        {selectedWeatherType === 'pressure' && (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <Label className="text-sm font-medium text-gray-700">Pressure Configuration</Label>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Contour Width</Label>
-              <Slider
-                value={[config.contourWidth || 1]}
-                onValueChange={([value]) => updateConfigValue('pressure', 'contourWidth', value)}
-                min={0.5}
-                max={5}
-                step={0.1}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Contour Opacity</Label>
-              <Slider
-                value={[config.contourOpacity || 0.8]}
-                onValueChange={([value]) => updateConfigValue('pressure', 'contourOpacity', value)}
-                min={0}
-                max={1}
-                step={0.05}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700 mb-2">Pressure Gradient (980mb to 1050mb+)</Label>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {config.gradient.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 border rounded bg-white">
-                    <Input
-                      type="color"
-                      value={convertRgbToHex(item.color)}
-                      onChange={(e) => {
-                        const newGradient = [...config.gradient];
-                        newGradient[index].color = convertHexToRgb(e.target.value);
-                        updateConfigValue('pressure', 'gradient', newGradient);
-                      }}
-                      className="w-10 h-8 p-0 border-2"
-                    />
-                    <span className="text-xs w-16 font-medium text-gray-700">{item.value}</span>
-                    <div className="flex-1">
-                      <Label className="text-xs text-gray-600 mb-1 block">Opacity: {item.opacity.toFixed(1)}</Label>
-                      <Slider
-                        value={[item.opacity]}
-                        onValueChange={([value]) => {
-                          const newGradient = [...config.gradient];
-                          newGradient[index].opacity = value;
-                          updateConfigValue('pressure', 'gradient', newGradient);
-                        }}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {selectedWeatherType === 'swell' && (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <Label className="text-sm font-medium text-gray-700">Swell Configuration</Label>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[config.fillOpacity]}
-                  onValueChange={([value]) => updateConfigValue('swell', 'fillOpacity', value)}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  className="flex-1"
-                />
-                <span className="text-xs w-12">{config.fillOpacity}</span>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Fill Outline Color</Label>
-              <Input
-                type="color"
-                value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
-                onChange={(e) => updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
-                className="w-full h-8"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={config.fillAntialias}
-                onCheckedChange={(checked) => updateConfigValue('swell', 'fillAntialias', checked)}
-              />
-              <Label className="text-xs">Anti-aliasing</Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={config.animationEnabled}
-                onCheckedChange={(checked) => updateConfigValue('swell', 'animationEnabled', checked)}
-              />
-              <Label className="text-xs">Animation</Label>
-            </div>
-
-            {config.animationEnabled && (
-              <div>
-                <Label className="text-xs font-medium text-gray-700">Animation Speed</Label>
-                <Slider
-                  value={[config.animationSpeed * 1000]}
-                  onValueChange={([value]) => updateConfigValue('swell', 'animationSpeed', value / 1000)}
-                  min={0.1}
-                  max={5}
-                  step={0.1}
-                  className="flex-1"
-                />
-              </div>
-            )}
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient (0m to 10m+)</Label>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {config.gradient.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 border rounded bg-white">
-                    <Input
-                      type="color"
-                      value={convertRgbToHex(item.color)}
-                      onChange={(e) => {
-                        const newGradient = [...config.gradient];
-                        newGradient[index].color = convertHexToRgb(e.target.value);
-                        updateConfigValue('swell', 'gradient', newGradient);
-                      }}
-                      className="w-10 h-8 p-0 border-2"
-                    />
-                    <span className="text-xs w-14 font-medium text-gray-700">{item.value}</span>
-                    <div className="flex-1">
-                      <Label className="text-xs text-gray-600 mb-1 block">Opacity: {item.opacity.toFixed(1)}</Label>
-                      <Slider
-                        value={[item.opacity]}
-                        onValueChange={([value]) => {
-                          const newGradient = [...config.gradient];
-                          newGradient[index].opacity = value;
-                          updateConfigValue('swell', 'gradient', newGradient);
-                        }}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {selectedWeatherType === 'wind' && (
-          <>
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Wind Barb Color</Label>
-              <Input
-                type="color"
-                value={config.textColor}
-                onChange={(e) => updateConfigValue('wind', 'textColor', e.target.value)}
-                className="w-full h-8"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Wind Barb Size</Label>
-              <Slider
-                value={[config.textSize]}
-                onValueChange={([value]) => updateConfigValue('wind', 'textSize', value)}
-                min={8}
-                max={32}
-                step={1}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Wind Barb Opacity</Label>
-              <Slider
-                value={[config.textOpacity]}
-                onValueChange={([value]) => updateConfigValue('wind', 'textOpacity', value)}
-                min={0}
-                max={1}
-                step={0.1}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
-              <Input
-                type="color"
-                value={config.haloColor}
-                onChange={(e) => updateConfigValue('wind', 'haloColor', e.target.value)}
-                className="w-full h-8"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
-              <Slider
-                value={[config.haloWidth]}
-                onValueChange={([value]) => updateConfigValue('wind', 'haloWidth', value)}
-                min={0}
-                max={5}
-                step={0.5}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Barb Spacing</Label>
-              <Slider
-                value={[config.symbolSpacing]}
-                onValueChange={([value]) => updateConfigValue('wind', 'symbolSpacing', value)}
-                min={20}
-                max={200}
-                step={10}
-                className="flex-1"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={config.allowOverlap}
-                onCheckedChange={(checked) => updateConfigValue('wind', 'allowOverlap', checked)}
-              />
-              <Label className="text-xs">Allow Overlap</Label>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Speed Unit</Label>
-              <Select 
-                value={config.speedUnit} 
-                onValueChange={(value) => updateConfigValue('wind', 'speedUnit', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="knots">Knots</SelectItem>
-                  <SelectItem value="ms">m/s</SelectItem>
-                  <SelectItem value="kmh">km/h</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
-              <div className="font-semibold mb-1">Meteorological Wind Barb Legend:</div>
-              <div>○ = Calm (0-2 kts)</div>
-              <div>│ = Light air (3-7 kts)</div>
-              <div>╸│ = Half barb (5 kts)</div>
-              <div>━│ = Full barb (10 kts)</div>
-              <div>◤│ = Pennant (50 kts)</div>
-              <div className="mt-1 text-xs text-blue-600">
-                Wind direction: Points toward where wind is blowing
-              </div>
-            </div>
-          </>
-        )}
-
-        {selectedWeatherType === 'symbol' && (
-          <>
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Symbol Type</Label>
-              <Select 
-                value={config.symbolType} 
-                onValueChange={(value) => updateConfigValue('symbol', 'symbolType', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="arrow">Arrow (→)</SelectItem>
-                  <SelectItem value="triangle">Triangle (▲)</SelectItem>
-                  <SelectItem value="circle">Circle (●)</SelectItem>
-                  <SelectItem value="square">Square (■)</SelectItem>
-                  <SelectItem value="custom">Custom Symbol</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {config.symbolType === 'custom' && (
-              <div>
-                <Label className="text-xs font-medium text-gray-700">Custom Symbol</Label>
-                <Input
-                  type="text"
-                  value={config.customSymbol}
-                  onChange={(e) => updateConfigValue('symbol', 'customSymbol', e.target.value)}
-                  placeholder="Enter custom symbol (e.g., ★, ✈, ⚡)"
-                  maxLength={3}
-                  className="w-full"
-                />
-              </div>
-            )}
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Symbol Color</Label>
-              <Input
-                type="color"
-                value={config.textColor}
-                onChange={(e) => updateConfigValue('symbol', 'textColor', e.target.value)}
-                className="w-full h-8"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
-              <Slider
-                value={[config.textSize]}
-                onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
-                min={8}
-                max={32}
-                step={1}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Symbol Opacity</Label>
-              <Slider
-                value={[config.textOpacity]}
-                onValueChange={([value]) => updateConfigValue('symbol', 'textOpacity', value)}
-                min={0}
-                max={1}
-                step={0.1}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
-              <Input
-                type="color"
-                value={config.haloColor}
-                onChange={(e) => updateConfigValue('symbol', 'haloColor', e.target.value)}
-                className="w-full h-8"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
-              <Slider
-                value={[config.haloWidth]}
-                onValueChange={([value]) => updateConfigValue('symbol', 'haloWidth', value)}
-                min={0}
-                max={5}
-                step={0.5}
-                className="flex-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Symbol Spacing</Label>
-              <Slider
-                value={[config.symbolSpacing]}
-                onValueChange={([value]) => updateConfigValue('symbol', 'symbolSpacing', value)}
-                min={20}
-                max={200}
-                step={10}
-                className="flex-1"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={config.allowOverlap}
-                onCheckedChange={(checked) => updateConfigValue('symbol', 'allowOverlap', checked)}
-              />
-              <Label className="text-xs">Allow Overlap</Label>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Rotation Alignment</Label>
-              <Select 
-                value={config.rotationAlignment} 
-                onValueChange={(value) => updateConfigValue('symbol', 'rotationAlignment', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="map">Map</SelectItem>
-                  <SelectItem value="viewport">Viewport</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="relative h-full w-full">
       <MapTopControls />
@@ -1165,57 +706,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           )}
         </div>
       )}
-
-      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg min-w-[360px] max-h-[80vh] overflow-hidden">
-        <Collapsible open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-          <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-            <h3 className="text-sm font-semibold">Weather Layer Configuration</h3>
-            {isConfigOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent className="overflow-y-auto max-h-[calc(80vh-60px)]">
-            <div className="p-4 pt-0 space-y-4">
-              <div>
-                <Label className="block text-xs font-medium text-gray-700 mb-1">
-                  Weather Type
-                </Label>
-                <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select weather type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border shadow-lg z-50">
-                    <SelectItem value="wind">Wind Barbs</SelectItem>
-                    <SelectItem value="pressure">Pressure</SelectItem>
-                    <SelectItem value="pressure-gradient">Pressure Gradient</SelectItem>
-                    <SelectItem value="swell">Swell (Filled)</SelectItem>
-                    <SelectItem value="symbol">Symbol</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {renderConfigurationPanel()}
-
-              <Button 
-                onClick={applyLayerConfiguration}
-                className="w-full"
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Apply Configuration
-              </Button>
-
-              <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
-                <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
-                {activeOverlays.map(layer => (
-                  <div key={layer} className="text-xs capitalize">
-                    • {layer.replace('-', ' ')}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </div>
     </div>
   );
 };

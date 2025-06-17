@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import DirectTokenInput from "./DirectTokenInput";
-import WeatherConfigDrafts from "./WeatherConfigDrafts";
+import WeatherLayerConfig from "./WeatherLayerConfig";
 
 const navigationItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -91,19 +91,19 @@ const AppSidebar = () => {
                 </DialogContent>
               </Dialog>
 
-              {/* Weather Configuration Dialog */}
+              {/* Weather Layer Configuration Dialog */}
               <Dialog open={isWeatherDialogOpen} onOpenChange={setIsWeatherDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="icon" className="w-full mb-2 bg-white" title="Weather Configuration">
+                  <Button variant="outline" size="icon" className="w-full mb-2 bg-white" title="Weather Layer Configuration">
                     <CloudRain className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Weather Configuration</DialogTitle>
+                    <DialogTitle>Weather Layer Configuration</DialogTitle>
                   </DialogHeader>
                   <div className="relative">
-                    <WeatherConfigDrafts />
+                    <WeatherLayerConfig />
                   </div>
                 </DialogContent>
               </Dialog>
