@@ -17,6 +17,7 @@ interface MapboxMapProps {
   activeRouteType?: 'base' | 'weather';
   activeLayers?: Record<string, boolean>;
   activeBaseLayer?: string;
+  mapStyle?: string;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -27,7 +28,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   weatherRoute = [],
   activeRouteType = 'base',
   activeLayers = {},
-  activeBaseLayer = 'default'
+  activeBaseLayer = 'default',
+  mapStyle = 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7'
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
@@ -135,11 +137,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   useEffect(() => {
     if (mapref.current) return;
 
-    console.log("Initializing new map");
+    console.log("Initializing new map with style:", mapStyle);
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current!,
-      style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
+      style: mapStyle,
       center: [83.167, 6.887],
       zoom: 4,
       attributionControl: false
@@ -178,7 +180,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       }
       setIsMapLoaded(false);
     };
-  }, [toast]);
+  }, [toast, mapStyle]);
 
   useEffect(() => {
     if (!activeLayers || !isMapLoaded) return;
@@ -191,6 +193,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       }
     });
   }, [activeLayers, isMapLoaded]);
+
+  useEffect(() => {
+    if (mapref.current && mapref.current.isStyleLoaded()) {
+      console.log("Updating map style to:", mapStyle);
+      mapref.current.setStyle(mapStyle);
+    }
+  }, [mapStyle]);
 
   const fetchDTNSourceLayer = async (layerId: string) => {
     try {
@@ -499,7 +508,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             ['to-number', ['get', 'value'], 0]
           ];
 
-          layerConfigs.swell.gradient.forEach((item) => {
+          config.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
             colorExpression.push(heightValue, item.color);
           });
