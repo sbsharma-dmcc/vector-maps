@@ -502,6 +502,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           }, beforeId);
 
         } else if (overlay === 'swell') {
+          const config = layerConfigs.swell;
           const colorExpression: any[] = [
             'interpolate',
             ['exponential', 1.5],
