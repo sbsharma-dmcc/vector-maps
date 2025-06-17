@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Lock, Unlock, Save, Trash2 } from 'lucide-react';
+import { Save } from 'lucide-react';
 import MapTopControls from './MapTopControls';
-import { dtnToken } from '@/utils/mapConstants';
+import { getValidDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
@@ -43,7 +43,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
-  const [swellConfigLocked, setSwellConfigLocked] = useState(false);
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -62,15 +61,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       fillOpacity: 0.7,
       fillOutlineColor: 'transparent',
       gradient: [
-        { value: '980mb', color: 'rgba(128, 0, 128, 0.8)', opacity: 0.8 },     // Purple - very low pressure
-        { value: '990mb', color: 'rgba(0, 0, 255, 0.7)', opacity: 0.7 },       // Blue - low pressure
-        { value: '1000mb', color: 'rgba(0, 128, 255, 0.6)', opacity: 0.6 },    // Light blue
-        { value: '1010mb', color: 'rgba(0, 255, 255, 0.5)', opacity: 0.5 },    // Cyan
-        { value: '1013mb', color: 'rgba(128, 255, 128, 0.4)', opacity: 0.4 },  // Light green - standard pressure
-        { value: '1020mb', color: 'rgba(255, 255, 0, 0.5)', opacity: 0.5 },    // Yellow
-        { value: '1030mb', color: 'rgba(255, 128, 0, 0.6)', opacity: 0.6 },    // Orange
-        { value: '1040mb', color: 'rgba(255, 0, 0, 0.7)', opacity: 0.7 },      // Red - high pressure
-        { value: '1050mb+', color: 'rgba(128, 0, 0, 0.8)', opacity: 0.8 }      // Dark red - very high pressure
+        { value: '980mb', color: 'rgba(128, 0, 128, 0.8)', opacity: 0.8 },
+        { value: '990mb', color: 'rgba(0, 0, 255, 0.7)', opacity: 0.7 },
+        { value: '1000mb', color: 'rgba(0, 128, 255, 0.6)', opacity: 0.6 },
+        { value: '1010mb', color: 'rgba(0, 255, 255, 0.5)', opacity: 0.5 },
+        { value: '1013mb', color: 'rgba(128, 255, 128, 0.4)', opacity: 0.4 },
+        { value: '1020mb', color: 'rgba(255, 255, 0, 0.5)', opacity: 0.5 },
+        { value: '1030mb', color: 'rgba(255, 128, 0, 0.6)', opacity: 0.6 },
+        { value: '1040mb', color: 'rgba(255, 0, 0, 0.7)', opacity: 0.7 },
+        { value: '1050mb+', color: 'rgba(128, 0, 0, 0.8)', opacity: 0.8 }
       ],
       smoothing: true,
       blurRadius: 3,
@@ -89,27 +88,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       blurRadius: 2,
       edgeFeathering: 1.5,
       gradient: [
-        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },        // Deep blue (very light)
-        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },     // Dark blue
-        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },      // Medium blue
-        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },  // Light blue
-        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },     // Cyan-blue
-        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 }, // Blue-green
-        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },     // Green-blue
-        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 }, // Light green
-        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },     // Yellow-green
-        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 }, // Yellow
-        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },    // Orange-yellow
-        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },  // Orange
-        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },    // Dark orange
-        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },    // Red-orange
-        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },      // Red
-        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },    // Bright red
-        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },      // Dark red
-        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },     // Deep red
-        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },       // Crimson
-        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },     // Dark crimson
-        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }       // Very dark red
+        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
+        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
+        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
+        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
+        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },
+        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 },
+        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },
+        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 },
+        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },
+        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 },
+        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },
+        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },
+        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },
+        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },
+        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },
+        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },
+        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },
+        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },
+        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },
+        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },
+        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
       ]
     },
     symbol: {
@@ -127,28 +126,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   });
 
   const { toast } = useToast();
-
-  const [currentDTNToken, setCurrentDTNToken] = useState<string>('');
-
-  // Initialize DTN token on component mount
-  useEffect(() => {
-    const initializeToken = async () => {
-      try {
-        const { getValidDTNToken } = await import('../utils/dtnTokenManager');
-        const token = await getValidDTNToken();
-        setCurrentDTNToken(token.replace('Bearer ', ''));
-        console.log('DTN Token initialized:', token.substring(0, 50) + '...');
-      } catch (error) {
-        console.error('Failed to initialize DTN token:', error);
-        // Fallback to the legacy token
-        setCurrentDTNToken(dtnToken.replace('Bearer ', ''));
-      }
-    };
-    
-    initializeToken();
-  }, []);
-
-  console.log('DTN Token being used:', currentDTNToken.substring(0, 50) + '...');
 
   const dtnOverlays = {
     wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
@@ -272,11 +249,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   }, [activeLayers, isMapLoaded]);
 
-  const fetchDTNSourceLayer = async (layerId: string, token?: string) => {
-    const authToken = token || currentDTNToken;
+  const fetchDTNSourceLayer = async (layerId: string) => {
+    const token = await getValidDTNToken();
+    const authToken = token.replace('Bearer ', '');
+    
+    console.log(`Fetching source layer for: ${layerId} with token: ${authToken.substring(0, 20)}...`);
+    
     const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Authorization: token,
         Accept: "application/json",
       },
     });
@@ -287,6 +268,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const data = await response.json();
     const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
+    console.log(`Source layer found: ${sourceLayerName}`);
     return sourceLayerName;
   };
 
@@ -373,46 +355,19 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       return;
     }
 
-    // Ensure we have a valid token before making requests
-    let token = currentDTNToken;
-    if (!token) {
-      console.log('No DTN token available, fetching new one...');
-      try {
-        const { getValidDTNToken } = await import('../utils/dtnTokenManager');
-        const newToken = await getValidDTNToken();
-        token = newToken.replace('Bearer ', '');
-        setCurrentDTNToken(token);
-        console.log('Fetched new DTN token for overlay request');
-      } catch (error) {
-        console.error('Failed to fetch DTN token:', error);
-        toast({
-          title: "Authentication Error",
-          description: "Failed to get valid authentication token. Please try again.",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-
     const { dtnLayerId, tileSetId } = dtnOverlays[overlay];
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
 
-    console.log(`Adding overlay details:`, {
-      overlay,
-      dtnLayerId,
-      tileSetId,
-      sourceId,
-      layerId,
-      token: token.substring(0, 20) + '...'
-    });
-
     try {
-      console.log(`Fetching source layer for: ${dtnLayerId}`);
-      const sourceLayer = await fetchDTNSourceLayer(dtnLayerId, token);
-      console.log(`Source layer found: ${sourceLayer}`);
+      console.log(`Adding overlay details:`, { overlay, dtnLayerId, tileSetId, sourceId, layerId });
       
-      const tileURL = `https://map.api.dtn.com/v2/tiles/${dtnLayerId}/${tileSetId}/{z}/{x}/{y}.pbf?token=${token}`;
+      const token = await getValidDTNToken();
+      const authToken = token.replace('Bearer ', '');
+      
+      const sourceLayer = await fetchDTNSourceLayer(dtnLayerId);
+      
+      const tileURL = `https://map.api.dtn.com/v2/tiles/${dtnLayerId}/${tileSetId}/{z}/{x}/{y}.pbf?token=${authToken}`;
       console.log(`Tile URL: ${tileURL}`);
       
       if (!mapref.current.getSource(sourceId)) {
@@ -678,18 +633,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       }
     } catch (error: any) {
       console.error(`Error adding ${overlay} layer:`, error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        response: error.response
-      });
       
       if (error.message?.includes('401') || error.status === 401) {
         console.log('401 error detected, attempting to refresh token...');
         try {
-          const { getValidDTNToken } = await import('../utils/dtnTokenManager');
           const newToken = await getValidDTNToken();
-          setCurrentDTNToken(newToken.replace('Bearer ', ''));
+          console.log('Token refreshed, please try again');
           
           toast({
             title: "Token Refreshed",
@@ -1014,39 +963,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           <>
             <div className="flex items-center justify-between mb-4">
               <Label className="text-sm font-medium text-gray-700">Swell Configuration</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSwellConfigLocked(!swellConfigLocked)}
-                className="p-2"
-              >
-                {swellConfigLocked ? (
-                  <Lock className="h-4 w-4 text-red-500" />
-                ) : (
-                  <Unlock className="h-4 w-4 text-green-500" />
-                )}
-              </Button>
             </div>
-
-            {swellConfigLocked && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-yellow-800">
-                  Swell configuration is locked. Click the lock icon to unlock and make changes.
-                </p>
-              </div>
-            )}
 
             <div>
               <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
               <div className="flex items-center gap-2">
                 <Slider
                   value={[config.fillOpacity]}
-                  onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'fillOpacity', value)}
+                  onValueChange={([value]) => updateConfigValue('swell', 'fillOpacity', value)}
                   min={0}
                   max={1}
                   step={0.1}
                   className="flex-1"
-                  disabled={swellConfigLocked}
                 />
                 <span className="text-xs w-12">{config.fillOpacity}</span>
               </div>
@@ -1057,17 +985,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <Input
                 type="color"
                 value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
-                onChange={(e) => !swellConfigLocked && updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
+                onChange={(e) => updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
                 className="w-full h-8"
-                disabled={swellConfigLocked}
               />
             </div>
 
             <div className="flex items-center gap-2">
               <Switch
                 checked={config.fillAntialias}
-                onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'fillAntialias', checked)}
-                disabled={swellConfigLocked}
+                onCheckedChange={(checked) => updateConfigValue('swell', 'fillAntialias', checked)}
               />
               <Label className="text-xs">Anti-aliasing</Label>
             </div>
@@ -1075,8 +1001,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             <div className="flex items-center gap-2">
               <Switch
                 checked={config.animationEnabled}
-                onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'animationEnabled', checked)}
-                disabled={swellConfigLocked}
+                onCheckedChange={(checked) => updateConfigValue('swell', 'animationEnabled', checked)}
               />
               <Label className="text-xs">Animation</Label>
             </div>
@@ -1086,12 +1011,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 <Label className="text-xs font-medium text-gray-700">Animation Speed</Label>
                 <Slider
                   value={[config.animationSpeed * 1000]}
-                  onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'animationSpeed', value / 1000)}
+                  onValueChange={([value]) => updateConfigValue('swell', 'animationSpeed', value / 1000)}
                   min={0.1}
                   max={5}
                   step={0.1}
                   className="flex-1"
-                  disabled={swellConfigLocked}
                 />
               </div>
             )}
@@ -1100,19 +1024,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient (0m to 10m+)</Label>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {config.gradient.map((item, index) => (
-                  <div key={index} className={`flex items-center gap-2 p-2 border rounded ${swellConfigLocked ? 'bg-gray-50' : 'bg-white'}`}>
+                  <div key={index} className="flex items-center gap-2 p-2 border rounded bg-white">
                     <Input
                       type="color"
                       value={convertRgbToHex(item.color)}
                       onChange={(e) => {
-                        if (!swellConfigLocked) {
-                          const newGradient = [...config.gradient];
-                          newGradient[index].color = convertHexToRgb(e.target.value);
-                          updateConfigValue('swell', 'gradient', newGradient);
-                        }
+                        const newGradient = [...config.gradient];
+                        newGradient[index].color = convertHexToRgb(e.target.value);
+                        updateConfigValue('swell', 'gradient', newGradient);
                       }}
                       className="w-10 h-8 p-0 border-2"
-                      disabled={swellConfigLocked}
                     />
                     <span className="text-xs w-14 font-medium text-gray-700">{item.value}</span>
                     <div className="flex-1">
@@ -1120,27 +1041,19 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                       <Slider
                         value={[item.opacity]}
                         onValueChange={([value]) => {
-                          if (!swellConfigLocked) {
-                            const newGradient = [...config.gradient];
-                            newGradient[index].opacity = value;
-                            updateConfigValue('swell', 'gradient', newGradient);
-                          }
+                          const newGradient = [...config.gradient];
+                          newGradient[index].opacity = value;
+                          updateConfigValue('swell', 'gradient', newGradient);
                         }}
                         min={0}
                         max={1}
                         step={0.1}
                         className="w-full"
-                        disabled={swellConfigLocked}
                       />
                     </div>
                   </div>
                 ))}
               </div>
-              {!swellConfigLocked && (
-                <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                  <strong>Tip:</strong> Click the color boxes to change wave height colors and adjust the sliders to modify individual opacity for each height range.
-                </div>
-              )}
             </div>
           </>
         )}
