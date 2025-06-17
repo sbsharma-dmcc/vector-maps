@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -209,8 +210,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           'text-halo-color': config.haloColor,
           'text-halo-width': config.haloWidth
         };
+        
+        // Fix: Add type check for symbolType and customSymbol properties
+        let textField;
+        if (overlayType === 'symbol' && 'symbolType' in config && 'customSymbol' in config) {
+          textField = getSymbolByType(config.symbolType, config.customSymbol);
+        } else {
+          textField = ['get', 'speed'];
+        }
+        
         layerConfig.layout = {
-          'text-field': overlayType === 'symbol' ? getSymbolByType(config.symbolType, config.customSymbol) : ['get', 'speed'],
+          'text-field': textField,
           'text-size': config.textSize,
           'text-allow-overlap': config.allowOverlap,
           'symbol-spacing': config.symbolSpacing
@@ -535,7 +545,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'symbol-spacing': config.symbolSpacing
       });
     } else if (layerType === 'symbol') {
-      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
+      // Fix: Add type check for symbol-specific properties
+      let symbolText = '→'; // default symbol
+      if ('symbolType' in config && 'customSymbol' in config) {
+        symbolText = getSymbolByType(config.symbolType, config.customSymbol);
+      }
       
       updateLayerProperties(layerType, {
         'text-color': config.textColor,
@@ -548,7 +562,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'text-size': config.textSize,
         'text-allow-overlap': config.allowOverlap,
         'symbol-spacing': config.symbolSpacing,
-        'text-rotation-alignment': config.rotationAlignment,
+        'text-rotation-alignment': config.rotationAlignment || 'map',
         'text-field': symbolText
       });
     }
