@@ -99,6 +99,172 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] },
   ];
 
+  // Helper functions for layer management
+  const updateLayerProperties = (layerType: string, properties: any) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-${layerType}`;
+    if (mapref.current.getLayer(layerId)) {
+      Object.entries(properties).forEach(([property, value]) => {
+        try {
+          mapref.current?.setPaintProperty(layerId, property, value);
+        } catch (error) {
+          console.error(`Error setting paint property ${property}:`, error);
+        }
+      });
+    }
+  };
+
+  const updateLayoutProperties = (layerType: string, properties: any) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-${layerType}`;
+    if (mapref.current.getLayer(layerId)) {
+      Object.entries(properties).forEach(([property, value]) => {
+        try {
+          mapref.current?.setLayoutProperty(layerId, property, value);
+        } catch (error) {
+          console.error(`Error setting layout property ${property}:`, error);
+        }
+      });
+    }
+  };
+
+  const handleOverlayClick = async (overlayType: string) => {
+    if (activeOverlays.includes(overlayType)) {
+      removeOverlay(overlayType);
+      return;
+    }
+
+    if (!mapref.current || !mapref.current.isStyleLoaded()) {
+      toast({
+        title: "Map Not Ready",
+        description: "Please wait for the map to fully load before adding layers.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const overlayConfig = dtnOverlays[overlayType as keyof typeof dtnOverlays];
+      if (!overlayConfig) return;
+
+      const sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, token);
+      
+      if (!sourceLayerName) {
+        toast({
+          title: "Layer Error", 
+          description: `Could not fetch source layer for ${overlayType}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const sourceId = `dtn-source-${overlayType}`;
+      const layerId = `dtn-layer-${overlayType}`;
+
+      // Add source if it doesn't exist
+      if (!mapref.current.getSource(sourceId)) {
+        mapref.current.addSource(sourceId, {
+          type: 'vector',
+          tiles: [`https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${token}`],
+          minzoom: 0,
+          maxzoom: 14
+        });
+      }
+
+      // Configure layer based on type
+      let layerConfig: any = {
+        id: layerId,
+        type: overlayType === 'swell' ? 'fill' : overlayType === 'pressure' ? 'line' : 'symbol',
+        source: sourceId,
+        'source-layer': sourceLayerName
+      };
+
+      if (overlayType === 'swell') {
+        const colorExpression = createSwellColorExpression(layerConfigs.swell);
+        layerConfig.paint = {
+          'fill-color': colorExpression,
+          'fill-opacity': layerConfigs.swell.fillOpacity,
+          'fill-outline-color': layerConfigs.swell.fillOutlineColor,
+          'fill-antialias': layerConfigs.swell.fillAntialias
+        };
+      } else if (overlayType === 'pressure') {
+        layerConfig.paint = {
+          'line-color': layerConfigs.pressure.lineColor,
+          'line-width': layerConfigs.pressure.lineWidth,
+          'line-opacity': layerConfigs.pressure.lineOpacity,
+          'line-blur': layerConfigs.pressure.lineBlur,
+          'line-gap-width': layerConfigs.pressure.lineGapWidth
+        };
+        layerConfig.layout = {
+          'line-cap': layerConfigs.pressure.lineCap,
+          'line-join': layerConfigs.pressure.lineJoin
+        };
+      } else if (overlayType === 'wind' || overlayType === 'symbol') {
+        const config = layerConfigs[overlayType];
+        layerConfig.paint = {
+          'text-color': config.textColor,
+          'text-opacity': config.textOpacity,
+          'text-halo-color': config.haloColor,
+          'text-halo-width': config.haloWidth
+        };
+        layerConfig.layout = {
+          'text-field': overlayType === 'symbol' ? getSymbolByType(config.symbolType, config.customSymbol) : ['get', 'speed'],
+          'text-size': config.textSize,
+          'text-allow-overlap': config.allowOverlap,
+          'symbol-spacing': config.symbolSpacing
+        };
+      }
+
+      mapref.current.addLayer(layerConfig);
+      setActiveOverlays(prev => [...prev, overlayType]);
+
+      toast({
+        title: "Layer Added",
+        description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer has been added to the map`
+      });
+
+      ensureVesselsOnTop();
+
+    } catch (error) {
+      console.error(`Error adding ${overlayType} overlay:`, error);
+      toast({
+        title: "Layer Error",
+        description: `Failed to add ${overlayType} layer. Please check your connection.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const removeOverlay = (overlayType: string) => {
+    if (!mapref.current) return;
+
+    const layerId = `dtn-layer-${overlayType}`;
+    const sourceId = `dtn-source-${overlayType}`;
+
+    if (mapref.current.getLayer(layerId)) {
+      mapref.current.removeLayer(layerId);
+    }
+
+    if (mapref.current.getSource(sourceId)) {
+      mapref.current.removeSource(sourceId);
+    }
+
+    setActiveOverlays(prev => prev.filter(overlay => overlay !== overlayType));
+
+    toast({
+      title: "Layer Removed",
+      description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer has been removed`
+    });
+  };
+
+  const removeAllOverlays = () => {
+    activeOverlays.forEach(overlay => {
+      removeOverlay(overlay);
+    });
+  };
+
   // Get the next available draft number for a weather type
   const getNextDraftNumber = (weatherType: string) => {
     const existingDrafts = weatherDrafts.filter(draft => draft.weatherType === weatherType);
