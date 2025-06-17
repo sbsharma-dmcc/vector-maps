@@ -144,8 +144,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     localStorage.setItem('weatherLayerDrafts', JSON.stringify(weatherDrafts));
   }, [weatherDrafts]);
 
-  const token = dtnToken.replace('Bearer ', '');
-  console.log('DTN Token being used:', token.substring(0, 50) + '...');
+  const [currentDTNToken, setCurrentDTNToken] = useState<string>('');
+
+  // Initialize DTN token on component mount
+  useEffect(() => {
+    const initializeToken = async () => {
+      try {
+        const { getValidDTNToken } = await import('../utils/dtnTokenManager');
+        const token = await getValidDTNToken();
+        setCurrentDTNToken(token.replace('Bearer ', ''));
+        console.log('DTN Token initialized:', token.substring(0, 50) + '...');
+      } catch (error) {
+        console.error('Failed to initialize DTN token:', error);
+        // Fallback to the legacy token
+        setCurrentDTNToken(dtnToken.replace('Bearer ', ''));
+      }
+    };
+    
+    initializeToken();
+  }, []);
+
+  console.log('DTN Token being used:', currentDTNToken.substring(0, 50) + '...');
 
   const dtnOverlays = {
     wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
@@ -350,13 +369,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     setSelectedDraft('');
   }, [selectedWeatherType]);
 
-  const fetchDTNSourceLayer = async (layerId: string) => {
+  const fetchDTNSourceLayer = async (layerId: string, token?: string) => {
+    const authToken = token || currentDTNToken;
     const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
       headers: {
-        Authorization: dtnToken,
+        Authorization: `Bearer ${authToken}`,
         Accept: "application/json",
       },
     });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch source layer: ${response.status} ${response.statusText}`);
+    }
 
     const data = await response.json();
     const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
@@ -501,6 +525,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       return;
     }
 
+    // Ensure we have a valid token before making requests
+    let token = currentDTNToken;
+    if (!token) {
+      console.log('No DTN token available, fetching new one...');
+      try {
+        const { getValidDTNToken } = await import('../utils/dtnTokenManager');
+        const newToken = await getValidDTNToken();
+        token = newToken.replace('Bearer ', '');
+        setCurrentDTNToken(token);
+        console.log('Fetched new DTN token for overlay request');
+      } catch (error) {
+        console.error('Failed to fetch DTN token:', error);
+        toast({
+          title: "Authentication Error",
+          description: "Failed to get valid authentication token. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     const { dtnLayerId, tileSetId } = dtnOverlays[overlay];
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
@@ -516,7 +561,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     try {
       console.log(`Fetching source layer for: ${dtnLayerId}`);
-      const sourceLayer = await fetchDTNSourceLayer(dtnLayerId);
+      const sourceLayer = await fetchDTNSourceLayer(dtnLayerId, token);
       console.log(`Source layer found: ${sourceLayer}`);
       
       const tileURL = `https://map.api.dtn.com/v2/tiles/${dtnLayerId}/${tileSetId}/{z}/{x}/{y}.pbf?token=${token}`;
@@ -729,11 +774,33 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         response: error.response
       });
       
-      toast({
-        title: "Layer Error",
-        description: `Failed to add ${overlay} layer. Please check the console for details.`,
-        variant: "destructive"
-      });
+      // If it's a 401 error, try to refresh the token
+      if (error.message?.includes('401') || error.status === 401) {
+        console.log('401 error detected, attempting to refresh token...');
+        try {
+          const { getValidDTNToken } = await import('../utils/dtnTokenManager');
+          const newToken = await getValidDTNToken();
+          setCurrentDTNToken(newToken.replace('Bearer ', ''));
+          
+          toast({
+            title: "Token Refreshed",
+            description: "Authentication token has been refreshed. Please try adding the layer again.",
+          });
+        } catch (refreshError) {
+          console.error('Failed to refresh token:', refreshError);
+          toast({
+            title: "Authentication Error",
+            description: "Failed to refresh authentication token. Please reload the page.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Layer Error",
+          description: `Failed to add ${overlay} layer. Please check the console for details.`,
+          variant: "destructive"
+        });
+      }
     }
   };
 
