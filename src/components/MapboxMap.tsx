@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -839,7 +840,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             <div className="font-semibold">Debug Info:</div>
             <div>Map Loaded: {isMapLoaded ? 'Yes' : 'No'}</div>
             <div>Active Overlays: {activeOverlays.length}</div>
-            <div>Token Length: {token.length}</div>
+            <div>Token Length: {initialToken.length}</div>
             <div>Token Valid: {tokenValidation.isValid ? 'Yes' : 'No'}</div>
           </div>
         </div>
