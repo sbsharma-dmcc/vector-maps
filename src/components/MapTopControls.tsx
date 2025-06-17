@@ -1,56 +1,29 @@
 
 import React from 'react';
-import { Moon, Sun, Layers } from 'lucide-react';
+import { Search } from 'lucide-react';
 
-interface MapTopControlsProps {
-  isDarkMode?: boolean;
-  onToggleTheme?: () => void;
-  onToggleLayers?: () => void;
-}
-
-const MapTopControls: React.FC<MapTopControlsProps> = ({ 
-  isDarkMode = false, 
-  onToggleTheme,
-  onToggleLayers
-}) => {
-  console.log('MapTopControls rendered:', { isDarkMode, hasToggleTheme: !!onToggleTheme, hasToggleLayers: !!onToggleLayers });
-  
+const MapTopControls: React.FC = () => {
   return (
-    <div className="absolute top-4 right-4 z-30 flex gap-2">
-      {/* Theme Toggle */}
-      {onToggleTheme && (
-        <button 
-          onClick={onToggleTheme}
-          className="flex items-center justify-center bg-white border-2 border-gray-300 rounded-md px-3 py-2 shadow-xl hover:bg-gray-50 transition-colors min-w-[48px] min-h-[48px]"
-          title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          style={{ zIndex: 9999 }}
-        >
-          {isDarkMode ? (
-            <Sun className="h-6 w-6 text-yellow-500" />
-          ) : (
-            <Moon className="h-6 w-6 text-blue-600" />
-          )}
-        </button>
-      )}
-
-      {/* DTN Layers Toggle */}
-      {onToggleLayers && (
-        <button 
-          onClick={onToggleLayers}
-          className="flex items-center justify-center bg-white border-2 border-gray-300 rounded-md px-3 py-2 shadow-xl hover:bg-gray-50 transition-colors min-w-[48px] min-h-[48px]"
-          title="Toggle DTN Layers"
-          style={{ zIndex: 9999 }}
-        >
-          <Layers className="h-6 w-6 text-gray-700" />
-        </button>
-      )}
+    <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-2">
+      <div className="flex items-center bg-white rounded-md shadow-sm">
+        <Search className="h-5 w-5 ml-2 text-gray-400" />
+        <input 
+          type="text" 
+          placeholder="Search vessel or IMO" 
+          className="py-2 px-2 bg-transparent outline-none text-sm w-56"
+        />
+      </div>
       
-      {/* Debug indicator when no functions are passed */}
-      {!onToggleTheme && !onToggleLayers && (
-        <div className="bg-red-500 text-white p-2 rounded text-xs">
-          No controls available
+      <div className="flex gap-3">
+        <button className="flex items-center bg-blue-500 text-white rounded-md px-3 py-2 text-sm shadow-sm">
+          <span className="mr-1">+</span> New Voyage
+        </button>
+        
+        <div className="flex items-center bg-white rounded-md shadow-sm px-3 py-2">
+          <span className="text-sm mr-1">Notifications Feed</span>
+          <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">5</span>
         </div>
-      )}
+      </div>
     </div>
   );
 };
