@@ -23,8 +23,8 @@ interface ConfigDraft {
 }
 
 interface WeatherConfigDraftsProps {
-  currentConfig: WeatherConfig;
-  onLoadConfig: (config: WeatherConfig) => void;
+  currentConfig?: WeatherConfig;
+  onLoadConfig?: (config: WeatherConfig) => void;
 }
 
 const WeatherConfigDrafts: React.FC<WeatherConfigDraftsProps> = ({
@@ -36,6 +36,17 @@ const WeatherConfigDrafts: React.FC<WeatherConfigDraftsProps> = ({
   const [draftDescription, setDraftDescription] = useState('');
   const [selectedDraft, setSelectedDraft] = useState<string>('');
   const { toast } = useToast();
+
+  // Default config for when none is provided
+  const defaultConfig: WeatherConfig = {
+    wind: {},
+    pressure: {},
+    swell: {},
+    symbol: {}
+  };
+
+  // Use provided config or default
+  const configToSave = currentConfig || defaultConfig;
 
   // Load drafts from localStorage on component mount
   useEffect(() => {
@@ -68,7 +79,7 @@ const WeatherConfigDrafts: React.FC<WeatherConfigDraftsProps> = ({
       id: Date.now().toString(),
       name: draftName.trim(),
       description: draftDescription.trim() || undefined,
-      config: JSON.parse(JSON.stringify(currentConfig)), // Deep copy
+      config: JSON.parse(JSON.stringify(configToSave)), // Deep copy
       createdAt: new Date().toISOString()
     };
 
@@ -85,7 +96,9 @@ const WeatherConfigDrafts: React.FC<WeatherConfigDraftsProps> = ({
   const loadDraft = (draftId: string) => {
     const draft = drafts.find(d => d.id === draftId);
     if (draft) {
-      onLoadConfig(draft.config);
+      if (onLoadConfig) {
+        onLoadConfig(draft.config);
+      }
       setSelectedDraft(draftId);
       
       toast({
