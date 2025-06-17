@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Save, ChevronDown, ChevronUp } from 'lucide-react';
 import MapTopControls from './MapTopControls';
-import { getValidDTNToken } from '@/utils/dtnTokenManager';
+import DirectTokenInput from './DirectTokenInput';
+import { getDTNToken } from '@/utils/dtnTokenManager';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -216,10 +217,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const fetchDTNSourceLayer = async (layerId: string) => {
     try {
-      const token = await getValidDTNToken();
-      const authToken = token.replace('Bearer ', '');
-      
-      console.log(`Fetching source layer for: ${layerId} with token: ${authToken.substring(0, 20)}...`);
+      const token = getDTNToken();
+      console.log(`Fetching source layer for: ${layerId}`);
       
       const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
         headers: {
@@ -332,7 +331,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     try {
       console.log(`Adding overlay details:`, { overlay, dtnLayerId, tileSetId, sourceId, layerId });
       
-      const token = await getValidDTNToken();
+      const token = getDTNToken();
       const authToken = token.replace('Bearer ', '');
       
       const sourceLayer = await fetchDTNSourceLayer(dtnLayerId);
@@ -584,31 +583,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     } catch (error: any) {
       console.error(`Error adding ${overlay} layer:`, error);
       
-      if (error.message?.includes('401') || error.status === 401) {
-        console.log('401 error detected, attempting to refresh token...');
-        try {
-          const newToken = await getValidDTNToken();
-          console.log('Token refreshed, please try again');
-          
-          toast({
-            title: "Token Refreshed",
-            description: "Authentication token has been refreshed. Please try adding the layer again.",
-          });
-        } catch (refreshError) {
-          console.error('Failed to refresh token:', refreshError);
-          toast({
-            title: "Authentication Error",
-            description: "Failed to refresh authentication token. Please reload the page.",
-            variant: "destructive"
-          });
-        }
-      } else {
-        toast({
-          title: "Layer Error",
-          description: `Failed to add ${overlay} layer. Please check the console for details.`,
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Layer Error",
+        description: `Failed to add ${overlay} layer. Please check the token and try again.`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -1183,6 +1162,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   return (
     <div className="relative h-full w-full">
       <MapTopControls />
+      <DirectTokenInput />
       <div ref={mapContainerRef} className="absolute inset-0" />
 
       <button
