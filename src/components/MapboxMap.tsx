@@ -42,6 +42,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -116,6 +117,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const { toast } = useToast();
 
   const dtnOverlays = {
+    light: { label: 'Light Theme', isTheme: true },
+    dark: { label: 'Dark Theme', isTheme: true },
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
     wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
     swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
@@ -385,8 +388,32 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
+  const handleThemeChange = (theme: 'light' | 'dark') => {
+    setCurrentTheme(theme);
+    if (onToggleTheme && ((theme === 'dark' && !isDarkMode) || (theme === 'light' && isDarkMode))) {
+      onToggleTheme();
+    }
+    
+    // Update active overlays to reflect theme selection
+    setActiveOverlays(prev => {
+      const filtered = prev.filter(overlay => overlay !== 'light' && overlay !== 'dark');
+      return [...filtered, theme];
+    });
+
+    toast({
+      title: `${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme`,
+      description: `Switched to ${theme} theme`
+    });
+  };
+
   const handleOverlayClick = async (overlay: string) => {
     console.log(`Attempting to add overlay: ${overlay}`);
+    
+    // Handle theme overlays
+    if (overlay === 'light' || overlay === 'dark') {
+      handleThemeChange(overlay);
+      return;
+    }
     
     if (!mapref.current || !mapref.current.isStyleLoaded()) {
       console.warn("Map style not yet loaded");
@@ -651,6 +678,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
   const removeOverlay = (overlay: string) => {
+    if (overlay === 'light' || overlay === 'dark') {
+      setActiveOverlays(prev => prev.filter(item => item !== overlay));
+      return;
+    }
+
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
 
     const sourceId = `dtn-source-${overlay}`;
@@ -705,7 +737,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       {showLayers && (
         <div className="absolute top-32 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
           <h3 className="text-sm font-semibold mb-3">DTN Weather Layers</h3>
-          {Object.keys(dtnOverlays).map((overlay) => (
+          {Object.entries(dtnOverlays).map(([overlay, config]) => (
             <div
               key={overlay}
               onClick={() => handleOverlayClick(overlay)}
@@ -715,7 +747,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   : 'bg-gray-100 hover:bg-gray-200 text-black'
               }`}
             >
-              {overlay.charAt(0).toUpperCase() + overlay.slice(1).replace('-', ' ')}
+              {config.label || overlay.charAt(0).toUpperCase() + overlay.slice(1).replace('-', ' ')}
               {activeOverlays.includes(overlay) && <span className="ml-2">✓</span>}
             </div>
           ))}
