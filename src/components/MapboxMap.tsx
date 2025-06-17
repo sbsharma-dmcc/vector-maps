@@ -84,8 +84,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     localStorage.setItem('weatherLayerDrafts', JSON.stringify(weatherDrafts));
   }, [weatherDrafts]);
 
-  // Get initial token for logging
-  const initialToken = dtnToken.replace('Bearer ', '');
+  // Get initial token for logging with better error handling
+  const getInitialTokenSafely = () => {
+    try {
+      if (dtnToken && typeof dtnToken === 'string') {
+        return dtnToken.replace('Bearer ', '');
+      }
+      return 'No token available';
+    } catch (error) {
+      console.error('Error getting initial token:', error);
+      return 'Token error';
+    }
+  };
+
+  const initialToken = getInitialTokenSafely();
   console.log('Initial DTN Token being used:', initialToken.substring(0, 50) + '...');
 
   // Enhanced DTN token validation on component mount
@@ -100,6 +112,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         
         console.log('✅ DTN Authentication initialized successfully');
         console.log('Token length:', cleanToken.length);
+        console.log('Token starts with:', cleanToken.substring(0, 20) + '...');
         
         setTokenValidation({
           isValid: true,
@@ -237,20 +250,19 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       
       // Fetch source layer name with the validated token
       let sourceLayerName;
-      if (overlayType === 'swell') {
+      try {
         sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, cleanToken);
-        if (!sourceLayerName) {
-          console.log('Primary swell layer failed, using fallback...');
-          sourceLayerName = 'default';
-        }
-      } else {
-        sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, cleanToken);
+        console.log(`Fetched source layer name for ${overlayType}:`, sourceLayerName);
+      } catch (fetchError) {
+        console.error(`Failed to fetch source layer for ${overlayType}:`, fetchError);
+        // Use a default source layer name based on overlay type
+        sourceLayerName = overlayType === 'swell' ? 'significant_wave_height' : 'default';
+        console.log(`Using fallback source layer name: ${sourceLayerName}`);
       }
       
-      console.log(`Source layer name for ${overlayType}:`, sourceLayerName);
-      
       if (!sourceLayerName) {
-        throw new Error(`Could not fetch source layer for ${overlayType}`);
+        sourceLayerName = 'default'; // Final fallback
+        console.log(`Using final fallback source layer name: ${sourceLayerName}`);
       }
 
       const sourceId = `dtn-source-${overlayType}`;
@@ -287,7 +299,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'source-layer': sourceLayerName
       };
 
-      console.log(`Configuring ${overlayType} layer...`);
+      console.log(`Configuring ${overlayType} layer with source-layer: ${sourceLayerName}...`);
 
       if (overlayType === 'swell') {
         layerConfig.type = 'fill';
@@ -341,7 +353,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       
       try {
         mapref.current.addLayer(layerConfig);
-        console.log(`Layer ${layerId} added successfully`);
+        console.log(`✅ Layer ${layerId} added successfully`);
         
         // Wait for layer to be fully added
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -349,7 +361,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         // Verify layer was added
         const addedLayer = mapref.current.getLayer(layerId);
         if (addedLayer) {
-          console.log(`Layer ${layerId} verified as added:`, addedLayer);
+          console.log(`✅ Layer ${layerId} verified as added:`, addedLayer);
           setActiveOverlays(prev => [...prev, overlayType]);
 
           // Update token validation status to success
@@ -374,7 +386,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         }
         
       } catch (layerError) {
-        console.error(`Error adding layer ${layerId}:`, layerError);
+        console.error(`❌ Error adding layer ${layerId}:`, layerError);
         throw layerError;
       }
 
