@@ -1,9 +1,10 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Route, History, Ship, Search, Plus, Key } from "lucide-react";
+import { LayoutDashboard, Route, History, Ship, Search, Plus, Key, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import DirectTokenInput from "./DirectTokenInput";
+import WeatherConfigPopup from "./WeatherConfigPopup";
 import {
   Sidebar,
   SidebarContent,
@@ -24,10 +25,16 @@ const AppSidebar = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const [showTokenInput, setShowTokenInput] = useState(false);
+  const [showWeatherConfig, setShowWeatherConfig] = useState(false);
 
   // Helper function
   const isActive = (path: string) => 
     path === "/" ? currentPath === path : currentPath.startsWith(path);
+
+  const handleWeatherConfig = (layerType: string, config: any) => {
+    console.log('Weather config applied:', layerType, config);
+    // This would trigger the parent map component to update
+  };
 
   return (
     <Sidebar className="w-16 bg-white/90 shadow-md z-10 flex flex-col" collapsible="none">
@@ -65,7 +72,7 @@ const AppSidebar = () => {
                 ))}
               </SidebarMenu>
 
-              <div className="mt-4">
+              <div className="mt-4 space-y-2">
                 <Button 
                   variant="outline" 
                   size="icon" 
@@ -74,6 +81,16 @@ const AppSidebar = () => {
                   title="DTN Token"
                 >
                   <Key className="h-4 w-4" />
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="w-full bg-white"
+                  onClick={() => setShowWeatherConfig(true)}
+                  title="Weather Configuration"
+                >
+                  <Settings className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -88,6 +105,12 @@ const AppSidebar = () => {
       </div>
 
       {showTokenInput && <DirectTokenInput />}
+      
+      <WeatherConfigPopup 
+        isOpen={showWeatherConfig}
+        onClose={() => setShowWeatherConfig(false)}
+        onApplyConfig={handleWeatherConfig}
+      />
     </Sidebar>
   );
 };
