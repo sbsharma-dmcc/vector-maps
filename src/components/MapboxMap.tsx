@@ -70,13 +70,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         { value: '1050mb+', color: 'rgba(128, 0, 0, 0.9)', opacity: 0.9 }
       ],
       smoothing: true,
-      blurRadius: 8,
+      blurRadius: 20,
       contourLines: false,
       contourColor: '#333333',
       contourWidth: 1,
       contourOpacity: 0.4,
-      heatmapIntensity: 1.5,
-      heatmapRadius: 15
+      heatmapIntensity: 2.5,
+      heatmapRadius: 25
     },
     swell: {
       fillOpacity: 0.9,
@@ -345,19 +345,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'pressure') {
-          // Create smooth pressure gradient using heatmap layer
-          const colorExpression: any[] = [
-            'interpolate',
-            ['linear'],
-            ['to-number', ['get', 'value'], 1013]
-          ];
-
-          layerConfigs.pressure.gradient.forEach((item) => {
-            const pressureValue = parseFloat(item.value.replace('mb', '').replace('+', ''));
-            colorExpression.push(pressureValue, item.color);
-          });
-
-          // Use heatmap layer for smooth gradient
+          // Create extremely smooth pressure gradient using heatmap layer with enhanced settings
           mapref.current.addLayer({
             id: layerId,
             type: "heatmap",
@@ -369,69 +357,56 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 ['linear'],
                 ['heatmap-density'],
                 0, 'rgba(128, 0, 128, 0)',
-                0.1, 'rgba(128, 0, 128, 0.4)',
-                0.2, 'rgba(0, 0, 255, 0.5)',
-                0.3, 'rgba(0, 128, 255, 0.6)',
-                0.4, 'rgba(0, 255, 255, 0.6)',
-                0.5, 'rgba(128, 255, 128, 0.5)',
-                0.6, 'rgba(255, 255, 0, 0.6)',
-                0.7, 'rgba(255, 128, 0, 0.7)',
-                0.8, 'rgba(255, 0, 0, 0.8)',
-                1, 'rgba(128, 0, 0, 0.9)'
+                0.1, 'rgba(128, 0, 128, 0.2)',
+                0.2, 'rgba(0, 0, 255, 0.3)',
+                0.3, 'rgba(0, 128, 255, 0.4)',
+                0.4, 'rgba(0, 255, 255, 0.5)',
+                0.5, 'rgba(128, 255, 128, 0.4)',
+                0.6, 'rgba(255, 255, 0, 0.5)',
+                0.7, 'rgba(255, 128, 0, 0.6)',
+                0.8, 'rgba(255, 0, 0, 0.7)',
+                1, 'rgba(128, 0, 0, 0.8)'
               ],
               "heatmap-radius": [
                 'interpolate',
-                ['linear'],
+                ['exponential', 2],
                 ['zoom'],
                 0, layerConfigs.pressure.heatmapRadius,
-                9, layerConfigs.pressure.heatmapRadius * 2,
-                14, layerConfigs.pressure.heatmapRadius * 4
+                6, layerConfigs.pressure.heatmapRadius * 2,
+                10, layerConfigs.pressure.heatmapRadius * 4,
+                14, layerConfigs.pressure.heatmapRadius * 6
               ],
               "heatmap-intensity": [
                 'interpolate',
-                ['linear'],
+                ['exponential', 1.5],
                 ['zoom'],
                 0, layerConfigs.pressure.heatmapIntensity,
-                9, layerConfigs.pressure.heatmapIntensity * 1.5,
+                6, layerConfigs.pressure.heatmapIntensity * 1.2,
+                10, layerConfigs.pressure.heatmapIntensity * 1.5,
                 14, layerConfigs.pressure.heatmapIntensity * 2
               ],
               "heatmap-opacity": [
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                0, layerConfigs.pressure.fillOpacity * 0.8,
-                9, layerConfigs.pressure.fillOpacity,
-                14, layerConfigs.pressure.fillOpacity * 1.2
+                0, layerConfigs.pressure.fillOpacity * 0.6,
+                6, layerConfigs.pressure.fillOpacity * 0.8,
+                10, layerConfigs.pressure.fillOpacity,
+                14, layerConfigs.pressure.fillOpacity * 1.1
+              ],
+              "heatmap-weight": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'value'], 1013],
+                980, 1,
+                1013, 0.5,
+                1050, 1
               ]
             },
             layout: {
               "visibility": "visible"
             }
           }, beforeId);
-
-          // Add a second layer with fill for additional smoothing
-          mapref.current.addLayer({
-            id: `${layerId}-fill`,
-            type: "fill",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            paint: {
-              "fill-color": colorExpression,
-              "fill-opacity": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                2, 0.2,
-                6, 0.4,
-                14, 0.5
-              ],
-              "fill-outline-color": 'transparent',
-              "fill-antialias": true
-            },
-            layout: {
-              "visibility": "visible"
-            }
-          }, layerId);
 
         } else if (overlay === 'swell') {
           const colorExpression: any[] = [
@@ -680,29 +655,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const config = layerConfigs[selectedWeatherType];
     
     if (selectedWeatherType === 'pressure') {
-      const colorExpression: any[] = [
-        'interpolate',
-        ['exponential', 1.5],
-        ['to-number', ['get', 'value'], 1013]
-      ];
-
-      config.gradient.forEach((item: any) => {
-        const pressureValue = parseFloat(item.value.replace('mb', '').replace('+', ''));
-        colorExpression.push(pressureValue, item.color);
-      });
-
       updateLayerProperties(selectedWeatherType, {
         'heatmap-opacity': config.fillOpacity,
         'heatmap-intensity': config.heatmapIntensity,
         'heatmap-radius': config.heatmapRadius
       });
-
-      // Update fill layer if it exists
-      const fillLayerId = `dtn-layer-${selectedWeatherType}-fill`;
-      if (mapref.current && mapref.current.getLayer(fillLayerId)) {
-        mapref.current.setPaintProperty(fillLayerId, 'fill-color', colorExpression);
-        mapref.current.setPaintProperty(fillLayerId, 'fill-opacity', config.fillOpacity * 0.5);
-      }
     } else if (selectedWeatherType === 'swell') {
       const colorExpression: any[] = [
         'interpolate',
@@ -814,7 +771,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   value={[config.heatmapIntensity]}
                   onValueChange={([value]) => updateConfigValue('pressure', 'heatmapIntensity', value)}
                   min={0.5}
-                  max={3}
+                  max={5}
                   step={0.1}
                   className="flex-1"
                 />
@@ -828,9 +785,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 <Slider
                   value={[config.heatmapRadius]}
                   onValueChange={([value]) => updateConfigValue('pressure', 'heatmapRadius', value)}
-                  min={5}
-                  max={50}
-                  step={1}
+                  min={10}
+                  max={100}
+                  step={5}
                   className="flex-1"
                 />
                 <span className="text-xs w-12">{config.heatmapRadius}</span>
