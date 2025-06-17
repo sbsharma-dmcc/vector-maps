@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -57,17 +58,32 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const { toast } = useToast();
 
-  // Complete DTN pressure layers collection
+  // Complete DTN layers collection including all requested layers
   const dtnOverlays = {
-    'pressure-gradient': { 
-      dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', 
-      tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8',
-      name: 'Pressure Gradient'
+    'symbol': { 
+      dtnLayerId: 'fcst-manta-weather-symbols', 
+      tileSetId: 'weather-symbols-latest',
+      name: 'Weather Symbols'
+    },
+    'wind-barb': { 
+      dtnLayerId: 'fcst-manta-wind-barbs', 
+      tileSetId: 'wind-barbs-latest',
+      name: 'Wind Barbs'
+    },
+    'swell': { 
+      dtnLayerId: 'fcst-manta-swell-height-contours', 
+      tileSetId: 'swell-height-latest',
+      name: 'Swell Height'
     },
     'pressure-lines': { 
       dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', 
       tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8',
       name: 'Pressure Lines'
+    },
+    'pressure-gradient': { 
+      dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', 
+      tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8',
+      name: 'Pressure Gradient'
     },
     'pressure-analysis': {
       dtnLayerId: 'analysis-manta-mean-sea-level-pressure-isolines',
@@ -300,7 +316,105 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         });
 
         // Layer styling based on type with applied configuration
-        if (overlay === 'pressure-gradient') {
+        if (overlay === 'symbol') {
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "icon-image": [
+                'case',
+                ['has', 'symbol_type'], ['get', 'symbol_type'],
+                'circle'
+              ],
+              "icon-size": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, 0.5,
+                6, 0.8,
+                10, 1.2,
+                14, 1.5
+              ],
+              "icon-allow-overlap": true,
+              "visibility": "visible"
+            },
+            paint: {
+              "icon-opacity": config.fillOpacity,
+              "icon-color": config.colorScheme === 'custom' ? config.customColors.mediumPressure : '#ff6600'
+            }
+          });
+        } else if (overlay === 'wind-barb') {
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "icon-image": "wind-barb",
+              "icon-size": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, 0.3,
+                6, 0.6,
+                10, 1.0,
+                14, 1.4
+              ],
+              "icon-rotation-alignment": "map",
+              "icon-rotate": ['get', 'wind_direction'],
+              "icon-allow-overlap": false,
+              "symbol-spacing": 100,
+              "visibility": "visible"
+            },
+            paint: {
+              "icon-opacity": config.fillOpacity,
+              "icon-color": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'wind_speed'], 0],
+                0, '#0066cc',
+                10, '#00ccff',
+                20, '#66ff66',
+                30, '#ffff00',
+                40, '#ff9900',
+                50, '#ff3300'
+              ]
+            }
+          });
+        } else if (overlay === 'swell') {
+          const colorScheme = getColorScheme(config.colorScheme, config.customColors);
+          
+          mapref.current.addLayer({
+            id: layerId,
+            type: "fill",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "fill-color": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'swell_height'], 0],
+                0, 'rgba(0, 100, 200, 0.2)',
+                1, 'rgba(0, 150, 255, 0.4)',
+                2, 'rgba(50, 200, 255, 0.5)',
+                3, 'rgba(100, 255, 200, 0.6)',
+                4, 'rgba(150, 255, 150, 0.7)',
+                5, 'rgba(200, 255, 100, 0.75)',
+                6, 'rgba(255, 200, 50, 0.8)',
+                7, 'rgba(255, 150, 0, 0.85)',
+                8, 'rgba(255, 100, 0, 0.9)',
+                10, 'rgba(200, 50, 0, 0.95)'
+              ],
+              "fill-opacity": config.fillOpacity,
+              "fill-outline-color": 'rgba(255, 255, 255, 0.5)'
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          });
+        } else if (overlay === 'pressure-gradient') {
           const colorScheme = getColorScheme(config.colorScheme, config.customColors);
           
           mapref.current.addLayer({
@@ -597,7 +711,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       {showLayers && (
         <div className="absolute top-16 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[250px] max-h-[70vh] overflow-y-auto">
-          <h3 className="text-sm font-semibold mb-3">DTN Pressure Layers</h3>
+          <h3 className="text-sm font-semibold mb-3">DTN Weather Layers</h3>
           <div className="grid gap-1">
             {Object.entries(dtnOverlays).map(([overlay, config]) => (
               <div
