@@ -1,9 +1,6 @@
-
 import React, { useState } from 'react';
-import { Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
-import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [showLayersPanel, setShowLayersPanel] = useState(false);
@@ -34,19 +31,6 @@ const Index = () => {
 
   return (
     <div className="absolute inset-0">
-      {/* Top Controls */}
-      <div className="absolute top-4 left-4 z-30 flex gap-2">
-        {/* Layers control button */}
-        <Button
-          onClick={() => setShowLayersPanel(!showLayersPanel)}
-          variant="outline"
-          size="icon"
-          className="bg-white/90 hover:bg-white shadow-lg"
-        >
-          <Layers className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Map Layers Panel */}
       <MapLayersPanel
         isOpen={showLayersPanel}
@@ -63,6 +47,7 @@ const Index = () => {
         mapStyle={isDarkMode ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7'}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleMapTheme}
+        onToggleLayers={() => setShowLayersPanel(!showLayersPanel)}
       />
     </div>
   );

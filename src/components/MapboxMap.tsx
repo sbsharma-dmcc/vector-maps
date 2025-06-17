@@ -20,6 +20,7 @@ interface MapboxMapProps {
   mapStyle?: string;
   isDarkMode?: boolean;
   onToggleTheme?: () => void;
+  onToggleLayers?: () => void;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -33,7 +34,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   activeBaseLayer = 'default',
   mapStyle = 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7',
   isDarkMode = false,
-  onToggleTheme
+  onToggleTheme,
+  onToggleLayers
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
@@ -688,6 +690,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       <MapTopControls 
         isDarkMode={isDarkMode}
         onToggleTheme={onToggleTheme}
+        onToggleLayers={onToggleLayers}
       />
       <DirectTokenInput />
       <div ref={mapContainerRef} className="absolute inset-0" />
