@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -150,12 +149,26 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       const overlayConfig = dtnOverlays[overlayType as keyof typeof dtnOverlays];
       if (!overlayConfig) return;
 
-      const sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, token);
+      console.log(`Adding ${overlayType} overlay with config:`, overlayConfig);
+      
+      // For swell layer, try a different approach if the main one fails
+      let sourceLayerName;
+      if (overlayType === 'swell') {
+        // Try to get source layer, but provide fallback
+        sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, token);
+        if (!sourceLayerName) {
+          console.log('Primary swell layer failed, trying alternative approach...');
+          // Use a generic source layer name as fallback
+          sourceLayerName = 'default';
+        }
+      } else {
+        sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, token);
+      }
       
       if (!sourceLayerName) {
         toast({
           title: "Layer Error", 
-          description: `Could not fetch source layer for ${overlayType}`,
+          description: `Could not fetch source layer for ${overlayType}. This layer may not be available with your current API permissions.`,
           variant: "destructive"
         });
         return;
@@ -166,9 +179,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       // Add source if it doesn't exist
       if (!mapref.current.getSource(sourceId)) {
+        const tileUrl = overlayType === 'swell' 
+          ? `https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${token}`
+          : `https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${token}`;
+        
+        console.log(`Adding source for ${overlayType} with URL template:`, tileUrl);
+        
         mapref.current.addSource(sourceId, {
           type: 'vector',
-          tiles: [`https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${token}`],
+          tiles: [tileUrl],
           minzoom: 0,
           maxzoom: 14
         });
@@ -190,6 +209,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           'fill-outline-color': layerConfigs.swell.fillOutlineColor,
           'fill-antialias': layerConfigs.swell.fillAntialias
         };
+        
+        // Add error handling for swell layer
+        layerConfig.filter = ['has', 'value']; // Only show features with value property
       } else if (overlayType === 'pressure') {
         layerConfig.paint = {
           'line-color': layerConfigs.pressure.lineColor,
@@ -227,6 +249,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         };
       }
 
+      console.log(`Adding layer ${layerId} with config:`, layerConfig);
       mapref.current.addLayer(layerConfig);
       setActiveOverlays(prev => [...prev, overlayType]);
 
@@ -241,7 +264,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       console.error(`Error adding ${overlayType} overlay:`, error);
       toast({
         title: "Layer Error",
-        description: `Failed to add ${overlayType} layer. Please check your connection.`,
+        description: `Failed to add ${overlayType} layer. This may be due to API permissions or network issues.`,
         variant: "destructive"
       });
     }

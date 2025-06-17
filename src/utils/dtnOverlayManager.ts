@@ -1,22 +1,34 @@
-
 export const dtnOverlays = {
   wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
   pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
-  swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
+  swell: { dtnLayerId: 'fcst-manta-significant-wave-height-contours', tileSetId: 'fcst-manta-significant-wave-height-contours' },
   symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
 };
 
 export const fetchDTNSourceLayer = async (layerId: string, token: string) => {
-  const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
-  });
+  try {
+    console.log(`Fetching DTN source layer for: ${layerId}`);
+    const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
 
-  const data = await response.json();
-  const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
-  return sourceLayerName;
+    if (!response.ok) {
+      console.error(`Failed to fetch source layer for ${layerId}:`, response.status, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log(`Source layer data for ${layerId}:`, data);
+    const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
+    console.log(`Source layer name for ${layerId}:`, sourceLayerName);
+    return sourceLayerName;
+  } catch (error) {
+    console.error(`Error fetching source layer for ${layerId}:`, error);
+    return null;
+  }
 };
 
 export const createSwellColorExpression = (config: any) => {
