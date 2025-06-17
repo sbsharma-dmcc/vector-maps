@@ -9,9 +9,21 @@ const DTN_CREDENTIALS = {
 };
 
 export interface DTNTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
+  data: {
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+    scope: string;
+  };
+  meta: {
+    date_time: string;
+    name: string;
+    uuid: string;
+    request_id: string;
+    start_timestamp: number;
+    end_timestamp: number;
+    execution_time: number;
+  };
 }
 
 let currentToken: string | null = null;
@@ -41,22 +53,26 @@ export const fetchNewDTNToken = async (): Promise<string> => {
       throw new Error(`Failed to fetch DTN token: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    const data: DTNTokenResponse = await response.json();
+    const responseData: DTNTokenResponse = await response.json();
     console.log('✅ Successfully fetched new DTN token');
-    console.log('Raw response data:', data);
-    console.log('Token type:', data.token_type);
-    console.log('Expires in:', data.expires_in, 'seconds');
+    console.log('Raw response data:', responseData);
     
-    // Validate required fields
-    if (!data.access_token) {
-      throw new Error('No access_token in response');
+    // Extract token data from the nested data property
+    const tokenData = responseData.data;
+    if (!tokenData || !tokenData.access_token) {
+      console.error('Invalid response structure:', responseData);
+      throw new Error('No access_token in response data');
     }
     
-    // Store token and expiry time
-    currentToken = `Bearer ${data.access_token}`;
+    console.log('Token type:', tokenData.token_type);
+    console.log('Expires in:', tokenData.expires_in, 'seconds');
+    console.log('Scope:', tokenData.scope);
     
-    // Use a default expiry if expires_in is not provided (24 hours)
-    const expiresIn = data.expires_in || 86400;
+    // Store token and expiry time
+    currentToken = `Bearer ${tokenData.access_token}`;
+    
+    // Use the expires_in from the response
+    const expiresIn = tokenData.expires_in || 86400; // Default to 24 hours if not provided
     tokenExpiryTime = Date.now() + (expiresIn * 1000) - 60000; // Subtract 1 minute for safety
     
     console.log('Token stored successfully with expiry:', new Date(tokenExpiryTime));
