@@ -567,8 +567,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 "duration": 1000,
                 "delay": 0
               },
-              "fill-antialias": true,
-              "fill-pattern": null
+              "fill-antialias": true
             },
             layout: {
               "visibility": "visible"
@@ -592,8 +591,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 10, 0.2
               ],
               "fill-translate": [1, 1],
-              "fill-antialias": true,
-              "fill-pattern": null
+              "fill-antialias": true
             },
             layout: {
               "visibility": "visible"
