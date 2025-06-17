@@ -36,7 +36,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const { toast } = useToast();
 
-  // Enhanced DTN overlays with two pressure layers
+  // Complete DTN pressure layers collection
   const dtnOverlays = {
     'pressure-gradient': { 
       dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', 
@@ -48,6 +48,36 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8',
       name: 'Pressure Lines'
     },
+    'pressure-analysis': {
+      dtnLayerId: 'analysis-manta-mean-sea-level-pressure-isolines',
+      tileSetId: 'analysis-pressure-latest',
+      name: 'Pressure Analysis'
+    },
+    'pressure-tendency': {
+      dtnLayerId: 'fcst-manta-pressure-tendency-isolines',
+      tileSetId: 'pressure-tendency-latest',
+      name: 'Pressure Tendency'
+    },
+    'high-pressure-centers': {
+      dtnLayerId: 'fcst-manta-high-pressure-centers',
+      tileSetId: 'high-pressure-centers-latest',
+      name: 'High Pressure Centers'
+    },
+    'low-pressure-centers': {
+      dtnLayerId: 'fcst-manta-low-pressure-centers',
+      tileSetId: 'low-pressure-centers-latest',
+      name: 'Low Pressure Centers'
+    },
+    'pressure-systems': {
+      dtnLayerId: 'fcst-manta-pressure-systems',
+      tileSetId: 'pressure-systems-latest',
+      name: 'Pressure Systems'
+    },
+    'surface-pressure': {
+      dtnLayerId: 'fcst-manta-surface-pressure-contours',
+      tileSetId: 'surface-pressure-latest',
+      name: 'Surface Pressure'
+    }
   };
 
   useEffect(() => {
@@ -167,8 +197,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
+        // Layer styling based on type
         if (overlay === 'pressure-gradient') {
-          // Beautiful gradient like the reference image
+          // Beautiful gradient heatmap
           mapref.current.addLayer({
             id: layerId,
             type: "heatmap",
@@ -231,7 +262,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "visibility": "visible"
             }
           });
-        } else if (overlay === 'pressure-lines') {
+        } else if (overlay === 'pressure-lines' || overlay === 'surface-pressure' || overlay === 'pressure-analysis') {
           // Clean pressure lines/contours
           mapref.current.addLayer({
             id: layerId,
@@ -268,6 +299,84 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "visibility": "visible",
               "line-cap": "round",
               "line-join": "round"
+            }
+          });
+        } else if (overlay === 'pressure-tendency') {
+          // Pressure tendency with different color scheme
+          mapref.current.addLayer({
+            id: layerId,
+            type: "line",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "line-color": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'value'], 0],
+                -5, '#ff0000',
+                -2, '#ff6600',
+                -1, '#ffaa00',
+                0, '#ffffff',
+                1, '#66ff66',
+                2, '#00ff00',
+                5, '#006600'
+              ],
+              "line-width": 2,
+              "line-opacity": 0.9
+            },
+            layout: {
+              "visibility": "visible",
+              "line-cap": "round",
+              "line-join": "round"
+            }
+          });
+        } else if (overlay === 'high-pressure-centers' || overlay === 'low-pressure-centers') {
+          // Pressure centers as symbols
+          mapref.current.addLayer({
+            id: layerId,
+            type: "circle",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "circle-radius": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, 8,
+                6, 12,
+                10, 16,
+                14, 20
+              ],
+              "circle-color": overlay === 'high-pressure-centers' ? '#ff6600' : '#0066ff',
+              "circle-opacity": 0.8,
+              "circle-stroke-width": 2,
+              "circle-stroke-color": '#ffffff',
+              "circle-stroke-opacity": 1
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          });
+        } else if (overlay === 'pressure-systems') {
+          // Pressure systems as filled areas
+          mapref.current.addLayer({
+            id: layerId,
+            type: "fill",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "fill-color": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'pressure_type'], 0],
+                0, 'rgba(0, 100, 200, 0.3)',
+                1, 'rgba(200, 100, 0, 0.3)'
+              ],
+              "fill-opacity": 0.4,
+              "fill-outline-color": '#ffffff'
+            },
+            layout: {
+              "visibility": "visible"
             }
           });
         }
@@ -335,26 +444,28 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       </button>
 
       {showLayers && (
-        <div className="absolute top-16 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
+        <div className="absolute top-16 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[250px] max-h-[70vh] overflow-y-auto">
           <h3 className="text-sm font-semibold mb-3">DTN Pressure Layers</h3>
-          {Object.entries(dtnOverlays).map(([overlay, config]) => (
-            <div
-              key={overlay}
-              onClick={() => handleOverlayClick(overlay)}
-              className={`p-2 m-1 rounded cursor-pointer transition-colors ${
-                activeOverlays.includes(overlay)
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-100 hover:bg-gray-200 text-black'
-              }`}
-            >
-              {config.name}
-              {activeOverlays.includes(overlay) && <span className="ml-2">✓</span>}
-            </div>
-          ))}
+          <div className="grid gap-1">
+            {Object.entries(dtnOverlays).map(([overlay, config]) => (
+              <div
+                key={overlay}
+                onClick={() => handleOverlayClick(overlay)}
+                className={`p-2 rounded cursor-pointer transition-colors text-sm ${
+                  activeOverlays.includes(overlay)
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-black'
+                }`}
+              >
+                {config.name}
+                {activeOverlays.includes(overlay) && <span className="ml-2">✓</span>}
+              </div>
+            ))}
+          </div>
           {activeOverlays.length > 0 && (
             <button
               onClick={removeAllOverlays}
-              className="w-full mt-2 p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              className="w-full mt-3 p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
             >
               Remove All Layers ({activeOverlays.length})
             </button>
