@@ -53,6 +53,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [weatherDrafts, setWeatherDrafts] = useState<WeatherLayerDraft[]>([]);
   const [swellConfigLocked, setSwellConfigLocked] = useState(false);
   const [layerConfigs, setLayerConfigs] = useState(defaultLayerConfigs);
+  const [tokenValidation, setTokenValidation] = useState<{
+    isValid: boolean;
+    error: string | null;
+    lastChecked: Date | null;
+  }>({
+    isValid: false,
+    error: null,
+    lastChecked: null
+  });
   
   const { toast } = useToast();
 
@@ -75,6 +84,98 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const token = dtnToken.replace('Bearer ', '');
   console.log('DTN Token being used:', token.substring(0, 50) + '...');
+
+  // Validate DTN token on component mount
+  useEffect(() => {
+    const validateToken = async () => {
+      console.log('=== Validating DTN Token ===');
+      console.log('Full token:', token);
+      console.log('Token length:', token.length);
+      
+      if (!token || token.length < 100) {
+        const error = 'DTN token appears to be invalid or too short';
+        console.error(error);
+        setTokenValidation({
+          isValid: false,
+          error,
+          lastChecked: new Date()
+        });
+        
+        toast({
+          title: "Token Error",
+          description: "DTN authentication token appears to be invalid. Please check your token configuration.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        // Test with a simple DTN API endpoint
+        const testUrl = 'https://map.api.dtn.com/v2/styles/fcst-manta-wind-speed-contours';
+        console.log('Testing token with URL:', testUrl);
+        
+        const response = await fetch(testUrl, {
+          method: 'HEAD',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        });
+        
+        console.log('Token validation response status:', response.status);
+        console.log('Token validation response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (response.ok) {
+          setTokenValidation({
+            isValid: true,
+            error: null,
+            lastChecked: new Date()
+          });
+          console.log('✅ DTN token validation successful');
+          
+          toast({
+            title: "Token Valid",
+            description: "DTN authentication token is working correctly"
+          });
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          const error = `Token validation failed: ${response.status} ${response.statusText} - ${errorText}`;
+          console.error('❌ DTN token validation failed:', error);
+          
+          setTokenValidation({
+            isValid: false,
+            error,
+            lastChecked: new Date()
+          });
+          
+          toast({
+            title: "Token Invalid",
+            description: `DTN token validation failed: ${response.status} ${response.statusText}`,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('❌ DTN token validation error:', errorMessage);
+        
+        setTokenValidation({
+          isValid: false,
+          error: `Network error: ${errorMessage}`,
+          lastChecked: new Date()
+        });
+        
+        toast({
+          title: "Token Validation Error",
+          description: `Failed to validate DTN token: ${errorMessage}`,
+          variant: "destructive"
+        });
+      }
+    };
+
+    if (token) {
+      validateToken();
+    }
+  }, [token, toast]);
 
   // Enhanced vessel coordinates with circle vessels added
   const mockVessels: Vessel[] = [
@@ -146,6 +247,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const handleOverlayClick = async (overlayType: string) => {
     console.log(`=== Starting overlay click for: ${overlayType} ===`);
     
+    // Check token validation first
+    if (!tokenValidation.isValid) {
+      console.error('Cannot add layer: DTN token is not valid');
+      toast({
+        title: "Authentication Error",
+        description: `Cannot add ${overlayType} layer: DTN token is not valid. Error: ${tokenValidation.error}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (activeOverlays.includes(overlayType)) {
       console.log(`Removing existing overlay: ${overlayType}`);
       removeOverlay(overlayType);
@@ -170,21 +282,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       }
 
       console.log(`Adding ${overlayType} overlay with config:`, overlayConfig);
-      console.log(`Using DTN token: ${token.substring(0, 20)}...`);
-      
-      // Test DTN API connectivity first
-      console.log('Testing DTN API connectivity...');
-      const testResponse = await fetch(`https://map.api.dtn.com/v2/styles/${overlayConfig.dtnLayerId}`, {
-        method: 'HEAD',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      console.log('DTN API test response status:', testResponse.status);
-      if (!testResponse.ok) {
-        throw new Error(`DTN API test failed: ${testResponse.status} ${testResponse.statusText}`);
-      }
+      console.log(`Using validated DTN token: ${token.substring(0, 20)}...`);
       
       // Fetch source layer name
       let sourceLayerName;
@@ -730,6 +828,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       {showLayers && (
         <div className="absolute top-32 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
           <h3 className="text-sm font-semibold mb-3">DTN Weather Layers</h3>
+          
+          {/* Token Status */}
+          <div className={`mb-4 p-2 rounded text-xs ${tokenValidation.isValid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className="font-semibold">
+              Token Status: {tokenValidation.isValid ? '✅ Valid' : '❌ Invalid'}
+            </div>
+            {!tokenValidation.isValid && tokenValidation.error && (
+              <div className="mt-1 text-red-600">{tokenValidation.error}</div>
+            )}
+            {tokenValidation.lastChecked && (
+              <div className="mt-1 text-gray-500">
+                Checked: {tokenValidation.lastChecked.toLocaleTimeString()}
+              </div>
+            )}
+          </div>
+          
           {Object.keys(dtnOverlays).map((overlay) => (
             <div
               key={overlay}
@@ -737,7 +851,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               className={`p-2 m-1 rounded cursor-pointer transition-colors ${
                 activeOverlays.includes(overlay)
                   ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-100 hover:bg-gray-200 text-black'
+                  : tokenValidation.isValid 
+                    ? 'bg-gray-100 hover:bg-gray-200 text-black'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
               {overlay.charAt(0).toUpperCase() + overlay.slice(1)}
@@ -756,7 +872,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             <div className="font-semibold">Debug Info:</div>
             <div>Map Loaded: {isMapLoaded ? 'Yes' : 'No'}</div>
             <div>Active Overlays: {activeOverlays.length}</div>
-            <div>Token Valid: {token.length > 20 ? 'Yes' : 'No'}</div>
+            <div>Token Length: {token.length}</div>
+            <div>Token Valid: {tokenValidation.isValid ? 'Yes' : 'No'}</div>
           </div>
         </div>
       )}
