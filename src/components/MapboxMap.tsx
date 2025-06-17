@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -232,21 +233,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       console.log(`Adding ${overlayType} overlay with config:`, overlayConfig);
       
-      // Fetch source layer name with the fresh token
-      let sourceLayerName;
-      try {
-        sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, cleanToken);
-        console.log(`Fetched source layer name for ${overlayType}:`, sourceLayerName);
-      } catch (fetchError) {
-        console.error(`Failed to fetch source layer for ${overlayType}:`, fetchError);
-        // Use a default source layer name based on overlay type
-        sourceLayerName = overlayType === 'swell' ? 'significant_wave_height' : 'default';
-        console.log(`Using fallback source layer name: ${sourceLayerName}`);
-      }
+      // Use fallback source layer names based on overlay type
+      const fallbackSourceLayers = {
+        wind: 'wind_speed',
+        pressure: 'pressure',
+        swell: 'significant_wave_height',
+        symbol: 'wind_symbol'
+      };
       
-      if (!sourceLayerName) {
-        sourceLayerName = 'default'; // Final fallback
-        console.log(`Using final fallback source layer name: ${sourceLayerName}`);
+      let sourceLayerName = fallbackSourceLayers[overlayType as keyof typeof fallbackSourceLayers] || 'default';
+      
+      // Try to fetch the actual source layer name, but don't fail if it doesn't work
+      try {
+        const fetchedSourceLayer = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, cleanToken);
+        if (fetchedSourceLayer) {
+          sourceLayerName = fetchedSourceLayer;
+          console.log(`✅ Using fetched source layer name: ${sourceLayerName}`);
+        } else {
+          console.log(`⚠️ Using fallback source layer name: ${sourceLayerName}`);
+        }
+      } catch (fetchError) {
+        console.warn(`Failed to fetch source layer for ${overlayType}, using fallback:`, fetchError);
       }
 
       const sourceId = `dtn-source-${overlayType}`;
@@ -274,9 +281,19 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
 
       // Wait a moment for source to be added
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Configure layer based on type
+      // Test the tile URL by making a sample request
+      try {
+        const testTileUrl = tileUrl.replace('{z}', '2').replace('{x}', '1').replace('{y}', '1');
+        console.log(`Testing tile URL: ${testTileUrl}`);
+        const testResponse = await fetch(testTileUrl, { method: 'HEAD' });
+        console.log(`Tile URL test response: ${testResponse.status} ${testResponse.statusText}`);
+      } catch (testError) {
+        console.warn('Tile URL test failed:', testError);
+      }
+
+      // Configure layer based on type with enhanced visibility
       let layerConfig: any = {
         id: layerId,
         source: sourceId,
@@ -290,46 +307,55 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         const colorExpression = createSwellColorExpression(layerConfigs.swell);
         layerConfig.paint = {
           'fill-color': colorExpression,
-          'fill-opacity': layerConfigs.swell.fillOpacity,
-          'fill-outline-color': layerConfigs.swell.fillOutlineColor,
-          'fill-antialias': layerConfigs.swell.fillAntialias
+          'fill-opacity': 0.8, // Increased opacity for visibility
+          'fill-outline-color': '#ffffff',
+          'fill-antialias': true
         };
-        layerConfig.filter = ['has', 'value'];
+        // Remove restrictive filter to see if data exists
+        layerConfig.filter = null;
       } else if (overlayType === 'pressure') {
         layerConfig.type = 'line';
         layerConfig.paint = {
-          'line-color': layerConfigs.pressure.lineColor,
-          'line-width': layerConfigs.pressure.lineWidth,
-          'line-opacity': layerConfigs.pressure.lineOpacity,
-          'line-blur': layerConfigs.pressure.lineBlur,
-          'line-gap-width': layerConfigs.pressure.lineGapWidth
+          'line-color': '#ff6b35',
+          'line-width': 2, // Increased width for visibility
+          'line-opacity': 0.9, // Increased opacity
+          'line-blur': 0
         };
         layerConfig.layout = {
-          'line-cap': layerConfigs.pressure.lineCap,
-          'line-join': layerConfigs.pressure.lineJoin
+          'line-cap': 'round',
+          'line-join': 'round'
         };
-      } else if (overlayType === 'wind' || overlayType === 'symbol') {
+      } else if (overlayType === 'wind') {
         layerConfig.type = 'symbol';
         const config = layerConfigs[overlayType];
         layerConfig.paint = {
-          'text-color': config.textColor,
-          'text-opacity': config.textOpacity,
-          'text-halo-color': config.haloColor,
-          'text-halo-width': config.haloWidth
+          'text-color': '#ffffff',
+          'text-opacity': 1.0, // Full opacity
+          'text-halo-color': '#000000',
+          'text-halo-width': 2 // Increased halo for visibility
         };
         
-        let textField;
-        if (overlayType === 'symbol' && 'symbolType' in config && 'customSymbol' in config) {
-          textField = getSymbolByType(config.symbolType, config.customSymbol);
-        } else {
-          textField = ['get', 'speed'];
-        }
+        layerConfig.layout = {
+          'text-field': ['concat', ['get', 'speed'], ' kt'],
+          'text-size': 14,
+          'text-allow-overlap': true,
+          'symbol-spacing': 50 // Reduced spacing for more symbols
+        };
+      } else if (overlayType === 'symbol') {
+        layerConfig.type = 'symbol';
+        const config = layerConfigs[overlayType];
+        layerConfig.paint = {
+          'text-color': '#ff0000',
+          'text-opacity': 1.0,
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2
+        };
         
         layerConfig.layout = {
-          'text-field': textField,
-          'text-size': config.textSize,
-          'text-allow-overlap': config.allowOverlap,
-          'symbol-spacing': config.symbolSpacing
+          'text-field': '→',
+          'text-size': 20, // Larger size for visibility
+          'text-allow-overlap': true,
+          'symbol-spacing': 80
         };
       }
 
@@ -340,12 +366,35 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         console.log(`✅ Layer ${layerId} added successfully`);
         
         // Wait for layer to be fully added
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Verify layer was added
+        // Verify layer was added and check for data
         const addedLayer = mapref.current.getLayer(layerId);
         if (addedLayer) {
           console.log(`✅ Layer ${layerId} verified as added:`, addedLayer);
+          
+          // Check if the source has data by querying rendered features
+          setTimeout(() => {
+            if (mapref.current) {
+              const features = mapref.current.queryRenderedFeatures({ layers: [layerId] });
+              console.log(`Features found in layer ${layerId}:`, features.length);
+              if (features.length === 0) {
+                console.warn(`⚠️ No features found in layer ${layerId} - data might not be available at current zoom/location`);
+                toast({
+                  title: "Layer Added - No Data Visible",
+                  description: `${overlayType} layer added but no data visible at current location/zoom. Try zooming in or moving the map.`,
+                  variant: "default"
+                });
+              } else {
+                console.log(`✅ Found ${features.length} features in layer ${layerId}`);
+                toast({
+                  title: "Layer Added Successfully",
+                  description: `${overlayType} layer is now visible with ${features.length} features`
+                });
+              }
+            }
+          }, 1000);
+          
           setActiveOverlays(prev => [...prev, overlayType]);
 
           // Update token validation status to success
@@ -358,11 +407,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
           // Track layer addition with Amplitude
           trackLayerAdded(overlayType, layerId);
-
-          toast({
-            title: "Layer Added Successfully",
-            description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer is now visible on the map`
-          });
 
           ensureVesselsOnTop();
         } else {
