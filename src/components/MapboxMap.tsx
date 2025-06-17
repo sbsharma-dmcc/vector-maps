@@ -9,6 +9,7 @@ import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesse
 import { dtnOverlays, fetchDTNSourceLayer, createSwellColorExpression } from '@/utils/dtnOverlayManager';
 import { convertRgbToHex, convertHexToRgb, getSymbolByType } from '@/utils/colorHelpers';
 import { defaultLayerConfigs } from '@/utils/layerConfigDefaults';
+import { trackLayerAdded, trackLayerRemoved, trackLayerConfigurationApplied } from '@/utils/amplitudeTracking';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -253,6 +254,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       mapref.current.addLayer(layerConfig);
       setActiveOverlays(prev => [...prev, overlayType]);
 
+      // Track layer addition with Amplitude
+      trackLayerAdded(overlayType, layerId);
+
       toast({
         title: "Layer Added",
         description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer has been added to the map`
@@ -285,6 +289,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
 
     setActiveOverlays(prev => prev.filter(overlay => overlay !== overlayType));
+
+    // Track layer removal with Amplitude
+    trackLayerRemoved(overlayType, layerId);
 
     toast({
       title: "Layer Removed",
@@ -595,6 +602,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const applyLayerConfiguration = () => {
     const config = layerConfigs[selectedWeatherType];
     applySpecificLayerConfiguration(selectedWeatherType, config);
+
+    // Track configuration application with Amplitude
+    trackLayerConfigurationApplied(selectedWeatherType, {
+      config_type: selectedWeatherType,
+      config_properties: Object.keys(config).length
+    });
 
     // Automatically save as draft after applying
     saveConfigurationAsDraft();
