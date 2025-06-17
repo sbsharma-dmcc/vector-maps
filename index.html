@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -15,6 +16,17 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- Amplitude Analytics -->
+    <script src="https://cdn.eu.amplitude.com/script/7cf0c965e142e4f136f7b766f4916535.js"></script>
+    <script>
+      window.amplitude.add(window.sessionReplay.plugin({sampleRate: 1}));
+      window.amplitude.init('7cf0c965e142e4f136f7b766f4916535', {
+        "fetchRemoteConfig": true,
+        "serverZone": "EU",
+        "autocapture": true
+      });
+    </script>
   </head>
 
   <body>
