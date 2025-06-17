@@ -53,7 +53,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       contourOpacity: 0.8,
       highPressureColor: '#ff0000',
       mediumPressureColor: '#80ff80',
-      lowPressureColor: '#800080'
+      lowPressureColor: '#800080',
+      heatmapRadius: 20,
+      heatmapIntensity: 0.6,
+      fillOpacity: 0.7
     },
     swell: {
       fillOpacity: 0.9,
@@ -496,7 +499,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             ['to-number', ['get', 'value'], 0]
           ];
 
-          layerConfigs.swell.gradient.forEach((item) => {
+          config.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
             colorExpression.push(heightValue, item.color);
           });
