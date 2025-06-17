@@ -15,25 +15,61 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+interface WeatherConfig {
+  fillOpacity: number;
+  heatmapIntensity: number;
+  heatmapRadius: number;
+  heatmapWeight: number;
+  lineOpacity: number;
+  lineWidth: number;
+  colorScheme: string;
+  customColors: {
+    lowPressure: string;
+    mediumPressure: string;
+    highPressure: string;
+  };
+  enableAnimation: boolean;
+  animationSpeed: number;
+  blendMode: string;
+  smoothing: boolean;
+  contourInterval: number;
+}
+
+interface AppSidebarProps {
+  onWeatherConfigChange?: (configs: Record<string, WeatherConfig>) => void;
+}
+
 const navigationItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
   { title: "Routes", path: "/routes", icon: Route },
   { title: "History", path: "/history", icon: History },
 ];
 
-const AppSidebar = () => {
+const AppSidebar: React.FC<AppSidebarProps> = ({ onWeatherConfigChange }) => {
   const location = useLocation();
   const currentPath = location.pathname;
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [showWeatherConfig, setShowWeatherConfig] = useState(false);
+  const [weatherConfigs, setWeatherConfigs] = useState<Record<string, WeatherConfig>>({});
 
   // Helper function
   const isActive = (path: string) => 
     path === "/" ? currentPath === path : currentPath.startsWith(path);
 
-  const handleWeatherConfig = (layerType: string, config: any) => {
+  const handleWeatherConfig = (layerType: string, config: WeatherConfig) => {
     console.log('Weather config applied:', layerType, config);
-    // This would trigger the parent map component to update
+    
+    const newConfigs = {
+      ...weatherConfigs,
+      [layerType]: config
+    };
+    
+    setWeatherConfigs(newConfigs);
+    
+    // Notify parent component (which should pass this to MapboxMap)
+    if (onWeatherConfigChange) {
+      onWeatherConfigChange(newConfigs);
+    }
   };
 
   return (
