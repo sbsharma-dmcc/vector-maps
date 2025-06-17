@@ -1,7 +1,8 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Route, History, Ship, Search, Plus } from "lucide-react";
+import { LayoutDashboard, Route, History, Ship, Search, Plus, Settings, CloudRain } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +12,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import DirectTokenInput from "./DirectTokenInput";
+import WeatherConfigDrafts from "./WeatherConfigDrafts";
 
 const navigationItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -21,6 +31,8 @@ const navigationItems = [
 const AppSidebar = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const [isDTNDialogOpen, setIsDTNDialogOpen] = useState(false);
+  const [isWeatherDialogOpen, setIsWeatherDialogOpen] = useState(false);
 
   // Helper function
   const isActive = (path: string) => 
@@ -61,6 +73,40 @@ const AppSidebar = () => {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
+
+              {/* DTN Token Dialog */}
+              <Dialog open={isDTNDialogOpen} onOpenChange={setIsDTNDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" className="w-full mb-2 bg-white" title="DTN Token">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>DTN Token Configuration</DialogTitle>
+                  </DialogHeader>
+                  <div className="relative">
+                    <DirectTokenInput />
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Weather Configuration Dialog */}
+              <Dialog open={isWeatherDialogOpen} onOpenChange={setIsWeatherDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" className="w-full mb-2 bg-white" title="Weather Configuration">
+                    <CloudRain className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Weather Configuration</DialogTitle>
+                  </DialogHeader>
+                  <div className="relative">
+                    <WeatherConfigDrafts />
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
