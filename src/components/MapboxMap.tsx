@@ -18,6 +18,8 @@ interface MapboxMapProps {
   activeLayers?: Record<string, boolean>;
   activeBaseLayer?: string;
   mapStyle?: string;
+  isDarkMode?: boolean;
+  onToggleTheme?: () => void;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -29,7 +31,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   activeRouteType = 'base',
   activeLayers = {},
   activeBaseLayer = 'default',
-  mapStyle = 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7'
+  mapStyle = 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7',
+  isDarkMode = false,
+  onToggleTheme
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
@@ -681,7 +685,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   return (
     <div className="relative h-full w-full">
-      <MapTopControls />
+      <MapTopControls 
+        isDarkMode={isDarkMode}
+        onToggleTheme={onToggleTheme}
+      />
       <DirectTokenInput />
       <div ref={mapContainerRef} className="absolute inset-0" />
 

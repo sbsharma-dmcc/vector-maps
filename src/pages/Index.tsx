@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Moon, Sun, Layers } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
 import { Button } from '@/components/ui/button';
@@ -45,16 +45,6 @@ const Index = () => {
         >
           <Layers className="h-4 w-4" />
         </Button>
-
-        {/* Theme toggle button */}
-        <Button
-          onClick={toggleMapTheme}
-          variant="outline"
-          size="icon"
-          className="bg-white/90 hover:bg-white shadow-lg"
-        >
-          {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
       </div>
 
       {/* Map Layers Panel */}
@@ -71,6 +61,8 @@ const Index = () => {
         activeLayers={activeLayers}
         activeBaseLayer={activeBaseLayer}
         mapStyle={isDarkMode ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7'}
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleMapTheme}
       />
     </div>
   );
