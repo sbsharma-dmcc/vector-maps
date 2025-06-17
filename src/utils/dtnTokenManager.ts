@@ -43,12 +43,23 @@ export const fetchNewDTNToken = async (): Promise<string> => {
 
     const data: DTNTokenResponse = await response.json();
     console.log('✅ Successfully fetched new DTN token');
+    console.log('Raw response data:', data);
     console.log('Token type:', data.token_type);
     console.log('Expires in:', data.expires_in, 'seconds');
     
+    // Validate required fields
+    if (!data.access_token) {
+      throw new Error('No access_token in response');
+    }
+    
     // Store token and expiry time
     currentToken = `Bearer ${data.access_token}`;
-    tokenExpiryTime = Date.now() + (data.expires_in * 1000) - 60000; // Subtract 1 minute for safety
+    
+    // Use a default expiry if expires_in is not provided (24 hours)
+    const expiresIn = data.expires_in || 86400;
+    tokenExpiryTime = Date.now() + (expiresIn * 1000) - 60000; // Subtract 1 minute for safety
+    
+    console.log('Token stored successfully with expiry:', new Date(tokenExpiryTime));
     
     return currentToken;
   } catch (error) {
@@ -129,8 +140,8 @@ export const getDTNToken = async (): Promise<string> => {
     return newToken;
   } catch (error) {
     console.error('❌ Failed to get DTN token, using fallback');
-    // Return the hardcoded fallback token as last resort
-    const fallbackToken = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpfX21pZW13NGhoTmdvQWQxR3N6ciJ9.eyJodHRwczovL2F1dGguZHRuLmNvbS9hY2NvdW50SWQiOiIyNTY1Mzk5IiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vdmVuZG9ySWQiOiJ1bmtub3duIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vY3VzdG9tZXJJZCI6IjI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9wcm9kdWN0Q29kZSI6IkRUTld4QVBJXzI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9yZXF1ZXN0ZXJJcCI6IjE4LjIxMy4xNzQuMjciLCJodHRwczovL2F1dGguZHRuLmNvbS9ycHMiOiIyNTAiLCJodHRwczovL2F1dGguZHRuLmNvbS90aWVyIjoiRW50ZXJwcmlzZSIsImh0dHBzOi8vYXV0aC5kdG4uY29tL3F1b3RhIjoiMTAwMDAwIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vYXJlYVNpemUiOiIwIiwiaXNzIjoiaHR0cHM6Ly9pZC5hdXRoLmR0bi5jb20vIiwic3ViIjoiRnpGbHZJajNjUFBhejhlc3B5ckhEN0FySnVlY0xOR1BAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbWFwLmFwaS5kdG4uY29tIiwiaWF0IjoxNzUwMDU4MTY4LCJleHAiOjE3NTAxNDQ1NjgsInNjb3BlIjoicmVhZDpjYXRhbG9nLWRlZmF1bHQgd2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJGekZsdklqM2NQUGF6OGVzcHlySEQ3QXJKdWVjTE5HUCIsInBlcm1pc3Npb25zIjpbInJlYWQ6Y2F0YWxvZy1kZWZhdWx0Iiwid2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiXX0.LCsNRdOsCj7ilbkCnaOOLcEWRbSTjN48TszJ8JQ-3qZc6-GvR7e8mVNun6dhnbQef_coPT-f-55-1SyAqHn7CWdx2kCw-Q-DFNPCdfRTusMuvGjqu-vn7UxoRfxASevMkDF_dE7GhZlYn53k5rfW386G1SzOsk1ev9KUqRXomCLMlwOModPksZD82r65wn8RLpUltCkZliSvTLzPgf4HlE_EmQpO9LJrGPVlxxhMJpmzGIQpP-lQfPWQSsgtV3f0peYZhtnorWSbrn9RsApjO9qi3Gcu_c6FtFuzIsAkG_bpG-nJRyZP9vPwlpLVxI62voYLFPPdm3xgrxTvhUVSlg";
+    // Return the updated fallback token as last resort
+    const fallbackToken = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpfX21pZW13NGhoTmdvQWQxR3N6ciJ9.eyJodHRwczovL2F1dGguZHRuLmNvbS9hY2NvdW50SWQiOiIyNTY1Mzk5IiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vdmVuZG9ySWQiOiJ1bmtub3duIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vY3VzdG9tZXJJZCI6IjI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9wcm9kdWN0Q29kZSI6IkRUTld4QVBJXzI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9yZXF1ZXN0ZXJJcCI6IjE4LjIxMy4xNzQuMjciLCJodHRwczovL2F1dGguZHRuLmNvbS9ycHMiOiIyNTAiLCJodHRwczovL2F1dGguZHRuLmNvbS90aWVyIjoiRW50ZXJwcmlzZSIsImh0dHBzOi8vYXV0aC5kdG4uY29tL3F1b3RhIjoiMTAwMDAwIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vYXJlYVNpemUiOiIwIiwiaXNzIjoiaHR0cHM6Ly9pZC5hdXRoLmR0bi5jb20vIiwic3ViIjoiRnpGbHZJajNjUFBhejhlc3B5ckhEN0FySnVlY0xOR1BAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbWFwLmFwaS5kdG4uY29tIiwiaWF0IjoxNzUwMTQ0NzAzLCJleHAiOjE3NTAyMzExMDMsInNjb3BlIjoicmVhZDpjYXRhbG9nLWRlZmF1bHQgd2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJGekZsdklqM2NQUGF6OGVzcHlySEQ3QXJKdWVjTE5HUCIsInBlcm1pc3Npb25zIjpbInJlYWQ6Y2F0YWxvZy1kZWZhdWx0Iiwid2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiXX0.FCJ6gLJLJy-NtF75wXIv_1KLzwXKYrO5j577On2sS9x-FqZvpk5SphlyAm3gATn6Wn7osf2zj-nF75WudiVgAV_jqSbWEDBtI16k4ZcrMHz2jkjjkrCX4RjUMS-7oqqVUoPdOuWE-KRP4wZRH4VHv-aa24qs-J73YfZG-lYOAKS3nTBp6_mjbFG0Nj37vOprHfw2h0Glrw75sM2TlgmjFv8lx_oznHuq3t8opbqWHBq32L8PpOgxTx0xaqOiTuBUV75G3Nbt-EhHlz_fDypId1VfvVuPXlTAs1syPtm9va6GddF7cMoWA6u376XIBbYy9oa6b1PYPiN1osyBCTt60w";
     return fallbackToken;
   }
 };
