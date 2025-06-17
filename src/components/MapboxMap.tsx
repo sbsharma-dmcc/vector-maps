@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -11,7 +10,7 @@ import { dtnOverlays, fetchDTNSourceLayer, createSwellColorExpression } from '@/
 import { convertRgbToHex, convertHexToRgb, getSymbolByType } from '@/utils/colorHelpers';
 import { defaultLayerConfigs } from '@/utils/layerConfigDefaults';
 import { trackLayerAdded, trackLayerRemoved, trackLayerConfigurationApplied } from '@/utils/amplitudeTracking';
-import { ensureValidDTNToken, validateDTNToken } from '@/utils/dtnTokenManager';
+import { ensureValidDTNToken, validateDTNToken, fetchNewDTNToken } from '@/utils/dtnTokenManager';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -84,30 +83,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     localStorage.setItem('weatherLayerDrafts', JSON.stringify(weatherDrafts));
   }, [weatherDrafts]);
 
-  // Get initial token for logging with better error handling
-  const getInitialTokenSafely = () => {
-    try {
-      if (dtnToken && typeof dtnToken === 'string') {
-        return dtnToken.replace('Bearer ', '');
-      }
-      return 'No token available';
-    } catch (error) {
-      console.error('Error getting initial token:', error);
-      return 'Token error';
-    }
-  };
-
-  const initialToken = getInitialTokenSafely();
-  console.log('Initial DTN Token being used:', initialToken.substring(0, 50) + '...');
-
   // Enhanced DTN token validation on component mount
   useEffect(() => {
     const initializeDTNAuth = async () => {
       console.log('=== Initializing DTN Authentication ===');
       
       try {
-        // Get a valid token (this will fetch a new one if needed)
-        const validToken = await ensureValidDTNToken();
+        // Force fetch a new token to ensure it's valid
+        console.log('🔄 Fetching fresh DTN token...');
+        const validToken = await fetchNewDTNToken();
         const cleanToken = validToken.replace('Bearer ', '');
         
         console.log('✅ DTN Authentication initialized successfully');
@@ -233,12 +217,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
 
     try {
-      // Get a fresh, validated token for this request
-      console.log('🔄 Getting validated DTN token for layer request...');
-      const validToken = await ensureValidDTNToken();
+      // Force fetch a fresh token for this request
+      console.log('🔄 Fetching fresh DTN token for layer request...');
+      const validToken = await fetchNewDTNToken();
       const cleanToken = validToken.replace('Bearer ', '');
       
-      console.log(`✅ Using validated DTN token: ${cleanToken.substring(0, 20)}...`);
+      console.log(`✅ Using fresh DTN token: ${cleanToken.substring(0, 20)}...`);
       
       const overlayConfig = dtnOverlays[overlayType as keyof typeof dtnOverlays];
       if (!overlayConfig) {
@@ -248,7 +232,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       console.log(`Adding ${overlayType} overlay with config:`, overlayConfig);
       
-      // Fetch source layer name with the validated token
+      // Fetch source layer name with the fresh token
       let sourceLayerName;
       try {
         sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, cleanToken);
@@ -278,7 +262,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         mapref.current.removeSource(sourceId);
       }
 
-      // Add source with the validated token
+      // Add source with the fresh token
       const tileUrl = `https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${cleanToken}`;
       console.log(`Adding source for ${overlayType} with URL template:`, tileUrl);
       
@@ -852,7 +836,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             <div className="font-semibold">Debug Info:</div>
             <div>Map Loaded: {isMapLoaded ? 'Yes' : 'No'}</div>
             <div>Active Overlays: {activeOverlays.length}</div>
-            <div>Token Length: {initialToken.length}</div>
             <div>Token Valid: {tokenValidation.isValid ? 'Yes' : 'No'}</div>
           </div>
         </div>
