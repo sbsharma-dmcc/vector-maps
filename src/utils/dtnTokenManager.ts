@@ -1,4 +1,3 @@
-
 const DTN_AUTH_URL = 'https://api.auth.dtn.com/v1/tokens/authorize';
 
 const DTN_CREDENTIALS = {
@@ -118,7 +117,7 @@ export const getValidDTNToken = async (): Promise<string> => {
   }
 };
 
-// Add the missing refreshDTNToken function
+// Add the refreshDTNToken function and properly export it
 export const refreshDTNToken = async (): Promise<string> => {
   console.log('Manually refreshing DTN token...');
   clearTokenCache();
