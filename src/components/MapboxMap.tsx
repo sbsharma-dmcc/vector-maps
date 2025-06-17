@@ -102,42 +102,58 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   // Helper functions for layer management
   const updateLayerProperties = (layerType: string, properties: any) => {
-    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    if (!mapref.current || !mapref.current.isStyleLoaded()) {
+      console.warn('Map not ready for layer property updates');
+      return;
+    }
     
     const layerId = `dtn-layer-${layerType}`;
     if (mapref.current.getLayer(layerId)) {
       Object.entries(properties).forEach(([property, value]) => {
         try {
+          console.log(`Setting paint property ${property} to:`, value, 'on layer:', layerId);
           mapref.current?.setPaintProperty(layerId, property, value);
         } catch (error) {
           console.error(`Error setting paint property ${property}:`, error);
         }
       });
+    } else {
+      console.warn(`Layer ${layerId} not found for property updates`);
     }
   };
 
   const updateLayoutProperties = (layerType: string, properties: any) => {
-    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    if (!mapref.current || !mapref.current.isStyleLoaded()) {
+      console.warn('Map not ready for layout property updates');
+      return;
+    }
     
     const layerId = `dtn-layer-${layerType}`;
     if (mapref.current.getLayer(layerId)) {
       Object.entries(properties).forEach(([property, value]) => {
         try {
+          console.log(`Setting layout property ${property} to:`, value, 'on layer:', layerId);
           mapref.current?.setLayoutProperty(layerId, property, value);
         } catch (error) {
           console.error(`Error setting layout property ${property}:`, error);
         }
       });
+    } else {
+      console.warn(`Layer ${layerId} not found for layout updates`);
     }
   };
 
   const handleOverlayClick = async (overlayType: string) => {
+    console.log(`=== Starting overlay click for: ${overlayType} ===`);
+    
     if (activeOverlays.includes(overlayType)) {
+      console.log(`Removing existing overlay: ${overlayType}`);
       removeOverlay(overlayType);
       return;
     }
 
     if (!mapref.current || !mapref.current.isStyleLoaded()) {
+      console.error('Map not ready - style not loaded');
       toast({
         title: "Map Not Ready",
         description: "Please wait for the map to fully load before adding layers.",
@@ -148,61 +164,84 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     try {
       const overlayConfig = dtnOverlays[overlayType as keyof typeof dtnOverlays];
-      if (!overlayConfig) return;
+      if (!overlayConfig) {
+        console.error(`No overlay config found for: ${overlayType}`);
+        return;
+      }
 
       console.log(`Adding ${overlayType} overlay with config:`, overlayConfig);
+      console.log(`Using DTN token: ${token.substring(0, 20)}...`);
       
-      // For swell layer, try a different approach if the main one fails
+      // Test DTN API connectivity first
+      console.log('Testing DTN API connectivity...');
+      const testResponse = await fetch(`https://map.api.dtn.com/v2/styles/${overlayConfig.dtnLayerId}`, {
+        method: 'HEAD',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      console.log('DTN API test response status:', testResponse.status);
+      if (!testResponse.ok) {
+        throw new Error(`DTN API test failed: ${testResponse.status} ${testResponse.statusText}`);
+      }
+      
+      // Fetch source layer name
       let sourceLayerName;
       if (overlayType === 'swell') {
-        // Try to get source layer, but provide fallback
         sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, token);
         if (!sourceLayerName) {
-          console.log('Primary swell layer failed, trying alternative approach...');
-          // Use a generic source layer name as fallback
+          console.log('Primary swell layer failed, using fallback...');
           sourceLayerName = 'default';
         }
       } else {
         sourceLayerName = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, token);
       }
       
+      console.log(`Source layer name for ${overlayType}:`, sourceLayerName);
+      
       if (!sourceLayerName) {
-        toast({
-          title: "Layer Error", 
-          description: `Could not fetch source layer for ${overlayType}. This layer may not be available with your current API permissions.`,
-          variant: "destructive"
-        });
-        return;
+        throw new Error(`Could not fetch source layer for ${overlayType}`);
       }
 
       const sourceId = `dtn-source-${overlayType}`;
       const layerId = `dtn-layer-${overlayType}`;
 
-      // Add source if it doesn't exist
-      if (!mapref.current.getSource(sourceId)) {
-        const tileUrl = overlayType === 'swell' 
-          ? `https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${token}`
-          : `https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${token}`;
-        
-        console.log(`Adding source for ${overlayType} with URL template:`, tileUrl);
-        
-        mapref.current.addSource(sourceId, {
-          type: 'vector',
-          tiles: [tileUrl],
-          minzoom: 0,
-          maxzoom: 14
-        });
+      // Remove existing source/layer if they exist
+      if (mapref.current.getLayer(layerId)) {
+        console.log(`Removing existing layer: ${layerId}`);
+        mapref.current.removeLayer(layerId);
       }
+      if (mapref.current.getSource(sourceId)) {
+        console.log(`Removing existing source: ${sourceId}`);
+        mapref.current.removeSource(sourceId);
+      }
+
+      // Add source
+      const tileUrl = `https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${token}`;
+      console.log(`Adding source for ${overlayType} with URL template:`, tileUrl);
+      
+      mapref.current.addSource(sourceId, {
+        type: 'vector',
+        tiles: [tileUrl],
+        minzoom: 0,
+        maxzoom: 14
+      });
+
+      // Wait a moment for source to be added
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Configure layer based on type
       let layerConfig: any = {
         id: layerId,
-        type: overlayType === 'swell' ? 'fill' : overlayType === 'pressure' ? 'line' : 'symbol',
         source: sourceId,
         'source-layer': sourceLayerName
       };
 
+      console.log(`Configuring ${overlayType} layer...`);
+
       if (overlayType === 'swell') {
+        layerConfig.type = 'fill';
         const colorExpression = createSwellColorExpression(layerConfigs.swell);
         layerConfig.paint = {
           'fill-color': colorExpression,
@@ -210,10 +249,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           'fill-outline-color': layerConfigs.swell.fillOutlineColor,
           'fill-antialias': layerConfigs.swell.fillAntialias
         };
-        
-        // Add error handling for swell layer
-        layerConfig.filter = ['has', 'value']; // Only show features with value property
+        layerConfig.filter = ['has', 'value'];
       } else if (overlayType === 'pressure') {
+        layerConfig.type = 'line';
         layerConfig.paint = {
           'line-color': layerConfigs.pressure.lineColor,
           'line-width': layerConfigs.pressure.lineWidth,
@@ -226,6 +264,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           'line-join': layerConfigs.pressure.lineJoin
         };
       } else if (overlayType === 'wind' || overlayType === 'symbol') {
+        layerConfig.type = 'symbol';
         const config = layerConfigs[overlayType];
         layerConfig.paint = {
           'text-color': config.textColor,
@@ -234,7 +273,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           'text-halo-width': config.haloWidth
         };
         
-        // Fix: Add type check for symbolType and customSymbol properties
         let textField;
         if (overlayType === 'symbol' && 'symbolType' in config && 'customSymbol' in config) {
           textField = getSymbolByType(config.symbolType, config.customSymbol);
@@ -250,53 +288,89 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         };
       }
 
-      console.log(`Adding layer ${layerId} with config:`, layerConfig);
-      mapref.current.addLayer(layerConfig);
-      setActiveOverlays(prev => [...prev, overlayType]);
+      console.log(`Adding layer ${layerId} with config:`, JSON.stringify(layerConfig, null, 2));
+      
+      try {
+        mapref.current.addLayer(layerConfig);
+        console.log(`Layer ${layerId} added successfully`);
+        
+        // Wait for layer to be fully added
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Verify layer was added
+        const addedLayer = mapref.current.getLayer(layerId);
+        if (addedLayer) {
+          console.log(`Layer ${layerId} verified as added:`, addedLayer);
+          setActiveOverlays(prev => [...prev, overlayType]);
 
-      // Track layer addition with Amplitude
-      trackLayerAdded(overlayType, layerId);
+          // Track layer addition with Amplitude
+          trackLayerAdded(overlayType, layerId);
 
-      toast({
-        title: "Layer Added",
-        description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer has been added to the map`
-      });
+          toast({
+            title: "Layer Added Successfully",
+            description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer is now visible on the map`
+          });
 
-      ensureVesselsOnTop();
+          ensureVesselsOnTop();
+        } else {
+          throw new Error(`Layer ${layerId} was not found after adding`);
+        }
+        
+      } catch (layerError) {
+        console.error(`Error adding layer ${layerId}:`, layerError);
+        throw layerError;
+      }
 
     } catch (error) {
-      console.error(`Error adding ${overlayType} overlay:`, error);
+      console.error(`=== Error adding ${overlayType} overlay ===`, error);
       toast({
         title: "Layer Error",
-        description: `Failed to add ${overlayType} layer. This may be due to API permissions or network issues.`,
+        description: `Failed to add ${overlayType} layer: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
   };
 
   const removeOverlay = (overlayType: string) => {
-    if (!mapref.current) return;
+    console.log(`=== Removing overlay: ${overlayType} ===`);
+    
+    if (!mapref.current) {
+      console.warn('Map reference not available');
+      return;
+    }
 
     const layerId = `dtn-layer-${overlayType}`;
     const sourceId = `dtn-source-${overlayType}`;
 
-    if (mapref.current.getLayer(layerId)) {
-      mapref.current.removeLayer(layerId);
+    try {
+      if (mapref.current.getLayer(layerId)) {
+        console.log(`Removing layer: ${layerId}`);
+        mapref.current.removeLayer(layerId);
+      } else {
+        console.warn(`Layer ${layerId} not found for removal`);
+      }
+
+      if (mapref.current.getSource(sourceId)) {
+        console.log(`Removing source: ${sourceId}`);
+        mapref.current.removeSource(sourceId);
+      } else {
+        console.warn(`Source ${sourceId} not found for removal`);
+      }
+
+      setActiveOverlays(prev => prev.filter(overlay => overlay !== overlayType));
+
+      // Track layer removal with Amplitude
+      trackLayerRemoved(overlayType, layerId);
+
+      toast({
+        title: "Layer Removed",
+        description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer has been removed`
+      });
+      
+      console.log(`Successfully removed ${overlayType} overlay`);
+    } catch (error) {
+      console.error(`Error removing ${overlayType} overlay:`, error);
     }
-
-    if (mapref.current.getSource(sourceId)) {
-      mapref.current.removeSource(sourceId);
-    }
-
-    setActiveOverlays(prev => prev.filter(overlay => overlay !== overlayType));
-
-    // Track layer removal with Amplitude
-    trackLayerRemoved(overlayType, layerId);
-
-    toast({
-      title: "Layer Removed",
-      description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer has been removed`
-    });
   };
 
   const removeAllOverlays = () => {
@@ -387,6 +461,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       if (mapref.current) {
         cleanupVesselMarkers(markersRef);
         createVesselMarkers(mapref.current, mockVessels, markersRef);
+        console.log('Vessels repositioned on top of layers');
       }
     }, 100);
   };
@@ -677,6 +752,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               Remove All Layers ({activeOverlays.length})
             </button>
           )}
+          <div className="mt-4 p-2 bg-gray-50 rounded text-xs">
+            <div className="font-semibold">Debug Info:</div>
+            <div>Map Loaded: {isMapLoaded ? 'Yes' : 'No'}</div>
+            <div>Active Overlays: {activeOverlays.length}</div>
+            <div>Token Valid: {token.length > 20 ? 'Yes' : 'No'}</div>
+          </div>
         </div>
       )}
 
