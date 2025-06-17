@@ -499,7 +499,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             ['to-number', ['get', 'value'], 0]
           ];
 
-          config.gradient.forEach((item) => {
+          layerConfigs.swell.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
             colorExpression.push(heightValue, item.color);
           });
