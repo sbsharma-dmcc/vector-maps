@@ -118,6 +118,13 @@ export const getValidDTNToken = async (): Promise<string> => {
   }
 };
 
+// Add the missing refreshDTNToken function
+export const refreshDTNToken = async (): Promise<string> => {
+  console.log('Manually refreshing DTN token...');
+  clearTokenCache();
+  return await getValidDTNToken();
+};
+
 // Clear token cache (useful for forcing refresh)
 export const clearTokenCache = () => {
   tokenCache = null;

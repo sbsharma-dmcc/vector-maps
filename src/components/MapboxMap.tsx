@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Save } from 'lucide-react';
 import MapTopControls from './MapTopControls';
 import { getValidDTNToken } from '@/utils/dtnTokenManager';
-import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -38,7 +37,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -58,25 +56,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       speedUnit: 'knots'
     },
     pressure: {
-      fillOpacity: 0.7,
+      fillOpacity: 0.8,
       fillOutlineColor: 'transparent',
       gradient: [
-        { value: '980mb', color: 'rgba(128, 0, 128, 0.8)', opacity: 0.8 },
-        { value: '990mb', color: 'rgba(0, 0, 255, 0.7)', opacity: 0.7 },
-        { value: '1000mb', color: 'rgba(0, 128, 255, 0.6)', opacity: 0.6 },
-        { value: '1010mb', color: 'rgba(0, 255, 255, 0.5)', opacity: 0.5 },
-        { value: '1013mb', color: 'rgba(128, 255, 128, 0.4)', opacity: 0.4 },
-        { value: '1020mb', color: 'rgba(255, 255, 0, 0.5)', opacity: 0.5 },
-        { value: '1030mb', color: 'rgba(255, 128, 0, 0.6)', opacity: 0.6 },
-        { value: '1040mb', color: 'rgba(255, 0, 0, 0.7)', opacity: 0.7 },
-        { value: '1050mb+', color: 'rgba(128, 0, 0, 0.8)', opacity: 0.8 }
+        { value: '980mb', color: 'rgba(128, 0, 128, 0.9)', opacity: 0.9 },
+        { value: '990mb', color: 'rgba(0, 0, 255, 0.8)', opacity: 0.8 },
+        { value: '1000mb', color: 'rgba(0, 128, 255, 0.7)', opacity: 0.7 },
+        { value: '1010mb', color: 'rgba(0, 255, 255, 0.6)', opacity: 0.6 },
+        { value: '1013mb', color: 'rgba(128, 255, 128, 0.5)', opacity: 0.5 },
+        { value: '1020mb', color: 'rgba(255, 255, 0, 0.6)', opacity: 0.6 },
+        { value: '1030mb', color: 'rgba(255, 128, 0, 0.7)', opacity: 0.7 },
+        { value: '1040mb', color: 'rgba(255, 0, 0, 0.8)', opacity: 0.8 },
+        { value: '1050mb+', color: 'rgba(128, 0, 0, 0.9)', opacity: 0.9 }
       ],
       smoothing: true,
-      blurRadius: 3,
-      contourLines: true,
+      blurRadius: 8,
+      contourLines: false,
       contourColor: '#333333',
       contourWidth: 1,
-      contourOpacity: 0.4
+      contourOpacity: 0.4,
+      heatmapIntensity: 1.5,
+      heatmapRadius: 15
     },
     swell: {
       fillOpacity: 0.9,
@@ -134,30 +134,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
-  // Enhanced vessel coordinates with circle vessels added
-  const mockVessels: Vessel[] = [
-    { id: 'vessel-1', name: 'Green Vessel 1', type: 'green', position: [72.5, 15.2] },
-    { id: 'vessel-2', name: 'Orange Vessel 1', type: 'orange', position: [78.8, 12.1] },
-    { id: 'vessel-3', name: 'Green Vessel 2', type: 'green', position: [85.2, 18.5] },
-    { id: 'vessel-4', name: 'Orange Vessel 2', type: 'orange', position: [80.1, 6.8] },
-    { id: 'vessel-5', name: 'Green Vessel 3', type: 'green', position: [90.5, 14.3] },
-    { id: 'vessel-6', name: 'Orange Vessel 3', type: 'orange', position: [75.2, 20.1] },
-    { id: 'vessel-7', name: 'Green Vessel 4', type: 'green', position: [68.7, 18.9] },
-    { id: 'vessel-8', name: 'Orange Vessel 4', type: 'orange', position: [82.4, 10.5] },
-    { id: 'vessel-9', name: 'Green Vessel 5', type: 'green', position: [87.9, 21.7] },
-    { id: 'vessel-10', name: 'Orange Vessel 5', type: 'orange', position: [76.8, 8.3] },
-    { id: 'vessel-11', name: 'Green Vessel 6', type: 'green', position: [81.6, 16.4] },
-    { id: 'vessel-12', name: 'Orange Vessel 6', type: 'orange', position: [88.2, 11.7] },
-    { id: 'vessel-13', name: 'Green Vessel 7', type: 'green', position: [74.1, 13.6] },
-    { id: 'vessel-14', name: 'Orange Vessel 7', type: 'orange', position: [79.5, 22.4] },
-    { id: 'vessel-15', name: 'Green Vessel 8', type: 'green', position: [84.7, 7.2] },
-    { id: 'circle-1', name: 'Circle Vessel 1', type: 'circle', position: [70.5, 12.8] },
-    { id: 'circle-2', name: 'Circle Vessel 2', type: 'circle', position: [83.2, 15.7] },
-    { id: 'circle-3', name: 'Circle Vessel 3', type: 'circle', position: [77.1, 9.5] },
-    { id: 'circle-4', name: 'Circle Vessel 4', type: 'circle', position: [86.8, 19.2] },
-    { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] },
-  ];
-
   // Function to get symbol based on type
   const getSymbolByType = (symbolType: string, customSymbol?: string) => {
     switch (symbolType) {
@@ -174,16 +150,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       default:
         return '→';
     }
-  };
-
-  // Function to ensure vessels are always on top
-  const ensureVesselsOnTop = () => {
-    setTimeout(() => {
-      if (mapref.current) {
-        cleanupVesselMarkers(markersRef);
-        createVesselMarkers(mapref.current, mockVessels, markersRef);
-      }
-    }, 100);
   };
 
   useEffect(() => {
@@ -210,11 +176,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       setIsMapLoaded(true);
       console.log("Map fully loaded");
       
-      ensureVesselsOnTop();
-      
       toast({
         title: "Map Loaded",
-        description: "Map has been successfully initialized with vessel markers"
+        description: "Map has been successfully initialized"
       });
     });
 
@@ -229,7 +193,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       if (mapref.current) {
-        cleanupVesselMarkers(markersRef);
         mapref.current.remove();
         mapref.current = null;
       }
@@ -382,10 +345,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'pressure') {
-          // Enhanced pressure gradient implementation
+          // Create smooth pressure gradient using heatmap layer
           const colorExpression: any[] = [
             'interpolate',
-            ['exponential', 1.5],
+            ['linear'],
             ['to-number', ['get', 'value'], 1013]
           ];
 
@@ -394,9 +357,61 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             colorExpression.push(pressureValue, item.color);
           });
 
-          // Main pressure fill layer with gradient
+          // Use heatmap layer for smooth gradient
           mapref.current.addLayer({
             id: layerId,
+            type: "heatmap",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "heatmap-color": [
+                'interpolate',
+                ['linear'],
+                ['heatmap-density'],
+                0, 'rgba(128, 0, 128, 0)',
+                0.1, 'rgba(128, 0, 128, 0.4)',
+                0.2, 'rgba(0, 0, 255, 0.5)',
+                0.3, 'rgba(0, 128, 255, 0.6)',
+                0.4, 'rgba(0, 255, 255, 0.6)',
+                0.5, 'rgba(128, 255, 128, 0.5)',
+                0.6, 'rgba(255, 255, 0, 0.6)',
+                0.7, 'rgba(255, 128, 0, 0.7)',
+                0.8, 'rgba(255, 0, 0, 0.8)',
+                1, 'rgba(128, 0, 0, 0.9)'
+              ],
+              "heatmap-radius": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, layerConfigs.pressure.heatmapRadius,
+                9, layerConfigs.pressure.heatmapRadius * 2,
+                14, layerConfigs.pressure.heatmapRadius * 4
+              ],
+              "heatmap-intensity": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, layerConfigs.pressure.heatmapIntensity,
+                9, layerConfigs.pressure.heatmapIntensity * 1.5,
+                14, layerConfigs.pressure.heatmapIntensity * 2
+              ],
+              "heatmap-opacity": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, layerConfigs.pressure.fillOpacity * 0.8,
+                9, layerConfigs.pressure.fillOpacity,
+                14, layerConfigs.pressure.fillOpacity * 1.2
+              ]
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          }, beforeId);
+
+          // Add a second layer with fill for additional smoothing
+          mapref.current.addLayer({
+            id: `${layerId}-fill`,
             type: "fill",
             source: sourceId,
             "source-layer": sourceLayer,
@@ -406,64 +421,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                2, 0.3,
-                6, layerConfigs.pressure.fillOpacity,
-                14, layerConfigs.pressure.fillOpacity * 1.1
+                2, 0.2,
+                6, 0.4,
+                14, 0.5
               ],
-              "fill-outline-color": layerConfigs.pressure.fillOutlineColor,
+              "fill-outline-color": 'transparent',
               "fill-antialias": true
             },
             layout: {
               "visibility": "visible"
             }
-          }, beforeId);
+          }, layerId);
 
-          // Add pressure contour lines if enabled
-          if (layerConfigs.pressure.contourLines) {
-            mapref.current.addLayer({
-              id: `${layerId}-contours`,
-              type: "line",
-              source: sourceId,
-              "source-layer": sourceLayer,
-              paint: {
-                "line-color": layerConfigs.pressure.contourColor,
-                "line-width": layerConfigs.pressure.contourWidth,
-                "line-opacity": layerConfigs.pressure.contourOpacity,
-                "line-blur": 0.5
-              },
-              layout: {
-                "line-cap": "round",
-                "line-join": "round",
-                "visibility": "visible"
-              }
-            }, layerId);
-          }
-
-          // Add pressure blur layer for enhanced smoothing
-          if (layerConfigs.pressure.smoothing) {
-            mapref.current.addLayer({
-              id: `${layerId}-blur`,
-              type: "fill",
-              source: sourceId,
-              "source-layer": sourceLayer,
-              paint: {
-                "fill-color": colorExpression,
-                "fill-opacity": [
-                  'interpolate',
-                  ['linear'],
-                  ['to-number', ['get', 'value'], 1013],
-                  980, 0.1,
-                  1013, 0.05,
-                  1050, 0.1
-                ],
-                "fill-translate": [layerConfigs.pressure.blurRadius, layerConfigs.pressure.blurRadius],
-                "fill-antialias": true
-              },
-              layout: {
-                "visibility": "visible"
-              }
-            }, layerId);
-          }
         } else if (overlay === 'swell') {
           const colorExpression: any[] = [
             'interpolate',
@@ -616,7 +585,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           }, beforeId);
         }
 
-        ensureVesselsOnTop();
         setActiveOverlays(prev => [...prev, overlay]);
         console.log(`Successfully added ${overlay} layer`);
         
@@ -668,11 +636,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
     const blurLayerId = `${layerId}-blur`;
-    const contourLayerId = `${layerId}-contours`;
+    const fillLayerId = `${layerId}-fill`;
 
     // Remove all related layers
-    if (mapref.current.getLayer(contourLayerId)) {
-      mapref.current.removeLayer(contourLayerId);
+    if (mapref.current.getLayer(fillLayerId)) {
+      mapref.current.removeLayer(fillLayerId);
     }
     if (mapref.current.getLayer(blurLayerId)) {
       mapref.current.removeLayer(blurLayerId);
@@ -684,14 +652,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       mapref.current.removeSource(sourceId);
     }
 
-    ensureVesselsOnTop();
     setActiveOverlays(prev => prev.filter(item => item !== overlay));
   };
 
   const removeAllOverlays = () => {
     activeOverlays.forEach(overlay => removeOverlay(overlay));
     setActiveOverlays([]);
-    ensureVesselsOnTop();
     
     toast({
       title: "All Layers Removed",
@@ -726,18 +692,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
 
       updateLayerProperties(selectedWeatherType, {
-        'fill-color': colorExpression,
-        'fill-opacity': config.fillOpacity,
-        'fill-outline-color': config.fillOutlineColor,
-        'fill-antialias': true
+        'heatmap-opacity': config.fillOpacity,
+        'heatmap-intensity': config.heatmapIntensity,
+        'heatmap-radius': config.heatmapRadius
       });
 
-      // Update contour lines if they exist
-      const contourLayerId = `dtn-layer-${selectedWeatherType}-contours`;
-      if (mapref.current && mapref.current.getLayer(contourLayerId)) {
-        mapref.current.setPaintProperty(contourLayerId, 'line-color', config.contourColor);
-        mapref.current.setPaintProperty(contourLayerId, 'line-width', config.contourWidth);
-        mapref.current.setPaintProperty(contourLayerId, 'line-opacity', config.contourOpacity);
+      // Update fill layer if it exists
+      const fillLayerId = `dtn-layer-${selectedWeatherType}-fill`;
+      if (mapref.current && mapref.current.getLayer(fillLayerId)) {
+        mapref.current.setPaintProperty(fillLayerId, 'fill-color', colorExpression);
+        mapref.current.setPaintProperty(fillLayerId, 'fill-opacity', config.fillOpacity * 0.5);
       }
     } else if (selectedWeatherType === 'swell') {
       const colorExpression: any[] = [
@@ -844,82 +808,34 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Fill Outline Color</Label>
-              <Input
-                type="color"
-                value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
-                onChange={(e) => updateConfigValue('pressure', 'fillOutlineColor', e.target.value)}
-                className="w-full h-8"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={config.contourLines}
-                onCheckedChange={(checked) => updateConfigValue('pressure', 'contourLines', checked)}
-              />
-              <Label className="text-xs">Show Contour Lines</Label>
-            </div>
-
-            {config.contourLines && (
-              <>
-                <div>
-                  <Label className="text-xs font-medium text-gray-700">Contour Color</Label>
-                  <Input
-                    type="color"
-                    value={config.contourColor}
-                    onChange={(e) => updateConfigValue('pressure', 'contourColor', e.target.value)}
-                    className="w-full h-8"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs font-medium text-gray-700">Contour Width</Label>
-                  <Slider
-                    value={[config.contourWidth]}
-                    onValueChange={([value]) => updateConfigValue('pressure', 'contourWidth', value)}
-                    min={0.5}
-                    max={5}
-                    step={0.5}
-                    className="flex-1"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs font-medium text-gray-700">Contour Opacity</Label>
-                  <Slider
-                    value={[config.contourOpacity]}
-                    onValueChange={([value]) => updateConfigValue('pressure', 'contourOpacity', value)}
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    className="flex-1"
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={config.smoothing}
-                onCheckedChange={(checked) => updateConfigValue('pressure', 'smoothing', checked)}
-              />
-              <Label className="text-xs">Enhanced Smoothing</Label>
-            </div>
-
-            {config.smoothing && (
-              <div>
-                <Label className="text-xs font-medium text-gray-700">Blur Radius</Label>
+              <Label className="text-xs font-medium text-gray-700">Heatmap Intensity</Label>
+              <div className="flex items-center gap-2">
                 <Slider
-                  value={[config.blurRadius]}
-                  onValueChange={([value]) => updateConfigValue('pressure', 'blurRadius', value)}
-                  min={0}
-                  max={10}
+                  value={[config.heatmapIntensity]}
+                  onValueChange={([value]) => updateConfigValue('pressure', 'heatmapIntensity', value)}
+                  min={0.5}
+                  max={3}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.heatmapIntensity}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Heatmap Radius</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.heatmapRadius]}
+                  onValueChange={([value]) => updateConfigValue('pressure', 'heatmapRadius', value)}
+                  min={5}
+                  max={50}
                   step={1}
                   className="flex-1"
                 />
+                <span className="text-xs w-12">{config.heatmapRadius}</span>
               </div>
-            )}
+            </div>
 
             <div>
               <Label className="text-xs font-medium text-gray-700 mb-2">Pressure Gradient (980mb to 1050mb+)</Label>
