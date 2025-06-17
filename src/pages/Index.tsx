@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
@@ -26,7 +27,13 @@ const Index = () => {
   };
 
   const toggleMapTheme = () => {
+    console.log('Theme toggle clicked, current state:', isDarkMode);
     setIsDarkMode(!isDarkMode);
+  };
+
+  const toggleLayersPanel = () => {
+    console.log('Layers panel toggle clicked, current state:', showLayersPanel);
+    setShowLayersPanel(!showLayersPanel);
   };
 
   return (
@@ -47,7 +54,7 @@ const Index = () => {
         mapStyle={isDarkMode ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7'}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleMapTheme}
-        onToggleLayers={() => setShowLayersPanel(!showLayersPanel)}
+        onToggleLayers={toggleLayersPanel}
       />
     </div>
   );
