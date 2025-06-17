@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Save } from 'lucide-react';
+import { Save, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LayerConfigs {
@@ -119,6 +119,61 @@ const WeatherLayerConfig: React.FC = () => {
         [property]: value
       }
     }));
+  };
+
+  const updateSwellGradientItem = (index: number, field: 'value' | 'color', newValue: string) => {
+    setLayerConfigs(prev => ({
+      ...prev,
+      swell: {
+        ...prev.swell,
+        gradient: prev.swell.gradient.map((item: any, i: number) => 
+          i === index ? { ...item, [field]: newValue } : item
+        )
+      }
+    }));
+  };
+
+  const addSwellGradientItem = () => {
+    const newItem = { value: '0m', color: 'rgba(100, 100, 100, 0.5)', opacity: 0.5 };
+    setLayerConfigs(prev => ({
+      ...prev,
+      swell: {
+        ...prev.swell,
+        gradient: [...prev.swell.gradient, newItem]
+      }
+    }));
+  };
+
+  const removeSwellGradientItem = (index: number) => {
+    setLayerConfigs(prev => ({
+      ...prev,
+      swell: {
+        ...prev.swell,
+        gradient: prev.swell.gradient.filter((_: any, i: number) => i !== index)
+      }
+    }));
+  };
+
+  const convertRgbaToHex = (rgba: string) => {
+    const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    if (!match) return '#000000';
+    
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
+    
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  const convertHexToRgba = (hex: string, opacity: number = 1) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return 'rgba(0, 0, 0, 1)';
+    
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
   const applyLayerConfiguration = () => {
@@ -371,6 +426,53 @@ const WeatherLayerConfig: React.FC = () => {
                 />
               </div>
             )}
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-gray-700">Color Gradient</Label>
+                <Button
+                  onClick={addSwellGradientItem}
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2"
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {config.gradient.map((item: any, index: number) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <Input
+                      type="text"
+                      value={item.value}
+                      onChange={(e) => updateSwellGradientItem(index, 'value', e.target.value)}
+                      className="w-16 h-6 text-xs"
+                      placeholder="0m"
+                    />
+                    <Input
+                      type="color"
+                      value={convertRgbaToHex(item.color)}
+                      onChange={(e) => {
+                        const opacity = parseFloat(item.color.match(/[\d.]+(?=\))/)?.[0] || '1');
+                        const newColor = convertHexToRgba(e.target.value, opacity);
+                        updateSwellGradientItem(index, 'color', newColor);
+                      }}
+                      className="w-8 h-6 p-0 border-2"
+                    />
+                    <Button
+                      onClick={() => removeSwellGradientItem(index)}
+                      size="sm"
+                      variant="outline"
+                      className="h-6 w-6 p-0"
+                      disabled={config.gradient.length <= 2}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         )}
 
