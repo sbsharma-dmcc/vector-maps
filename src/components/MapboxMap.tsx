@@ -1,17 +1,18 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Lock, Unlock, Save, Trash2 } from 'lucide-react';
 import MapTopControls from './MapTopControls';
-import LayerControlPanel from './LayerControlPanel';
-import { dtnToken, getDTNTokenForMap } from '@/utils/mapConstants';
+import { dtnToken } from '@/utils/mapConstants';
 import { createVesselMarkers, cleanupVesselMarkers, Vessel } from '@/utils/vesselMarkers';
-import { dtnOverlays, fetchDTNSourceLayer, createSwellColorExpression } from '@/utils/dtnOverlayManager';
-import { convertRgbToHex, convertHexToRgb, getSymbolByType } from '@/utils/colorHelpers';
-import { defaultLayerConfigs } from '@/utils/layerConfigDefaults';
-import { trackLayerAdded, trackLayerRemoved, trackLayerConfigurationApplied } from '@/utils/amplitudeTracking';
-import { ensureValidDTNToken, validateDTNToken, fetchNewDTNToken } from '@/utils/dtnTokenManager';
+import WeatherConfigDrafts from './WeatherConfigDrafts';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -54,17 +55,76 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [selectedDraft, setSelectedDraft] = useState<string>('');
   const [weatherDrafts, setWeatherDrafts] = useState<WeatherLayerDraft[]>([]);
   const [swellConfigLocked, setSwellConfigLocked] = useState(false);
-  const [layerConfigs, setLayerConfigs] = useState(defaultLayerConfigs);
-  const [tokenValidation, setTokenValidation] = useState<{
-    isValid: boolean;
-    error: string | null;
-    lastChecked: Date | null;
-  }>({
-    isValid: false,
-    error: null,
-    lastChecked: null
-  });
   
+  // Enhanced configuration state for each layer type
+  const [layerConfigs, setLayerConfigs] = useState({
+    wind: {
+      textColor: '#ffffff',
+      textSize: 16,
+      textOpacity: 0.9,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 80,
+      allowOverlap: true,
+      barbStyle: 'full',
+      speedUnit: 'knots'
+    },
+    pressure: {
+      lineColor: '#ff6b35',
+      lineWidth: 1,
+      lineOpacity: 0.6,
+      lineCap: 'round',
+      lineJoin: 'round',
+      lineBlur: 0,
+      lineGapWidth: 0
+    },
+    swell: {
+      fillOpacity: 0.9,
+      fillOutlineColor: 'transparent',
+      animationSpeed: 0.0008,
+      animationEnabled: true,
+      fillAntialias: true,
+      smoothing: true,
+      blurRadius: 2,
+      edgeFeathering: 1.5,
+      gradient: [
+        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },        // Deep blue (very light)
+        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },     // Dark blue
+        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },      // Medium blue
+        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },  // Light blue
+        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },     // Cyan-blue
+        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 }, // Blue-green
+        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },     // Green-blue
+        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 }, // Light green
+        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },     // Yellow-green
+        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 }, // Yellow
+        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },    // Orange-yellow
+        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },  // Orange
+        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },    // Dark orange
+        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },    // Red-orange
+        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },      // Red
+        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },    // Bright red
+        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },      // Dark red
+        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },     // Deep red
+        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },       // Crimson
+        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },     // Dark crimson
+        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }       // Very dark red
+      ]
+    },
+    symbol: {
+      textColor: '#ff0000',
+      textSize: 16,
+      textOpacity: 0.8,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 100,
+      allowOverlap: true,
+      rotationAlignment: 'map',
+      symbolType: 'arrow',
+      customSymbol: '→'
+    }
+  });
+
   const { toast } = useToast();
 
   // Load weather drafts from localStorage on component mount
@@ -84,52 +144,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     localStorage.setItem('weatherLayerDrafts', JSON.stringify(weatherDrafts));
   }, [weatherDrafts]);
 
-  // Enhanced DTN token validation on component mount
-  useEffect(() => {
-    const initializeDTNAuth = async () => {
-      console.log('=== Initializing DTN Authentication ===');
-      
-      try {
-        // Force fetch a new token to ensure it's valid
-        console.log('🔄 Fetching fresh DTN token...');
-        const validToken = await fetchNewDTNToken();
-        const cleanToken = validToken.replace('Bearer ', '');
-        
-        console.log('✅ DTN Authentication initialized successfully');
-        console.log('Token length:', cleanToken.length);
-        console.log('Token starts with:', cleanToken.substring(0, 20) + '...');
-        
-        setTokenValidation({
-          isValid: true,
-          error: null,
-          lastChecked: new Date()
-        });
-        
-        toast({
-          title: "DTN Authentication Ready",
-          description: "Successfully authenticated with DTN API"
-        });
-        
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown authentication error';
-        console.error('❌ DTN Authentication failed:', errorMessage);
-        
-        setTokenValidation({
-          isValid: false,
-          error: errorMessage,
-          lastChecked: new Date()
-        });
-        
-        toast({
-          title: "DTN Authentication Failed",
-          description: `Failed to authenticate with DTN API: ${errorMessage}`,
-          variant: "destructive"
-        });
-      }
-    };
+  const token = dtnToken.replace('Bearer ', '');
+  console.log('DTN Token being used:', token.substring(0, 50) + '...');
 
-    initializeDTNAuth();
-  }, [toast]);
+  const dtnOverlays = {
+    wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
+    pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
+    swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
+    symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
+  };
 
   // Enhanced vessel coordinates with circle vessels added
   const mockVessels: Vessel[] = [
@@ -154,336 +177,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     { id: 'circle-4', name: 'Circle Vessel 4', type: 'circle', position: [86.8, 19.2] },
     { id: 'circle-5', name: 'Circle Vessel 5', type: 'circle', position: [73.9, 17.4] },
   ];
-
-  // Helper functions for layer management
-  const updateLayerProperties = (layerType: string, properties: any) => {
-    if (!mapref.current || !mapref.current.isStyleLoaded()) {
-      console.warn('Map not ready for layer property updates');
-      return;
-    }
-    
-    const layerId = `dtn-layer-${layerType}`;
-    if (mapref.current.getLayer(layerId)) {
-      Object.entries(properties).forEach(([property, value]) => {
-        try {
-          console.log(`Setting paint property ${property} to:`, value, 'on layer:', layerId);
-          mapref.current?.setPaintProperty(layerId, property, value);
-        } catch (error) {
-          console.error(`Error setting paint property ${property}:`, error);
-        }
-      });
-    } else {
-      console.warn(`Layer ${layerId} not found for property updates`);
-    }
-  };
-
-  const updateLayoutProperties = (layerType: string, properties: any) => {
-    if (!mapref.current || !mapref.current.isStyleLoaded()) {
-      console.warn('Map not ready for layout property updates');
-      return;
-    }
-    
-    const layerId = `dtn-layer-${layerType}`;
-    if (mapref.current.getLayer(layerId)) {
-      Object.entries(properties).forEach(([property, value]) => {
-        try {
-          console.log(`Setting layout property ${property} to:`, value, 'on layer:', layerId);
-          mapref.current?.setLayoutProperty(layerId, property, value);
-        } catch (error) {
-          console.error(`Error setting layout property ${property}:`, error);
-        }
-      });
-    } else {
-      console.warn(`Layer ${layerId} not found for layout updates`);
-    }
-  };
-
-  const handleOverlayClick = async (overlayType: string) => {
-    console.log(`=== Starting overlay click for: ${overlayType} ===`);
-    
-    if (activeOverlays.includes(overlayType)) {
-      console.log(`Removing existing overlay: ${overlayType}`);
-      removeOverlay(overlayType);
-      return;
-    }
-
-    if (!mapref.current || !mapref.current.isStyleLoaded()) {
-      console.error('Map not ready - style not loaded');
-      toast({
-        title: "Map Not Ready",
-        description: "Please wait for the map to fully load before adding layers.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      // Force fetch a fresh token for this request
-      console.log('🔄 Fetching fresh DTN token for layer request...');
-      const validToken = await fetchNewDTNToken();
-      const cleanToken = validToken.replace('Bearer ', '');
-      
-      console.log(`✅ Using fresh DTN token: ${cleanToken.substring(0, 20)}...`);
-      
-      const overlayConfig = dtnOverlays[overlayType as keyof typeof dtnOverlays];
-      if (!overlayConfig) {
-        console.error(`No overlay config found for: ${overlayType}`);
-        return;
-      }
-
-      console.log(`Adding ${overlayType} overlay with config:`, overlayConfig);
-      
-      // Use fallback source layer names based on overlay type
-      const fallbackSourceLayers = {
-        wind: 'wind_speed',
-        pressure: 'pressure',
-        swell: 'significant_wave_height',
-        symbol: 'wind_symbol'
-      };
-      
-      let sourceLayerName = fallbackSourceLayers[overlayType as keyof typeof fallbackSourceLayers] || 'default';
-      
-      // Try to fetch the actual source layer name, but don't fail if it doesn't work
-      try {
-        const fetchedSourceLayer = await fetchDTNSourceLayer(overlayConfig.dtnLayerId, cleanToken);
-        if (fetchedSourceLayer) {
-          sourceLayerName = fetchedSourceLayer;
-          console.log(`✅ Using fetched source layer name: ${sourceLayerName}`);
-        } else {
-          console.log(`⚠️ Using fallback source layer name: ${sourceLayerName}`);
-        }
-      } catch (fetchError) {
-        console.warn(`Failed to fetch source layer for ${overlayType}, using fallback:`, fetchError);
-      }
-
-      const sourceId = `dtn-source-${overlayType}`;
-      const layerId = `dtn-layer-${overlayType}`;
-
-      // Remove existing source/layer if they exist
-      if (mapref.current.getLayer(layerId)) {
-        console.log(`Removing existing layer: ${layerId}`);
-        mapref.current.removeLayer(layerId);
-      }
-      if (mapref.current.getSource(sourceId)) {
-        console.log(`Removing existing source: ${sourceId}`);
-        mapref.current.removeSource(sourceId);
-      }
-
-      // Add source with the fresh token
-      const tileUrl = `https://map.api.dtn.com/v2/tiles/${overlayConfig.tileSetId}/{z}/{x}/{y}?access_token=${cleanToken}`;
-      console.log(`Adding source for ${overlayType} with URL template:`, tileUrl);
-      
-      mapref.current.addSource(sourceId, {
-        type: 'vector',
-        tiles: [tileUrl],
-        minzoom: 0,
-        maxzoom: 14
-      });
-
-      // Wait a moment for source to be added
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Test the tile URL by making a sample request
-      try {
-        const testTileUrl = tileUrl.replace('{z}', '2').replace('{x}', '1').replace('{y}', '1');
-        console.log(`Testing tile URL: ${testTileUrl}`);
-        const testResponse = await fetch(testTileUrl, { method: 'HEAD' });
-        console.log(`Tile URL test response: ${testResponse.status} ${testResponse.statusText}`);
-      } catch (testError) {
-        console.warn('Tile URL test failed:', testError);
-      }
-
-      // Configure layer based on type with enhanced visibility
-      let layerConfig: any = {
-        id: layerId,
-        source: sourceId,
-        'source-layer': sourceLayerName
-      };
-
-      console.log(`Configuring ${overlayType} layer with source-layer: ${sourceLayerName}...`);
-
-      if (overlayType === 'swell') {
-        layerConfig.type = 'fill';
-        const colorExpression = createSwellColorExpression(layerConfigs.swell);
-        layerConfig.paint = {
-          'fill-color': colorExpression,
-          'fill-opacity': 0.8, // Increased opacity for visibility
-          'fill-outline-color': '#ffffff',
-          'fill-antialias': true
-        };
-        // Remove restrictive filter to see if data exists
-        layerConfig.filter = null;
-      } else if (overlayType === 'pressure') {
-        layerConfig.type = 'line';
-        layerConfig.paint = {
-          'line-color': '#ff6b35',
-          'line-width': 2, // Increased width for visibility
-          'line-opacity': 0.9, // Increased opacity
-          'line-blur': 0
-        };
-        layerConfig.layout = {
-          'line-cap': 'round',
-          'line-join': 'round'
-        };
-      } else if (overlayType === 'wind') {
-        layerConfig.type = 'symbol';
-        const config = layerConfigs[overlayType];
-        layerConfig.paint = {
-          'text-color': '#ffffff',
-          'text-opacity': 1.0, // Full opacity
-          'text-halo-color': '#000000',
-          'text-halo-width': 2 // Increased halo for visibility
-        };
-        
-        layerConfig.layout = {
-          'text-field': ['concat', ['get', 'speed'], ' kt'],
-          'text-size': 14,
-          'text-allow-overlap': true,
-          'symbol-spacing': 50 // Reduced spacing for more symbols
-        };
-      } else if (overlayType === 'symbol') {
-        layerConfig.type = 'symbol';
-        const config = layerConfigs[overlayType];
-        layerConfig.paint = {
-          'text-color': '#ff0000',
-          'text-opacity': 1.0,
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2
-        };
-        
-        layerConfig.layout = {
-          'text-field': '→',
-          'text-size': 20, // Larger size for visibility
-          'text-allow-overlap': true,
-          'symbol-spacing': 80
-        };
-      }
-
-      console.log(`Adding layer ${layerId} with config:`, JSON.stringify(layerConfig, null, 2));
-      
-      try {
-        mapref.current.addLayer(layerConfig);
-        console.log(`✅ Layer ${layerId} added successfully`);
-        
-        // Wait for layer to be fully added
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Verify layer was added and check for data
-        const addedLayer = mapref.current.getLayer(layerId);
-        if (addedLayer) {
-          console.log(`✅ Layer ${layerId} verified as added:`, addedLayer);
-          
-          // Check if the source has data by querying rendered features
-          setTimeout(() => {
-            if (mapref.current) {
-              const features = mapref.current.queryRenderedFeatures({ layers: [layerId] });
-              console.log(`Features found in layer ${layerId}:`, features.length);
-              if (features.length === 0) {
-                console.warn(`⚠️ No features found in layer ${layerId} - data might not be available at current zoom/location`);
-                toast({
-                  title: "Layer Added - No Data Visible",
-                  description: `${overlayType} layer added but no data visible at current location/zoom. Try zooming in or moving the map.`,
-                  variant: "default"
-                });
-              } else {
-                console.log(`✅ Found ${features.length} features in layer ${layerId}`);
-                toast({
-                  title: "Layer Added Successfully",
-                  description: `${overlayType} layer is now visible with ${features.length} features`
-                });
-              }
-            }
-          }, 1000);
-          
-          setActiveOverlays(prev => [...prev, overlayType]);
-
-          // Update token validation status to success
-          setTokenValidation(prev => ({
-            ...prev,
-            isValid: true,
-            error: null,
-            lastChecked: new Date()
-          }));
-
-          // Track layer addition with Amplitude
-          trackLayerAdded(overlayType, layerId);
-
-          ensureVesselsOnTop();
-        } else {
-          throw new Error(`Layer ${layerId} was not found after adding`);
-        }
-        
-      } catch (layerError) {
-        console.error(`❌ Error adding layer ${layerId}:`, layerError);
-        throw layerError;
-      }
-
-    } catch (error) {
-      console.error(`=== Error adding ${overlayType} overlay ===`, error);
-      
-      // Update token validation status
-      setTokenValidation(prev => ({
-        ...prev,
-        isValid: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        lastChecked: new Date()
-      }));
-      
-      toast({
-        title: "Layer Error",
-        description: `Failed to add ${overlayType} layer: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const removeOverlay = (overlayType: string) => {
-    console.log(`=== Removing overlay: ${overlayType} ===`);
-    
-    if (!mapref.current) {
-      console.warn('Map reference not available');
-      return;
-    }
-
-    const layerId = `dtn-layer-${overlayType}`;
-    const sourceId = `dtn-source-${overlayType}`;
-
-    try {
-      if (mapref.current.getLayer(layerId)) {
-        console.log(`Removing layer: ${layerId}`);
-        mapref.current.removeLayer(layerId);
-      } else {
-        console.warn(`Layer ${layerId} not found for removal`);
-      }
-
-      if (mapref.current.getSource(sourceId)) {
-        console.log(`Removing source: ${sourceId}`);
-        mapref.current.removeSource(sourceId);
-      } else {
-        console.warn(`Source ${sourceId} not found for removal`);
-      }
-
-      setActiveOverlays(prev => prev.filter(overlay => overlay !== overlayType));
-
-      // Track layer removal with Amplitude
-      trackLayerRemoved(overlayType, layerId);
-
-      toast({
-        title: "Layer Removed",
-        description: `${overlayType.charAt(0).toUpperCase() + overlayType.slice(1)} layer has been removed`
-      });
-      
-      console.log(`Successfully removed ${overlayType} overlay`);
-    } catch (error) {
-      console.error(`Error removing ${overlayType} overlay:`, error);
-    }
-  };
-
-  const removeAllOverlays = () => {
-    activeOverlays.forEach(overlay => {
-      removeOverlay(overlay);
-    });
-  };
 
   // Get the next available draft number for a weather type
   const getNextDraftNumber = (weatherType: string) => {
@@ -561,13 +254,30 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     return weatherDrafts.filter(draft => draft.weatherType === selectedWeatherType);
   };
 
+  // Function to get symbol based on type
+  const getSymbolByType = (symbolType: string, customSymbol?: string) => {
+    switch (symbolType) {
+      case 'arrow':
+        return '→';
+      case 'triangle':
+        return '▲';
+      case 'circle':
+        return '●';
+      case 'square':
+        return '■';
+      case 'custom':
+        return customSymbol || '→';
+      default:
+        return '→';
+    }
+  };
+
   // Function to ensure vessels are always on top
   const ensureVesselsOnTop = () => {
     setTimeout(() => {
       if (mapref.current) {
         cleanupVesselMarkers(markersRef);
         createVesselMarkers(mapref.current, mockVessels, markersRef);
-        console.log('Vessels repositioned on top of layers');
       }
     }, 100);
   };
@@ -640,6 +350,54 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     setSelectedDraft('');
   }, [selectedWeatherType]);
 
+  const fetchDTNSourceLayer = async (layerId: string) => {
+    const response = await fetch(`https://map.api.dtn.com/v2/styles/${layerId}`, {
+      headers: {
+        Authorization: dtnToken,
+        Accept: "application/json",
+      },
+    });
+
+    const data = await response.json();
+    const sourceLayerName = data[0]?.mapBoxStyle?.layers?.[0]?.["source-layer"];
+    return sourceLayerName;
+  };
+
+  // Enhanced layer update functions
+  const updateLayerProperties = (layerType: string, properties: Record<string, any>) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-${layerType}`;
+    
+    if (!mapref.current.getLayer(layerId)) return;
+
+    Object.entries(properties).forEach(([property, value]) => {
+      try {
+        mapref.current!.setPaintProperty(layerId, property, value);
+        console.log(`Updated ${layerType} ${property} to`, value);
+      } catch (error) {
+        console.warn(`Failed to update ${property}:`, error);
+      }
+    });
+  };
+
+  const updateLayoutProperties = (layerType: string, properties: Record<string, any>) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-${layerType}`;
+    
+    if (!mapref.current.getLayer(layerId)) return;
+
+    Object.entries(properties).forEach(([property, value]) => {
+      try {
+        mapref.current!.setLayoutProperty(layerId, property, value);
+        console.log(`Updated ${layerType} layout ${property} to`, value);
+      } catch (error) {
+        console.warn(`Failed to update layout ${property}:`, error);
+      }
+    });
+  };
+
   // Add animation to swell layer
   const animateSwell = () => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
@@ -667,6 +425,354 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       animate();
       console.log('Started swell animation');
     }
+  };
+
+  // Enhanced meteorological wind barb function
+  const createMeteorologicalWindBarb = (speed: number, direction: number, unit: string = 'knots') => {
+    // Convert speed to knots if needed
+    let speedKnots = speed;
+    if (unit === 'ms') speedKnots = speed * 1.944;
+    if (unit === 'kmh') speedKnots = speed * 0.54;
+
+    // Calm conditions (0-2 knots) - Circle
+    if (speedKnots < 3) {
+      return {
+        symbol: '○',
+        rotation: 0
+      };
+    }
+
+    // Light air (3-7 knots) - Staff only
+    if (speedKnots < 8) {
+      return {
+        symbol: '│',
+        rotation: direction
+      };
+    }
+
+    let barb = '';
+    let remainingSpeed = Math.round(speedKnots);
+    
+    // Build barb from left to right based on meteorological standards
+    // Add pennants for every 50 knots (triangular flags)
+    const pennants = Math.floor(remainingSpeed / 50);
+    for (let i = 0; i < pennants; i++) {
+      barb += '◤';
+    }
+    remainingSpeed = remainingSpeed % 50;
+    
+    // Add full barbs for every 10 knots
+    const fullBarbs = Math.floor(remainingSpeed / 10);
+    for (let i = 0; i < fullBarbs; i++) {
+      barb += '━';
+    }
+    remainingSpeed = remainingSpeed % 10;
+    
+    // Add half barb for 5-9 knots remainder
+    if (remainingSpeed >= 5) {
+      barb += '╸';
+    }
+    
+    // Add the staff
+    barb += '│';
+    
+    return {
+      symbol: barb,
+      rotation: direction
+    };
+  };
+
+  const handleOverlayClick = async (overlay: string) => {
+    console.log(`Attempting to add overlay: ${overlay}`);
+    
+    if (!mapref.current || !mapref.current.isStyleLoaded()) {
+      console.warn("Map style not yet loaded");
+      toast({
+        title: "Map Loading",
+        description: "Please wait for the map to fully load before adding layers",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (activeOverlays.includes(overlay)) {
+      console.log(`Removing overlay: ${overlay}`);
+      removeOverlay(overlay);
+      return;
+    }
+
+    const { dtnLayerId, tileSetId } = dtnOverlays[overlay];
+    const sourceId = `dtn-source-${overlay}`;
+    const layerId = `dtn-layer-${overlay}`;
+
+    console.log(`Adding overlay details:`, {
+      overlay,
+      dtnLayerId,
+      tileSetId,
+      sourceId,
+      layerId,
+      token: token.substring(0, 20) + '...'
+    });
+
+    try {
+      console.log(`Fetching source layer for: ${dtnLayerId}`);
+      const sourceLayer = await fetchDTNSourceLayer(dtnLayerId);
+      console.log(`Source layer found: ${sourceLayer}`);
+      
+      const tileURL = `https://map.api.dtn.com/v2/tiles/${dtnLayerId}/${tileSetId}/{z}/{x}/{y}.pbf?token=${token}`;
+      console.log(`Tile URL: ${tileURL}`);
+      
+      if (!mapref.current.getSource(sourceId)) {
+        console.log(`Adding source: ${sourceId}`);
+        mapref.current.addSource(sourceId, {
+          type: "vector",
+          tiles: [tileURL],
+          minzoom: 0,
+          maxzoom: 14,
+        });
+
+        let beforeId = undefined;
+
+        if (overlay === 'swell') {
+          // Enhanced color expression with smoother transitions
+          const colorExpression: any[] = [
+            'interpolate',
+            ['exponential', 1.5], // Use exponential interpolation for smoother gradients
+            ['to-number', ['get', 'value'], 0]
+          ];
+
+          layerConfigs.swell.gradient.forEach((item) => {
+            const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+            colorExpression.push(heightValue, item.color);
+          });
+
+          mapref.current.addLayer({
+            id: layerId,
+            type: "fill",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "fill-color": colorExpression,
+              "fill-opacity": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                2, 0.4,  // Lower opacity at far zoom levels
+                6, layerConfigs.swell.fillOpacity,
+                14, layerConfigs.swell.fillOpacity * 1.1
+              ],
+              "fill-outline-color": layerConfigs.swell.fillOutlineColor,
+              "fill-translate": [0, 0],
+              "fill-translate-transition": {
+                "duration": 1000,
+                "delay": 0
+              },
+              "fill-antialias": true,
+              // Add blur for smoother edges
+              "fill-pattern": undefined // Ensure no pattern interference
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          }, beforeId);
+
+          // Add a secondary blur layer for enhanced smoothing
+          mapref.current.addLayer({
+            id: `${layerId}-blur`,
+            type: "fill",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "fill-color": colorExpression,
+              "fill-opacity": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'value'], 0],
+                0, 0.1,
+                5, 0.15,
+                10, 0.2
+              ],
+              "fill-translate": [1, 1],
+              "fill-antialias": true
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          }, layerId);
+          
+          setTimeout(() => animateSwell(), 100);
+        } else if (overlay === 'wind') {
+          // Enhanced meteorological wind barb implementation
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "text-field": [
+                "case",
+                ["<", ["to-number", ["get", "value"], 0], 3], "○",
+                ["<", ["to-number", ["get", "value"], 0], 8], "│",
+                ["<", ["to-number", ["get", "value"], 0], 13], "╸│",
+                ["<", ["to-number", ["get", "value"], 0], 18], "━│",
+                ["<", ["to-number", ["get", "value"], 0], 23], "━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 28], "━━│",
+                ["<", ["to-number", ["get", "value"], 0], 33], "━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 38], "━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 43], "━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 48], "━━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 53], "━━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 63], "◤│",
+                ["<", ["to-number", ["get", "value"], 0], 68], "◤╸│",
+                ["<", ["to-number", ["get", "value"], 0], 73], "◤━│",
+                ["<", ["to-number", ["get", "value"], 0], 78], "◤━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 83], "◤━━│",
+                ["<", ["to-number", ["get", "value"], 0], 88], "◤━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 93], "◤━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 98], "◤━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 103], "◤━━━━│",
+                "◤◤│"
+              ],
+              "text-size": layerConfigs.wind.textSize,
+              "text-rotation-alignment": "map",
+              "text-rotate": [
+                "case",
+                ["has", "direction"],
+                ["get", "direction"],
+                ["has", "value1"], 
+                ["get", "value1"],
+                0
+              ],
+              "text-allow-overlap": layerConfigs.wind.allowOverlap,
+              "text-ignore-placement": true,
+              "symbol-spacing": layerConfigs.wind.symbolSpacing,
+              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+              "text-anchor": "bottom"
+            },
+            paint: {
+              "text-color": layerConfigs.wind.textColor,
+              "text-opacity": layerConfigs.wind.textOpacity,
+              "text-halo-color": layerConfigs.wind.haloColor,
+              "text-halo-width": layerConfigs.wind.haloWidth
+            },
+          }, beforeId);
+        } else if (overlay === 'symbol') {
+          const symbolConfig = layerConfigs.symbol;
+          const symbolText = getSymbolByType(symbolConfig.symbolType, symbolConfig.customSymbol);
+          
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "text-field": symbolText,
+              "text-size": symbolConfig.textSize,
+              "text-rotation-alignment": symbolConfig.rotationAlignment,
+              "text-rotate": [
+                "case",
+                ["has", "direction"],
+                ["get", "direction"],
+                ["has", "value1"], 
+                ["get", "value1"],
+                0
+              ],
+              "text-allow-overlap": symbolConfig.allowOverlap,
+              "text-ignore-placement": true,
+              "symbol-spacing": symbolConfig.symbolSpacing
+            },
+            paint: {
+              "text-color": symbolConfig.textColor,
+              "text-opacity": symbolConfig.textOpacity,
+              "text-halo-color": symbolConfig.haloColor,
+              "text-halo-width": symbolConfig.haloWidth
+            },
+          }, beforeId);
+        } else {
+          mapref.current.addLayer({
+            id: layerId,
+            type: "line",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "line-cap": layerConfigs.pressure.lineCap,
+              "line-join": layerConfigs.pressure.lineJoin,
+            },
+            paint: {
+              "line-color": layerConfigs.pressure.lineColor,
+              "line-width": layerConfigs.pressure.lineWidth,
+              "line-opacity": layerConfigs.pressure.lineOpacity,
+              "line-blur": layerConfigs.pressure.lineBlur,
+              "line-gap-width": layerConfigs.pressure.lineGapWidth
+            },
+          }, beforeId);
+        }
+
+        ensureVesselsOnTop();
+        setActiveOverlays(prev => [...prev, overlay]);
+        console.log(`Successfully added ${overlay} layer`);
+        
+        toast({
+          title: `${overlay.charAt(0).toUpperCase() + overlay.slice(1)} Layer`,
+          description: `Successfully loaded ${overlay} overlay`
+        });
+      } else {
+        console.log(`Layer "${overlay}" already exists`);
+        toast({
+          title: "Layer Already Active",
+          description: `${overlay} layer is already active on the map`
+        });
+      }
+    } catch (error: any) {
+      console.error(`Error adding ${overlay} layer:`, error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
+      
+      toast({
+        title: "Layer Error",
+        description: `Failed to add ${overlay} layer. Please check the console for details.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const removeOverlay = (overlay: string) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+
+    const sourceId = `dtn-source-${overlay}`;
+    const layerId = `dtn-layer-${overlay}`;
+    const blurLayerId = `${layerId}-blur`;
+
+    // Remove both main and blur layers for swell
+    if (overlay === 'swell') {
+      if (mapref.current.getLayer(blurLayerId)) {
+        mapref.current.removeLayer(blurLayerId);
+      }
+    }
+    
+    if (mapref.current.getLayer(layerId)) {
+      mapref.current.removeLayer(layerId);
+    }
+    if (mapref.current.getSource(sourceId)) {
+      mapref.current.removeSource(sourceId);
+    }
+
+    ensureVesselsOnTop();
+    setActiveOverlays(prev => prev.filter(item => item !== overlay));
+  };
+
+  const removeAllOverlays = () => {
+    activeOverlays.forEach(overlay => removeOverlay(overlay));
+    setActiveOverlays([]);
+    ensureVesselsOnTop();
+    
+    toast({
+      title: "All Layers Removed",
+      description: "All weather layers have been removed from the map"
+    });
   };
 
   // Enhanced configuration update functions
@@ -700,35 +806,23 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   // Enhanced function to apply specific layer configuration
   const applySpecificLayerConfiguration = (layerType: string, config: any) => {
     if (layerType === 'swell') {
-      const colorExpression = createSwellColorExpression(config);
+      const colorExpression: any[] = [
+        'interpolate',
+        ['exponential', 1.5], // Use exponential interpolation for smoother gradients
+        ['to-number', ['get', 'value'], 0]
+      ];
+
+      config.gradient.forEach((item: any) => {
+        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+        colorExpression.push(heightValue, item.color);
+      });
 
       updateLayerProperties(layerType, {
         'fill-color': colorExpression,
-        'fill-opacity': config.fillOpacity,
+        'fill-opacity': layerConfigs.swell.fillOpacity,
         'fill-outline-color': config.fillOutlineColor,
         'fill-antialias': config.fillAntialias
       });
-
-      // Update blur layers if they exist
-      if (config.layerBlurEnabled) {
-        for (let i = 1; i <= Math.floor(config.layerBlurRadius); i++) {
-          const blurLayerId = `dtn-layer-${layerType}-blur-${i}`;
-          if (mapref.current && mapref.current.getLayer(blurLayerId)) {
-            updateLayerProperties(`${layerType}-blur-${i}`, {
-              'fill-color': colorExpression,
-              'fill-opacity': [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'value'], 0],
-                0, config.layerBlurIntensity * 0.1,
-                5, config.layerBlurIntensity * 0.15,
-                10, config.layerBlurIntensity * 0.2
-              ],
-              'fill-translate': [i * 2, i * 2]
-            });
-          }
-        }
-      }
     } else if (layerType === 'pressure') {
       updateLayerProperties(layerType, {
         'line-color': config.lineColor,
@@ -756,11 +850,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'symbol-spacing': config.symbolSpacing
       });
     } else if (layerType === 'symbol') {
-      // Fix: Add type check for symbol-specific properties
-      let symbolText = '→'; // default symbol
-      if ('symbolType' in config && 'customSymbol' in config) {
-        symbolText = getSymbolByType(config.symbolType, config.customSymbol);
-      }
+      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
       
       updateLayerProperties(layerType, {
         'text-color': config.textColor,
@@ -773,7 +863,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'text-size': config.textSize,
         'text-allow-overlap': config.allowOverlap,
         'symbol-spacing': config.symbolSpacing,
-        'text-rotation-alignment': config.rotationAlignment || 'map',
+        'text-rotation-alignment': config.rotationAlignment,
         'text-field': symbolText
       });
     }
@@ -783,12 +873,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const applyLayerConfiguration = () => {
     const config = layerConfigs[selectedWeatherType];
     applySpecificLayerConfiguration(selectedWeatherType, config);
-
-    // Track configuration application with Amplitude
-    trackLayerConfigurationApplied(selectedWeatherType, {
-      config_type: selectedWeatherType,
-      config_properties: Object.keys(config).length
-    });
 
     // Automatically save as draft after applying
     saveConfigurationAsDraft();
@@ -821,6 +905,484 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     return `rgb(${r}, ${g}, ${b})`;
   };
 
+  const renderConfigurationPanel = () => {
+    const config = layerConfigs[selectedWeatherType];
+
+    return (
+      <div className="space-y-4">
+        {selectedWeatherType === 'swell' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-sm font-medium text-gray-700">Swell Configuration</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSwellConfigLocked(!swellConfigLocked)}
+                className="p-2"
+              >
+                {swellConfigLocked ? (
+                  <Lock className="h-4 w-4 text-red-500" />
+                ) : (
+                  <Unlock className="h-4 w-4 text-green-500" />
+                )}
+              </Button>
+            </div>
+
+            {swellConfigLocked && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-800">
+                  Swell configuration is locked. Click the lock icon to unlock and make changes.
+                </p>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.fillOpacity]}
+                  onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'fillOpacity', value)}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="flex-1"
+                  disabled={swellConfigLocked}
+                />
+                <span className="text-xs w-12">{config.fillOpacity}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Outline Color</Label>
+              <Input
+                type="color"
+                value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
+                onChange={(e) => !swellConfigLocked && updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
+                className="w-full h-8"
+                disabled={swellConfigLocked}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.fillAntialias}
+                onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'fillAntialias', checked)}
+                disabled={swellConfigLocked}
+              />
+              <Label className="text-xs">Anti-aliasing</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.animationEnabled}
+                onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'animationEnabled', checked)}
+                disabled={swellConfigLocked}
+              />
+              <Label className="text-xs">Animation</Label>
+            </div>
+
+            {config.animationEnabled && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Animation Speed</Label>
+                <Slider
+                  value={[config.animationSpeed * 1000]}
+                  onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'animationSpeed', value / 1000)}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  className="flex-1"
+                  disabled={swellConfigLocked}
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient (0m to 10m+)</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {config.gradient.map((item, index) => (
+                  <div key={index} className={`flex items-center gap-2 p-2 border rounded ${swellConfigLocked ? 'bg-gray-50' : 'bg-white'}`}>
+                    <Input
+                      type="color"
+                      value={convertRgbToHex(item.color)}
+                      onChange={(e) => {
+                        if (!swellConfigLocked) {
+                          const newGradient = [...config.gradient];
+                          newGradient[index].color = convertHexToRgb(e.target.value);
+                          updateConfigValue('swell', 'gradient', newGradient);
+                        }
+                      }}
+                      className="w-10 h-8 p-0 border-2"
+                      disabled={swellConfigLocked}
+                    />
+                    <span className="text-xs w-14 font-medium text-gray-700">{item.value}</span>
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-600 mb-1 block">Opacity: {item.opacity.toFixed(1)}</Label>
+                      <Slider
+                        value={[item.opacity]}
+                        onValueChange={([value]) => {
+                          if (!swellConfigLocked) {
+                            const newGradient = [...config.gradient];
+                            newGradient[index].opacity = value;
+                            updateConfigValue('swell', 'gradient', newGradient);
+                          }
+                        }}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        className="w-full"
+                        disabled={swellConfigLocked}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {!swellConfigLocked && (
+                <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                  <strong>Tip:</strong> Click the color boxes to change wave height colors and adjust the sliders to modify individual opacity for each height range.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'pressure' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Color</Label>
+              <Input
+                type="color"
+                value={config.lineColor}
+                onChange={(e) => updateConfigValue('pressure', 'lineColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Width</Label>
+              <Slider
+                value={[config.lineWidth]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineWidth', value)}
+                min={0.5}
+                max={10}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Opacity</Label>
+              <Slider
+                value={[config.lineOpacity]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Blur</Label>
+              <Slider
+                value={[config.lineBlur]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineBlur', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Gap Width</Label>
+              <Slider
+                value={[config.lineGapWidth]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'lineGapWidth', value)}
+                min={0}
+                max={10}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Cap</Label>
+              <Select 
+                value={config.lineCap} 
+                onValueChange={(value) => updateConfigValue('pressure', 'lineCap', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="butt">Butt</SelectItem>
+                  <SelectItem value="round">Round</SelectItem>
+                  <SelectItem value="square">Square</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Line Join</Label>
+              <Select 
+                value={config.lineJoin} 
+                onValueChange={(value) => updateConfigValue('pressure', 'lineJoin', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bevel">Bevel</SelectItem>
+                  <SelectItem value="round">Round</SelectItem>
+                  <SelectItem value="miter">Miter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'wind' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Color</Label>
+              <Input
+                type="color"
+                value={config.textColor}
+                onChange={(e) => updateConfigValue('wind', 'textColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Size</Label>
+              <Slider
+                value={[config.textSize]}
+                onValueChange={([value]) => updateConfigValue('wind', 'textSize', value)}
+                min={8}
+                max={32}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Opacity</Label>
+              <Slider
+                value={[config.textOpacity]}
+                onValueChange={([value]) => updateConfigValue('wind', 'textOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
+              <Input
+                type="color"
+                value={config.haloColor}
+                onChange={(e) => updateConfigValue('wind', 'haloColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
+              <Slider
+                value={[config.haloWidth]}
+                onValueChange={([value]) => updateConfigValue('wind', 'haloWidth', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Barb Spacing</Label>
+              <Slider
+                value={[config.symbolSpacing]}
+                onValueChange={([value]) => updateConfigValue('wind', 'symbolSpacing', value)}
+                min={20}
+                max={200}
+                step={10}
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.allowOverlap}
+                onCheckedChange={(checked) => updateConfigValue('wind', 'allowOverlap', checked)}
+              />
+              <Label className="text-xs">Allow Overlap</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Speed Unit</Label>
+              <Select 
+                value={config.speedUnit} 
+                onValueChange={(value) => updateConfigValue('wind', 'speedUnit', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="knots">Knots</SelectItem>
+                  <SelectItem value="ms">m/s</SelectItem>
+                  <SelectItem value="kmh">km/h</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+              <div className="font-semibold mb-1">Meteorological Wind Barb Legend:</div>
+              <div>○ = Calm (0-2 kts)</div>
+              <div>│ = Light air (3-7 kts)</div>
+              <div>╸│ = Half barb (5 kts)</div>
+              <div>━│ = Full barb (10 kts)</div>
+              <div>◤│ = Pennant (50 kts)</div>
+              <div className="mt-1 text-xs text-blue-600">
+                Wind direction: Points toward where wind is blowing
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'symbol' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Type</Label>
+              <Select 
+                value={config.symbolType} 
+                onValueChange={(value) => updateConfigValue('symbol', 'symbolType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="arrow">Arrow (→)</SelectItem>
+                  <SelectItem value="triangle">Triangle (▲)</SelectItem>
+                  <SelectItem value="circle">Circle (●)</SelectItem>
+                  <SelectItem value="square">Square (■)</SelectItem>
+                  <SelectItem value="custom">Custom Symbol</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {config.symbolType === 'custom' && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Custom Symbol</Label>
+                <Input
+                  type="text"
+                  value={config.customSymbol}
+                  onChange={(e) => updateConfigValue('symbol', 'customSymbol', e.target.value)}
+                  placeholder="Enter custom symbol (e.g., ★, ✈, ⚡)"
+                  maxLength={3}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Color</Label>
+              <Input
+                type="color"
+                value={config.textColor}
+                onChange={(e) => updateConfigValue('symbol', 'textColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
+              <Slider
+                value={[config.textSize]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
+                min={8}
+                max={32}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Opacity</Label>
+              <Slider
+                value={[config.textOpacity]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'textOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
+              <Input
+                type="color"
+                value={config.haloColor}
+                onChange={(e) => updateConfigValue('symbol', 'haloColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
+              <Slider
+                value={[config.haloWidth]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'haloWidth', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Spacing</Label>
+              <Slider
+                value={[config.symbolSpacing]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'symbolSpacing', value)}
+                min={20}
+                max={200}
+                step={10}
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.allowOverlap}
+                onCheckedChange={(checked) => updateConfigValue('symbol', 'allowOverlap', checked)}
+              />
+              <Label className="text-xs">Allow Overlap</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Rotation Alignment</Label>
+              <Select 
+                value={config.rotationAlignment} 
+                onValueChange={(value) => updateConfigValue('symbol', 'rotationAlignment', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="map">Map</SelectItem>
+                  <SelectItem value="viewport">Viewport</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="relative h-full w-full">
       <MapTopControls />
@@ -836,22 +1398,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       {showLayers && (
         <div className="absolute top-32 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
           <h3 className="text-sm font-semibold mb-3">DTN Weather Layers</h3>
-          
-          {/* Token Status */}
-          <div className={`mb-4 p-2 rounded text-xs ${tokenValidation.isValid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-            <div className="font-semibold">
-              Token Status: {tokenValidation.isValid ? '✅ Valid' : '❌ Invalid'}
-            </div>
-            {!tokenValidation.isValid && tokenValidation.error && (
-              <div className="mt-1 text-red-600">{tokenValidation.error}</div>
-            )}
-            {tokenValidation.lastChecked && (
-              <div className="mt-1 text-gray-500">
-                Checked: {tokenValidation.lastChecked.toLocaleTimeString()}
-              </div>
-            )}
-          </div>
-          
           {Object.keys(dtnOverlays).map((overlay) => (
             <div
               key={overlay}
@@ -859,9 +1405,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               className={`p-2 m-1 rounded cursor-pointer transition-colors ${
                 activeOverlays.includes(overlay)
                   ? 'bg-blue-500 text-white' 
-                  : tokenValidation.isValid 
-                    ? 'bg-gray-100 hover:bg-gray-200 text-black'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 hover:bg-gray-200 text-black'
               }`}
             >
               {overlay.charAt(0).toUpperCase() + overlay.slice(1)}
@@ -876,35 +1420,100 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               Remove All Layers ({activeOverlays.length})
             </button>
           )}
-          <div className="mt-4 p-2 bg-gray-50 rounded text-xs">
-            <div className="font-semibold">Debug Info:</div>
-            <div>Map Loaded: {isMapLoaded ? 'Yes' : 'No'}</div>
-            <div>Active Overlays: {activeOverlays.length}</div>
-            <div>Token Valid: {tokenValidation.isValid ? 'Yes' : 'No'}</div>
-          </div>
         </div>
       )}
 
-      <LayerControlPanel
-        selectedWeatherType={selectedWeatherType}
-        setSelectedWeatherType={setSelectedWeatherType}
-        selectedDraft={selectedDraft}
-        setSelectedDraft={setSelectedDraft}
-        weatherDrafts={weatherDrafts}
-        layerConfigs={layerConfigs}
-        updateConfigValue={updateConfigValue}
-        swellConfigLocked={swellConfigLocked}
-        setSwellConfigLocked={setSwellConfigLocked}
-        activeOverlays={activeOverlays}
-        loadDraft={loadDraft}
-        deleteDraft={deleteDraft}
-        applyLayerConfiguration={applyLayerConfiguration}
-        loadConfigFromDraft={loadConfigFromDraft}
-        getCurrentWeatherTypeDrafts={getCurrentWeatherTypeDrafts}
-        convertRgbToHex={convertRgbToHex}
-        convertHexToRgb={convertHexToRgb}
-        getSymbolByType={getSymbolByType}
-      />
+      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[360px] max-h-[80vh] overflow-y-auto">
+        <h3 className="text-sm font-semibold mb-3">Weather Layer Configuration</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <Label className="block text-xs font-medium text-gray-700 mb-1">
+              Weather Type
+            </Label>
+            <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select weather type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border shadow-lg z-50">
+                <SelectItem value="wind">Wind Barbs</SelectItem>
+                <SelectItem value="pressure">Pressure</SelectItem>
+                <SelectItem value="swell">Swell (Filled)</SelectItem>
+                <SelectItem value="symbol">Symbol</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Draft Selection */}
+          {getCurrentWeatherTypeDrafts().length > 0 && (
+            <div>
+              <Label className="block text-xs font-medium text-gray-700 mb-1">
+                Load Draft
+              </Label>
+              <div className="flex gap-2">
+                <Select value={selectedDraft} onValueChange={loadDraft}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select a draft" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border shadow-lg z-50">
+                    {getCurrentWeatherTypeDrafts().map((draft) => (
+                      <SelectItem key={draft.id} value={draft.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{draft.name}</span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(draft.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedDraft && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteDraft(selectedDraft)}
+                    className="p-2"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                )}
+              </div>
+              {getCurrentWeatherTypeDrafts().length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {getCurrentWeatherTypeDrafts().length} draft(s) available for {selectedWeatherType}
+                </p>
+              )}
+            </div>
+          )}
+
+          {renderConfigurationPanel()}
+
+          <Button 
+            onClick={applyLayerConfiguration}
+            className="w-full"
+            size="sm"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Apply & Save as Draft
+          </Button>
+
+          {/* Add the Weather Config Drafts component */}
+          <WeatherConfigDrafts
+            currentConfig={layerConfigs}
+            onLoadConfig={loadConfigFromDraft}
+          />
+
+          <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
+            <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
+            {activeOverlays.map(layer => (
+              <div key={layer} className="text-xs capitalize">
+                • {layer}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

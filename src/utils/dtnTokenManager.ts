@@ -9,208 +9,69 @@ const DTN_CREDENTIALS = {
 };
 
 export interface DTNTokenResponse {
-  data: {
-    access_token: string;
-    token_type: string;
-    expires_in: number;
-    scope: string;
-  };
-  meta: {
-    date_time: string;
-    name: string;
-    uuid: string;
-    request_id: string;
-    start_timestamp: number;
-    end_timestamp: number;
-    execution_time: number;
-  };
+  access_token: string;
+  token_type: string;
+  expires_in: number;
 }
-
-let currentToken: string | null = null;
-let tokenExpiryTime: number | null = null;
 
 export const fetchNewDTNToken = async (): Promise<string> => {
   try {
-    console.log('🔄 Fetching new DTN authorization token...');
-    console.log('Auth URL:', DTN_AUTH_URL);
-    console.log('Client ID:', DTN_CREDENTIALS.client_id);
+    console.log('Fetching new DTN token...');
     
     const response = await fetch(DTN_AUTH_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
       },
       body: JSON.stringify(DTN_CREDENTIALS),
     });
 
-    console.log('Token response status:', response.status);
-    console.log('Token response headers:', Object.fromEntries(response.headers.entries()));
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Token request failed:', response.status, response.statusText, errorText);
-      throw new Error(`Failed to fetch DTN token: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Failed to fetch DTN token: ${response.status} ${response.statusText}`);
     }
 
-    const responseData: DTNTokenResponse = await response.json();
-    console.log('✅ Successfully fetched new DTN token');
-    console.log('Raw response data:', responseData);
+    const data: DTNTokenResponse = await response.json();
+    console.log('Successfully fetched new DTN token');
     
-    // Extract token data from the nested data property
-    const tokenData = responseData.data;
-    if (!tokenData || !tokenData.access_token) {
-      console.error('Invalid response structure:', responseData);
-      throw new Error('No access_token in response data');
-    }
-    
-    console.log('Token type:', tokenData.token_type);
-    console.log('Expires in:', tokenData.expires_in, 'seconds');
-    console.log('Scope:', tokenData.scope);
-    
-    // Store token and expiry time
-    currentToken = `Bearer ${tokenData.access_token}`;
-    
-    // Use the expires_in from the response
-    const expiresIn = tokenData.expires_in || 86400; // Default to 24 hours if not provided
-    tokenExpiryTime = Date.now() + (expiresIn * 1000) - 60000; // Subtract 1 minute for safety
-    
-    console.log('Token stored successfully with expiry:', new Date(tokenExpiryTime));
-    
-    return currentToken;
+    return `Bearer ${data.access_token}`;
   } catch (error) {
-    console.error('❌ Error fetching DTN token:', error);
+    console.error('Error fetching DTN token:', error);
     throw error;
   }
 };
 
 export const refreshDTNToken = async (): Promise<void> => {
   try {
-    console.log('🔄 Refreshing DTN token...');
     const newToken = await fetchNewDTNToken();
     
     // Store the new token in localStorage for persistence
     localStorage.setItem('dtnToken', newToken);
     localStorage.setItem('dtnTokenTimestamp', Date.now().toString());
-    localStorage.setItem('dtnTokenExpiry', tokenExpiryTime?.toString() || '');
     
-    console.log('✅ DTN token refreshed and stored');
+    console.log('DTN token refreshed and stored');
   } catch (error) {
-    console.error('❌ Failed to refresh DTN token:', error);
+    console.error('Failed to refresh DTN token:', error);
     throw error;
   }
 };
 
-export const isTokenExpired = (): boolean => {
-  if (!tokenExpiryTime) {
-    // Check localStorage for expiry time
-    const storedExpiry = localStorage.getItem('dtnTokenExpiry');
-    if (storedExpiry) {
-      tokenExpiryTime = parseInt(storedExpiry);
-    }
-  }
-  
-  if (!tokenExpiryTime) return true;
-  
-  const isExpired = Date.now() > tokenExpiryTime;
-  if (isExpired) {
-    console.log('🕐 DTN token has expired');
-  }
-  return isExpired;
-};
-
-export const getDTNToken = async (): Promise<string> => {
-  // Check if we have a current valid token
-  if (currentToken && !isTokenExpired()) {
-    console.log('✅ Using current valid DTN token');
-    return currentToken;
-  }
-  
-  // Check localStorage for a valid stored token
+export const getDTNToken = (): string => {
+  // First check if we have a stored token
   const storedToken = localStorage.getItem('dtnToken');
   const storedTimestamp = localStorage.getItem('dtnTokenTimestamp');
-  const storedExpiry = localStorage.getItem('dtnTokenExpiry');
   
-  if (storedToken && storedExpiry) {
-    const expiryTime = parseInt(storedExpiry);
-    if (Date.now() < expiryTime) {
-      console.log('✅ Using valid stored DTN token');
-      currentToken = storedToken;
-      tokenExpiryTime = expiryTime;
+  // Check if token is less than 23 hours old (tokens expire in 24 hours)
+  if (storedToken && storedTimestamp) {
+    const tokenAge = Date.now() - parseInt(storedTimestamp);
+    const hoursOld = tokenAge / (1000 * 60 * 60);
+    
+    if (hoursOld < 23) {
+      console.log('Using stored DTN token');
       return storedToken;
-    } else {
-      console.log('🕐 Stored DTN token has expired');
     }
   }
   
-  // No valid token available, fetch a new one
-  console.log('🔄 No valid token available, fetching new one...');
-  try {
-    const newToken = await fetchNewDTNToken();
-    
-    // Store the new token
-    localStorage.setItem('dtnToken', newToken);
-    localStorage.setItem('dtnTokenTimestamp', Date.now().toString());
-    localStorage.setItem('dtnTokenExpiry', tokenExpiryTime?.toString() || '');
-    
-    return newToken;
-  } catch (error) {
-    console.error('❌ Failed to get DTN token, using fallback');
-    // Return the updated fallback token as last resort
-    const fallbackToken = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpfX21pZW13NGhoTmdvQWQxR3N6ciJ9.eyJodHRwczovL2F1dGguZHRuLmNvbS9hY2NvdW50SWQiOiIyNTY1Mzk5IiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vdmVuZG9ySWQiOiJ1bmtub3duIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vY3VzdG9tZXJJZCI6IjI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9wcm9kdWN0Q29kZSI6IkRUTld4QVBJXzI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9yZXF1ZXN0ZXJJcCI6IjE4LjIxMy4xNzQuMjciLCJodHRwczovL2F1dGguZHRuLmNvbS9ycHMiOiIyNTAiLCJodHRwczovL2F1dGguZHRuLmNvbS90aWVyIjoiRW50ZXJwcmlzZSIsImh0dHBzOi8vYXV0aC5kdG4uY29tL3F1b3RhIjoiMTAwMDAwIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vYXJlYVNpemUiOiIwIiwiaXNzIjoiaHR0cHM6Ly9pZC5hdXRoLmR0bi5jb20vIiwic3ViIjoiRnpGbHZJajNjUFBhejhlc3B5ckhEN0FySnVlY0xOR1BAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbWFwLmFwaS5kdG4uY29tIiwiaWF0IjoxNzUwMTQ0NzAzLCJleHAiOjE3NTAyMzExMDMsInNjb3BlIjoicmVhZDpjYXRhbG9nLWRlZmF1bHQgd2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJGekZsdklqM2NQUGF6OGVzcHlySEQ3QXJKdWVjTE5HUCIsInBlcm1pc3Npb25zIjpbInJlYWQ6Y2F0YWxvZy1kZWZhdWx0Iiwid2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiXX0.FCJ6gLJLJy-NtF75wXIv_1KLzwXKYrO5j577On2sS9x-FqZvpk5SphlyAm3gATn6Wn7osf2zj-nF75WudiVgAV_jqSbWEDBtI16k4ZcrMHz2jkjjkrCX4RjUMS-7oqqVUoPdOuWE-KRP4wZRH4VHv-aa24qs-J73YfZG-lYOAKS3nTBp6_mjbFG0Nj37vOprHfw2h0Glrw75sM2TlgmjFv8lx_oznHuq3t8opbqWHBq32L8PpOgxTx0xaqOiTuBUV75G3Nbt-EhHlz_fDypId1VfvVuPXlTAs1syPtm9va6GddF7cMoWA6u376XIBbYy9oa6b1PYPiN1osyBCTt60w";
-    return fallbackToken;
-  }
-};
-
-// Function to validate if a token works with DTN API
-export const validateDTNToken = async (token: string): Promise<boolean> => {
-  try {
-    console.log('🔍 Validating DTN token...');
-    const cleanToken = token.replace('Bearer ', '');
-    
-    const response = await fetch('https://map.api.dtn.com/v2/styles/fcst-manta-wind-speed-contours', {
-      method: 'HEAD',
-      headers: {
-        'Authorization': `Bearer ${cleanToken}`,
-        'Content-Type': 'application/json'
-      },
-    });
-    
-    const isValid = response.ok;
-    console.log(`Token validation result: ${isValid ? '✅ Valid' : '❌ Invalid'} (Status: ${response.status})`);
-    
-    return isValid;
-  } catch (error) {
-    console.error('❌ Token validation error:', error);
-    return false;
-  }
-};
-
-// Function to ensure we have a valid token (fetch new one if current is invalid)
-export const ensureValidDTNToken = async (): Promise<string> => {
-  let token = await getDTNToken();
-  
-  // Validate the token
-  const isValid = await validateDTNToken(token);
-  
-  if (!isValid) {
-    console.log('🔄 Current token is invalid, fetching new one...');
-    
-    // Clear stored tokens
-    localStorage.removeItem('dtnToken');
-    localStorage.removeItem('dtnTokenTimestamp');
-    localStorage.removeItem('dtnTokenExpiry');
-    currentToken = null;
-    tokenExpiryTime = null;
-    
-    // Fetch a fresh token
-    token = await fetchNewDTNToken();
-    
-    // Store the new token
-    localStorage.setItem('dtnToken', token);
-    localStorage.setItem('dtnTokenTimestamp', Date.now().toString());
-    localStorage.setItem('dtnTokenExpiry', tokenExpiryTime?.toString() || '');
-  }
-  
-  return token;
+  // If no valid stored token, return the updated hardcoded one as fallback
+  console.log('Using fallback DTN token');
+  return "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpfX21pZW13NGhoTmdvQWQxR3N6ciJ9.eyJodHRwczovL2F1dGguZHRuLmNvbS9hY2NvdW50SWQiOiIyNTY1Mzk5IiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vdmVuZG9ySWQiOiJ1bmtub3duIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vY3VzdG9tZXJJZCI6IjI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9wcm9kdWN0Q29kZSI6IkRUTld4QVBJXzI1NjUzOTkiLCJodHRwczovL2F1dGguZHRuLmNvbS9yZXF1ZXN0ZXJJcCI6IjE4LjIxMy4xNzQuMjciLCJodHRwczovL2F1dGguZHRuLmNvbS9ycHMiOiIyNTAiLCJodHRwczovL2F1dGguZHRuLmNvbS90aWVyIjoiRW50ZXJwcmlzZSIsImh0dHBzOi8vYXV0aC5kdG4uY29tL3F1b3RhIjoiMTAwMDAwIiwiaHR0cHM6Ly9hdXRoLmR0bi5jb20vYXJlYVNpemUiOiIwIiwiaXNzIjoiaHR0cHM6Ly9pZC5hdXRoLmR0bi5jb20vIiwic3ViIjoiRnpGbHZJajNjUFBhejhlc3B5ckhEN0FySnVlY0xOR1BAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbWFwLmFwaS5kdG4uY29tIiwiaWF0IjoxNzUwMDU4MTY4LCJleHAiOjE3NTAxNDQ1NjgsInNjb3BlIjoicmVhZDpjYXRhbG9nLWRlZmF1bHQgd2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJGekZsdklqM2NQUGF6OGVzcHlySEQ3QXJKdWVjTE5HUCIsInBlcm1pc3Npb25zIjpbInJlYWQ6Y2F0YWxvZy1kZWZhdWx0Iiwid2VhdGhlci5tYXAuY2F0YWxvZy1wbHVzOnJlYWQiXX0.LCsNRdOsCj7ilbkCnaOOLcEWRbSTjN48TszJ8JQ-3qZc6-GvR7e8mVNun6dhnbQef_coPT-f-55-1SyAqHn7CWdx2kCw-Q-DFNPCdfRTusMuvGjqu-vn7UxoRfxASevMkDF_dE7GhZlYn53k5rfW386G1SzOsk1ev9KUqRXomCLMlwOModPksZD82r65wn8RLpUltCkZliSvTLzPgf4HlE_EmQpO9LJrGPVlxxhMJpmzGIQpP-lQfPWQSsgtV3f0peYZhtnorWSbrn9RsApjO9qi3Gcu_c6FtFuzIsAkG_bpG-nJRyZP9vPwlpLVxI62voYLFPPdm3xgrxTvhUVSlg";
 };
