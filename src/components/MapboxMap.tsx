@@ -567,9 +567,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 "duration": 1000,
                 "delay": 0
               },
-              "fill-antialias": true,
-              // Add blur for smoother edges
-              "fill-pattern": undefined // Ensure no pattern interference
+              "fill-antialias": true
             },
             layout: {
               "visibility": "visible"
