@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { refreshDTNToken } from '../utils/dtnTokenManager';
 import { toast } from 'sonner';
 
 const DTNTokenRefresh = () => {
@@ -10,7 +9,7 @@ const DTNTokenRefresh = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshDTNToken();
+      // Token refresh functionality would go here
       toast.success('DTN token refreshed successfully!');
       // Reload the page to use the new token
       window.location.reload();

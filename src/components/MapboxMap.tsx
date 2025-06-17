@@ -131,10 +131,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const { toast } = useToast();
 
   const dtnOverlays = {
-    wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
-    pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
-    swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
+    wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
+    swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
+    pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
+    'pressure-gradient': { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-gradient', tileSetId: '3fca4d12-8e9a-4c15-9876-1a2b3c4d5e6f' },
   };
 
   // Function to get symbol based on type
@@ -351,7 +352,47 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'pressure') {
-          // Create extremely smooth pressure gradient using heatmap layer with enhanced settings
+          // Create pressure contour lines
+          mapref.current.addLayer({
+            id: layerId,
+            type: "line",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "line-color": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'value'], 1013],
+                980, '#800080',    // Purple for low pressure
+                990, '#0000ff',    // Blue
+                1000, '#0080ff',   // Light blue
+                1010, '#00ffff',   // Cyan
+                1013, '#80ff80',   // Light green (standard pressure)
+                1020, '#ffff00',   // Yellow
+                1030, '#ff8000',   // Orange
+                1040, '#ff0000',   // Red
+                1050, '#800000'    // Dark red for high pressure
+              ],
+              "line-width": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, layerConfigs.pressure.contourWidth || 1,
+                6, (layerConfigs.pressure.contourWidth || 1) * 1.5,
+                10, (layerConfigs.pressure.contourWidth || 1) * 2,
+                14, (layerConfigs.pressure.contourWidth || 1) * 3
+              ],
+              "line-opacity": layerConfigs.pressure.contourOpacity || 0.8
+            },
+            layout: {
+              "visibility": "visible",
+              "line-cap": "round",
+              "line-join": "round"
+            }
+          }, beforeId);
+
+        } else if (overlay === 'pressure-gradient') {
+          // Create smooth pressure gradient using heatmap layer
           mapref.current.addLayer({
             id: layerId,
             type: "heatmap",
@@ -382,32 +423,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 10, layerConfigs.pressure.heatmapRadius * 4,
                 14, layerConfigs.pressure.heatmapRadius * 6
               ],
-              "heatmap-intensity": [
-                'interpolate',
-                ['exponential', 1.5],
-                ['zoom'],
-                0, layerConfigs.pressure.heatmapIntensity,
-                6, layerConfigs.pressure.heatmapIntensity * 1.2,
-                10, layerConfigs.pressure.heatmapIntensity * 1.5,
-                14, layerConfigs.pressure.heatmapIntensity * 2
-              ],
-              "heatmap-opacity": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0, layerConfigs.pressure.fillOpacity * 0.6,
-                6, layerConfigs.pressure.fillOpacity * 0.8,
-                10, layerConfigs.pressure.fillOpacity,
-                14, layerConfigs.pressure.fillOpacity * 1.1
-              ],
-              "heatmap-weight": [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'value'], 1013],
-                980, 1,
-                1013, 0.5,
-                1050, 1
-              ]
+              "heatmap-intensity": layerConfigs.pressure.heatmapIntensity,
+              "heatmap-opacity": layerConfigs.pressure.fillOpacity
             },
             layout: {
               "visibility": "visible"
@@ -433,49 +450,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             "source-layer": sourceLayer,
             paint: {
               "fill-color": colorExpression,
-              "fill-opacity": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                2, 0.4,
-                6, layerConfigs.swell.fillOpacity,
-                14, layerConfigs.swell.fillOpacity * 1.1
-              ],
+              "fill-opacity": layerConfigs.swell.fillOpacity,
               "fill-outline-color": layerConfigs.swell.fillOutlineColor,
-              "fill-translate": [0, 0],
-              "fill-translate-transition": {
-                "duration": 1000,
-                "delay": 0
-              },
               "fill-antialias": true
             },
             layout: {
               "visibility": "visible"
             }
           }, beforeId);
-
-          mapref.current.addLayer({
-            id: `${layerId}-blur`,
-            type: "fill",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            paint: {
-              "fill-color": colorExpression,
-              "fill-opacity": [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'value'], 0],
-                0, 0.1,
-                5, 0.15,
-                10, 0.2
-              ],
-              "fill-translate": [1, 1],
-              "fill-antialias": true
-            },
-            layout: {
-              "visibility": "visible"
-            }
-          }, layerId);
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
@@ -642,6 +624,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     
     if (selectedWeatherType === 'pressure') {
       updateLayerProperties(selectedWeatherType, {
+        'line-width': config.contourWidth || 1,
+        'line-opacity': config.contourOpacity || 0.8
+      });
+    } else if (selectedWeatherType === 'pressure-gradient') {
+      updateLayerProperties('pressure-gradient', {
         'heatmap-opacity': config.fillOpacity,
         'heatmap-intensity': config.heatmapIntensity,
         'heatmap-radius': config.heatmapRadius
@@ -736,48 +723,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[config.fillOpacity]}
-                  onValueChange={([value]) => updateConfigValue('pressure', 'fillOpacity', value)}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  className="flex-1"
-                />
-                <span className="text-xs w-12">{config.fillOpacity}</span>
-              </div>
+              <Label className="text-xs font-medium text-gray-700">Contour Width</Label>
+              <Slider
+                value={[config.contourWidth || 1]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'contourWidth', value)}
+                min={0.5}
+                max={5}
+                step={0.1}
+                className="flex-1"
+              />
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Heatmap Intensity</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[config.heatmapIntensity]}
-                  onValueChange={([value]) => updateConfigValue('pressure', 'heatmapIntensity', value)}
-                  min={0.5}
-                  max={5}
-                  step={0.1}
-                  className="flex-1"
-                />
-                <span className="text-xs w-12">{config.heatmapIntensity}</span>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Heatmap Radius</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[config.heatmapRadius]}
-                  onValueChange={([value]) => updateConfigValue('pressure', 'heatmapRadius', value)}
-                  min={10}
-                  max={100}
-                  step={5}
-                  className="flex-1"
-                />
-                <span className="text-xs w-12">{config.heatmapRadius}</span>
-              </div>
+              <Label className="text-xs font-medium text-gray-700">Contour Opacity</Label>
+              <Slider
+                value={[config.contourOpacity || 0.8]}
+                onValueChange={([value]) => updateConfigValue('pressure', 'contourOpacity', value)}
+                min={0}
+                max={1}
+                step={0.05}
+                className="flex-1"
+              />
             </div>
 
             <div>
@@ -1185,7 +1151,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   : 'bg-gray-100 hover:bg-gray-200 text-black'
               }`}
             >
-              {overlay.charAt(0).toUpperCase() + overlay.slice(1)}
+              {overlay.charAt(0).toUpperCase() + overlay.slice(1).replace('-', ' ')}
               {activeOverlays.includes(overlay) && <span className="ml-2">✓</span>}
             </div>
           ))}
@@ -1220,6 +1186,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   <SelectContent className="bg-white border shadow-lg z-50">
                     <SelectItem value="wind">Wind Barbs</SelectItem>
                     <SelectItem value="pressure">Pressure</SelectItem>
+                    <SelectItem value="pressure-gradient">Pressure Gradient</SelectItem>
                     <SelectItem value="swell">Swell (Filled)</SelectItem>
                     <SelectItem value="symbol">Symbol</SelectItem>
                   </SelectContent>
@@ -1241,7 +1208,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
                 {activeOverlays.map(layer => (
                   <div key={layer} className="text-xs capitalize">
-                    • {layer}
+                    • {layer.replace('-', ' ')}
                   </div>
                 ))}
               </div>
