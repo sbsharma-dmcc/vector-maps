@@ -87,6 +87,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       smoothing: true,
       blurRadius: 2,
       edgeFeathering: 1.5,
+      // New radial gradient properties
+      useRadialGradient: true,
+      radialGradientCenter: [0.5, 0.5], // center point (0-1, 0-1)
+      radialGradientRadius: 0.8, // radius (0-1)
+      radialGradientInnerOpacity: 0.2,
+      radialGradientOuterOpacity: 0.9,
+      // New blur properties
+      layerBlurEnabled: true,
+      layerBlurRadius: 3,
+      layerBlurIntensity: 0.5,
       gradient: [
         { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },        // Deep blue (very light)
         { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },     // Dark blue
@@ -363,6 +373,60 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     return sourceLayerName;
   };
 
+  // Enhanced function to create radial gradient color expression
+  const createRadialGradientExpression = (config: any) => {
+    if (!config.useRadialGradient) {
+      // Return regular color expression
+      const colorExpression: any[] = [
+        'interpolate',
+        ['exponential', 1.5],
+        ['to-number', ['get', 'value'], 0]
+      ];
+
+      config.gradient.forEach((item: any) => {
+        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+        colorExpression.push(heightValue, item.color);
+      });
+
+      return colorExpression;
+    }
+
+    // Create radial gradient expression
+    const baseColorExpression: any[] = [
+      'interpolate',
+      ['exponential', 1.5],
+      ['to-number', ['get', 'value'], 0]
+    ];
+
+    config.gradient.forEach((item: any) => {
+      const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+      baseColorExpression.push(heightValue, item.color);
+    });
+
+    // Apply radial gradient effect using distance from center
+    return [
+      'interpolate',
+      ['linear'],
+      [
+        'distance',
+        ['literal', config.radialGradientCenter],
+        [
+          'array',
+          ['/', ['get', 'x'], ['get', 'width']],
+          ['/', ['get', 'y'], ['get', 'height']]
+        ]
+      ],
+      0, baseColorExpression,
+      config.radialGradientRadius, [
+        'rgba',
+        ['get', 'r', baseColorExpression],
+        ['get', 'g', baseColorExpression],
+        ['get', 'b', baseColorExpression],
+        config.radialGradientOuterOpacity
+      ]
+    ];
+  };
+
   // Enhanced layer update functions
   const updateLayerProperties = (layerType: string, properties: Record<string, any>) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
@@ -534,18 +598,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         let beforeId = undefined;
 
         if (overlay === 'swell') {
-          // Enhanced color expression with smoother transitions
-          const colorExpression: any[] = [
-            'interpolate',
-            ['exponential', 1.5], // Use exponential interpolation for smoother gradients
-            ['to-number', ['get', 'value'], 0]
-          ];
+          // Enhanced swell layer with radial gradient and blur support
+          const config = layerConfigs.swell;
+          const colorExpression = createRadialGradientExpression(config);
 
-          layerConfigs.swell.gradient.forEach((item) => {
-            const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-            colorExpression.push(heightValue, item.color);
-          });
-
+          // Main swell layer
           mapref.current.addLayer({
             id: layerId,
             type: "fill",
@@ -558,10 +615,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 ['linear'],
                 ['zoom'],
                 2, 0.4,  // Lower opacity at far zoom levels
-                6, layerConfigs.swell.fillOpacity,
-                14, layerConfigs.swell.fillOpacity * 1.1
+                6, config.fillOpacity,
+                14, config.fillOpacity * 1.1
               ],
-              "fill-outline-color": layerConfigs.swell.fillOutlineColor,
+              "fill-outline-color": config.fillOutlineColor,
               "fill-translate": [0, 0],
               "fill-translate-transition": {
                 "duration": 1000,
@@ -574,29 +631,57 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             }
           }, beforeId);
 
-          // Add a secondary blur layer for enhanced smoothing
-          mapref.current.addLayer({
-            id: `${layerId}-blur`,
-            type: "fill",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            paint: {
-              "fill-color": colorExpression,
-              "fill-opacity": [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'value'], 0],
-                0, 0.1,
-                5, 0.15,
-                10, 0.2
-              ],
-              "fill-translate": [1, 1],
-              "fill-antialias": true
-            },
-            layout: {
-              "visibility": "visible"
+          // Enhanced blur layer with custom blur settings
+          if (config.layerBlurEnabled) {
+            mapref.current.addLayer({
+              id: `${layerId}-blur`,
+              type: "fill",
+              source: sourceId,
+              "source-layer": sourceLayer,
+              paint: {
+                "fill-color": colorExpression,
+                "fill-opacity": [
+                  'interpolate',
+                  ['linear'],
+                  ['to-number', ['get', 'value'], 0],
+                  0, config.layerBlurIntensity * 0.1,
+                  5, config.layerBlurIntensity * 0.15,
+                  10, config.layerBlurIntensity * 0.2
+                ],
+                "fill-translate": [config.layerBlurRadius, config.layerBlurRadius],
+                "fill-antialias": true
+              },
+              layout: {
+                "visibility": "visible"
+              }
+            }, layerId);
+
+            // Additional blur layers for more intense effect
+            for (let i = 1; i <= Math.floor(config.layerBlurRadius); i++) {
+              mapref.current.addLayer({
+                id: `${layerId}-blur-${i}`,
+                type: "fill",
+                source: sourceId,
+                "source-layer": sourceLayer,
+                paint: {
+                  "fill-color": colorExpression,
+                  "fill-opacity": [
+                    'interpolate',
+                    ['linear'],
+                    ['to-number', ['get', 'value'], 0],
+                    0, config.layerBlurIntensity * 0.05,
+                    5, config.layerBlurIntensity * 0.08,
+                    10, config.layerBlurIntensity * 0.1
+                  ],
+                  "fill-translate": [i * 2, i * 2],
+                  "fill-antialias": true
+                },
+                layout: {
+                  "visibility": "visible"
+                }
+              }, `${layerId}-blur`);
             }
-          }, layerId);
+          }
           
           setTimeout(() => animateSwell(), 100);
         } else if (overlay === 'wind') {
@@ -744,8 +829,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const layerId = `dtn-layer-${overlay}`;
     const blurLayerId = `${layerId}-blur`;
 
-    // Remove both main and blur layers for swell
+    // Remove swell blur layers
     if (overlay === 'swell') {
+      // Remove additional blur layers
+      for (let i = 1; i <= 10; i++) {
+        const blurLayerIdWithIndex = `${layerId}-blur-${i}`;
+        if (mapref.current.getLayer(blurLayerIdWithIndex)) {
+          mapref.current.removeLayer(blurLayerIdWithIndex);
+        }
+      }
+      
       if (mapref.current.getLayer(blurLayerId)) {
         mapref.current.removeLayer(blurLayerId);
       }
@@ -804,23 +897,33 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   // Enhanced function to apply specific layer configuration
   const applySpecificLayerConfiguration = (layerType: string, config: any) => {
     if (layerType === 'swell') {
-      const colorExpression: any[] = [
-        'interpolate',
-        ['exponential', 1.5], // Use exponential interpolation for smoother gradients
-        ['to-number', ['get', 'value'], 0]
-      ];
-
-      config.gradient.forEach((item: any) => {
-        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-        colorExpression.push(heightValue, item.color);
-      });
+      const colorExpression = createRadialGradientExpression(config);
 
       updateLayerProperties(layerType, {
         'fill-color': colorExpression,
-        'fill-opacity': layerConfigs.swell.fillOpacity,
+        'fill-opacity': config.fillOpacity,
         'fill-outline-color': config.fillOutlineColor,
         'fill-antialias': config.fillAntialias
       });
+
+      // Update blur layers if they exist
+      if (config.layerBlurEnabled) {
+        const blurLayerId = `dtn-layer-${layerType}-blur`;
+        if (mapref.current && mapref.current.getLayer(blurLayerId)) {
+          updateLayerProperties(`${layerType}-blur`, {
+            'fill-color': colorExpression,
+            'fill-opacity': [
+              'interpolate',
+              ['linear'],
+              ['to-number', ['get', 'value'], 0],
+              0, config.layerBlurIntensity * 0.1,
+              5, config.layerBlurIntensity * 0.15,
+              10, config.layerBlurIntensity * 0.2
+            ],
+            'fill-translate': [config.layerBlurRadius, config.layerBlurRadius]
+          });
+        }
+      }
     } else if (layerType === 'pressure') {
       updateLayerProperties(layerType, {
         'line-color': config.lineColor,
@@ -959,6 +1062,139 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 className="w-full h-8"
                 disabled={swellConfigLocked}
               />
+            </div>
+
+            {/* Radial Gradient Controls */}
+            <div className="border-t pt-4">
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">Radial Gradient Settings</Label>
+              
+              <div className="flex items-center gap-2 mb-3">
+                <Switch
+                  checked={config.useRadialGradient}
+                  onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'useRadialGradient', checked)}
+                  disabled={swellConfigLocked}
+                />
+                <Label className="text-xs">Enable Radial Gradient</Label>
+              </div>
+
+              {config.useRadialGradient && (
+                <>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Gradient Center X</Label>
+                    <Slider
+                      value={[config.radialGradientCenter[0]]}
+                      onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'radialGradientCenter', [value, config.radialGradientCenter[1]])}
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      className="flex-1"
+                      disabled={swellConfigLocked}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Gradient Center Y</Label>
+                    <Slider
+                      value={[config.radialGradientCenter[1]]}
+                      onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'radialGradientCenter', [config.radialGradientCenter[0], value])}
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      className="flex-1"
+                      disabled={swellConfigLocked}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Gradient Radius</Label>
+                    <Slider
+                      value={[config.radialGradientRadius]}
+                      onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'radialGradientRadius', value)}
+                      min={0.1}
+                      max={2}
+                      step={0.1}
+                      className="flex-1"
+                      disabled={swellConfigLocked}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Inner Opacity</Label>
+                    <Slider
+                      value={[config.radialGradientInnerOpacity]}
+                      onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'radialGradientInnerOpacity', value)}
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      className="flex-1"
+                      disabled={swellConfigLocked}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Outer Opacity</Label>
+                    <Slider
+                      value={[config.radialGradientOuterOpacity]}
+                      onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'radialGradientOuterOpacity', value)}
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      className="flex-1"
+                      disabled={swellConfigLocked}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Layer Blur Controls */}
+            <div className="border-t pt-4">
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">Layer Blur Settings</Label>
+              
+              <div className="flex items-center gap-2 mb-3">
+                <Switch
+                  checked={config.layerBlurEnabled}
+                  onCheckedChange={(checked) => !swellConfigLocked && updateConfigValue('swell', 'layerBlurEnabled', checked)}
+                  disabled={swellConfigLocked}
+                />
+                <Label className="text-xs">Enable Layer Blur</Label>
+              </div>
+
+              {config.layerBlurEnabled && (
+                <>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Blur Radius</Label>
+                    <div className="flex items-center gap-2">
+                      <Slider
+                        value={[config.layerBlurRadius]}
+                        onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'layerBlurRadius', value)}
+                        min={1}
+                        max={10}
+                        step={1}
+                        className="flex-1"
+                        disabled={swellConfigLocked}
+                      />
+                      <span className="text-xs w-12">{config.layerBlurRadius}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Blur Intensity</Label>
+                    <div className="flex items-center gap-2">
+                      <Slider
+                        value={[config.layerBlurIntensity]}
+                        onValueChange={([value]) => !swellConfigLocked && updateConfigValue('swell', 'layerBlurIntensity', value)}
+                        min={0.1}
+                        max={2}
+                        step={0.1}
+                        className="flex-1"
+                        disabled={swellConfigLocked}
+                      />
+                      <span className="text-xs w-12">{config.layerBlurIntensity.toFixed(1)}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
