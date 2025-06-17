@@ -1,31 +1,35 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { getDTNToken } from '@/utils/dtnTokenManager';
+import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { refreshDTNToken } from '../utils/dtnTokenManager';
+import { toast } from 'sonner';
 
-const DTNTokenRefresh: React.FC = () => {
-  const { toast } = useToast();
+const DTNTokenRefresh = () => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = () => {
-    const currentToken = getDTNToken();
-    if (currentToken) {
-      toast({
-        title: "Token Status",
-        description: "DTN token is currently set"
-      });
-    } else {
-      toast({
-        title: "No Token",
-        description: "Please set a DTN token first",
-        variant: "destructive"
-      });
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshDTNToken();
+      toast.success('DTN token refreshed successfully!');
+      // Reload the page to use the new token
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to refresh DTN token:', error);
+      toast.error('Failed to refresh DTN token. Please try again.');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
   return (
-    <Button onClick={handleRefresh} variant="outline" size="sm">
-      Check Token
+    <Button 
+      onClick={handleRefresh} 
+      disabled={isRefreshing}
+      variant="outline"
+      size="sm"
+    >
+      {isRefreshing ? 'Refreshing...' : 'Refresh DTN Token'}
     </Button>
   );
 };

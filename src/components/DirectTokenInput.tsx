@@ -40,7 +40,7 @@ const DirectTokenInput: React.FC = () => {
   };
 
   return (
-    <div className="absolute left-20 top-0 z-30 bg-white rounded-lg shadow-lg p-4 min-w-[300px] border">
+    <div className="absolute top-20 right-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[300px]">
       <div className="space-y-3">
         <Label className="text-sm font-semibold">Direct DTN Token</Label>
         <Input

@@ -1,10 +1,7 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Route, History, Ship, Search, Plus, Key, Settings } from "lucide-react";
+import { LayoutDashboard, Route, History, Ship, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import DirectTokenInput from "./DirectTokenInput";
-import WeatherConfigPopup from "./WeatherConfigPopup";
 import {
   Sidebar,
   SidebarContent,
@@ -15,62 +12,19 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-interface WeatherConfig {
-  fillOpacity: number;
-  heatmapIntensity: number;
-  heatmapRadius: number;
-  heatmapWeight: number;
-  lineOpacity: number;
-  lineWidth: number;
-  colorScheme: string;
-  customColors: {
-    lowPressure: string;
-    mediumPressure: string;
-    highPressure: string;
-  };
-  enableAnimation: boolean;
-  animationSpeed: number;
-  blendMode: string;
-  smoothing: boolean;
-  contourInterval: number;
-}
-
-interface AppSidebarProps {
-  onWeatherConfigChange?: (configs: Record<string, WeatherConfig>) => void;
-}
-
 const navigationItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
   { title: "Routes", path: "/routes", icon: Route },
   { title: "History", path: "/history", icon: History },
 ];
 
-const AppSidebar: React.FC<AppSidebarProps> = ({ onWeatherConfigChange }) => {
+const AppSidebar = () => {
   const location = useLocation();
   const currentPath = location.pathname;
-  const [showTokenInput, setShowTokenInput] = useState(false);
-  const [showWeatherConfig, setShowWeatherConfig] = useState(false);
-  const [weatherConfigs, setWeatherConfigs] = useState<Record<string, WeatherConfig>>({});
 
   // Helper function
   const isActive = (path: string) => 
     path === "/" ? currentPath === path : currentPath.startsWith(path);
-
-  const handleWeatherConfig = (layerType: string, config: WeatherConfig) => {
-    console.log('Weather config applied:', layerType, config);
-    
-    const newConfigs = {
-      ...weatherConfigs,
-      [layerType]: config
-    };
-    
-    setWeatherConfigs(newConfigs);
-    
-    // Notify parent component (which should pass this to MapboxMap)
-    if (onWeatherConfigChange) {
-      onWeatherConfigChange(newConfigs);
-    }
-  };
 
   return (
     <Sidebar className="w-16 bg-white/90 shadow-md z-10 flex flex-col" collapsible="none">
@@ -107,28 +61,6 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ onWeatherConfigChange }) => {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
-
-              <div className="mt-4 space-y-2">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="w-full bg-white"
-                  onClick={() => setShowTokenInput(!showTokenInput)}
-                  title="DTN Token"
-                >
-                  <Key className="h-4 w-4" />
-                </Button>
-
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="w-full bg-white"
-                  onClick={() => setShowWeatherConfig(true)}
-                  title="Weather Configuration"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -139,14 +71,6 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ onWeatherConfigChange }) => {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-
-      {showTokenInput && <DirectTokenInput />}
-      
-      <WeatherConfigPopup 
-        isOpen={showWeatherConfig}
-        onClose={() => setShowWeatherConfig(false)}
-        onApplyConfig={handleWeatherConfig}
-      />
     </Sidebar>
   );
 };

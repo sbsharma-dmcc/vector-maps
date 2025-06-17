@@ -1,31 +1,20 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Save, ChevronDown, ChevronUp } from 'lucide-react';
+import MapTopControls from './MapTopControls';
+import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
-
-interface WeatherConfig {
-  fillOpacity: number;
-  heatmapIntensity: number;
-  heatmapRadius: number;
-  heatmapWeight: number;
-  lineOpacity: number;
-  lineWidth: number;
-  colorScheme: string;
-  customColors: {
-    lowPressure: string;
-    mediumPressure: string;
-    highPressure: string;
-  };
-  enableAnimation: boolean;
-  animationSpeed: number;
-  blendMode: string;
-  smoothing: boolean;
-  contourInterval: number;
-}
 
 interface MapboxMapProps {
   vessels?: any[];
@@ -36,7 +25,6 @@ interface MapboxMapProps {
   activeRouteType?: 'base' | 'weather';
   activeLayers?: Record<string, boolean>;
   activeBaseLayer?: string;
-  weatherConfigs?: Record<string, WeatherConfig>;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -47,131 +35,123 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   weatherRoute = [],
   activeRouteType = 'base',
   activeLayers = {},
-  activeBaseLayer = 'default',
-  weatherConfigs = {}
+  activeBaseLayer = 'default'
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  
+  // Enhanced configuration state for each layer type
+  const [layerConfigs, setLayerConfigs] = useState({
+    wind: {
+      textColor: '#ffffff',
+      textSize: 16,
+      textOpacity: 0.9,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 80,
+      allowOverlap: true,
+      barbStyle: 'full',
+      speedUnit: 'knots'
+    },
+    pressure: {
+      fillOpacity: 0.8,
+      fillOutlineColor: 'transparent',
+      gradient: [
+        { value: '980mb', color: 'rgba(128, 0, 128, 0.9)', opacity: 0.9 },
+        { value: '990mb', color: 'rgba(0, 0, 255, 0.8)', opacity: 0.8 },
+        { value: '1000mb', color: 'rgba(0, 128, 255, 0.7)', opacity: 0.7 },
+        { value: '1010mb', color: 'rgba(0, 255, 255, 0.6)', opacity: 0.6 },
+        { value: '1013mb', color: 'rgba(128, 255, 128, 0.5)', opacity: 0.5 },
+        { value: '1020mb', color: 'rgba(255, 255, 0, 0.6)', opacity: 0.6 },
+        { value: '1030mb', color: 'rgba(255, 128, 0, 0.7)', opacity: 0.7 },
+        { value: '1040mb', color: 'rgba(255, 0, 0, 0.8)', opacity: 0.8 },
+        { value: '1050mb+', color: 'rgba(128, 0, 0, 0.9)', opacity: 0.9 }
+      ],
+      smoothing: true,
+      blurRadius: 20,
+      contourLines: false,
+      contourColor: '#333333',
+      contourWidth: 1,
+      contourOpacity: 0.4,
+      heatmapIntensity: 2.5,
+      heatmapRadius: 25
+    },
+    swell: {
+      fillOpacity: 0.9,
+      fillOutlineColor: 'transparent',
+      animationSpeed: 0.0008,
+      animationEnabled: true,
+      fillAntialias: true,
+      smoothing: true,
+      blurRadius: 2,
+      edgeFeathering: 1.5,
+      gradient: [
+        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
+        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
+        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
+        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
+        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },
+        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 },
+        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },
+        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 },
+        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },
+        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 },
+        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },
+        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },
+        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },
+        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },
+        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },
+        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },
+        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },
+        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },
+        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },
+        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },
+        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
+      ]
+    },
+    symbol: {
+      textColor: '#ff0000',
+      textSize: 16,
+      textOpacity: 0.8,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 100,
+      allowOverlap: true,
+      rotationAlignment: 'map',
+      symbolType: 'arrow',
+      customSymbol: '→'
+    }
+  });
 
   const { toast } = useToast();
 
-  // Complete DTN layers collection including all requested layers
   const dtnOverlays = {
-    'symbol': { 
-      dtnLayerId: 'fcst-manta-weather-symbols', 
-      tileSetId: 'weather-symbols-latest',
-      name: 'Weather Symbols'
-    },
-    'wind-barb': { 
-      dtnLayerId: 'fcst-manta-wind-barbs', 
-      tileSetId: 'wind-barbs-latest',
-      name: 'Wind Barbs'
-    },
-    'swell': { 
-      dtnLayerId: 'fcst-manta-swell-height-contours', 
-      tileSetId: 'swell-height-latest',
-      name: 'Swell Height'
-    },
-    'pressure-lines': { 
-      dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', 
-      tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8',
-      name: 'Pressure Lines'
-    },
-    'pressure-gradient': { 
-      dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', 
-      tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8',
-      name: 'Pressure Gradient'
-    },
-    'pressure-analysis': {
-      dtnLayerId: 'analysis-manta-mean-sea-level-pressure-isolines',
-      tileSetId: 'analysis-pressure-latest',
-      name: 'Pressure Analysis'
-    },
-    'pressure-tendency': {
-      dtnLayerId: 'fcst-manta-pressure-tendency-isolines',
-      tileSetId: 'pressure-tendency-latest',
-      name: 'Pressure Tendency'
-    },
-    'high-pressure-centers': {
-      dtnLayerId: 'fcst-manta-high-pressure-centers',
-      tileSetId: 'high-pressure-centers-latest',
-      name: 'High Pressure Centers'
-    },
-    'low-pressure-centers': {
-      dtnLayerId: 'fcst-manta-low-pressure-centers',
-      tileSetId: 'low-pressure-centers-latest',
-      name: 'Low Pressure Centers'
-    },
-    'pressure-systems': {
-      dtnLayerId: 'fcst-manta-pressure-systems',
-      tileSetId: 'pressure-systems-latest',
-      name: 'Pressure Systems'
-    },
-    'surface-pressure': {
-      dtnLayerId: 'fcst-manta-surface-pressure-contours',
-      tileSetId: 'surface-pressure-latest',
-      name: 'Surface Pressure'
-    }
+    wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
+    pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
+    swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
+    symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
   };
 
-  const getColorScheme = (scheme: string, customColors?: any) => {
-    switch (scheme) {
-      case 'rainbow':
-        return [
-          0, 'rgba(138, 43, 226, 0)',
-          0.1, 'rgba(75, 0, 130, 0.3)',
-          0.2, 'rgba(0, 0, 255, 0.4)',
-          0.3, 'rgba(0, 255, 255, 0.5)',
-          0.4, 'rgba(0, 255, 0, 0.6)',
-          0.5, 'rgba(255, 255, 0, 0.7)',
-          0.6, 'rgba(255, 165, 0, 0.75)',
-          0.7, 'rgba(255, 69, 0, 0.8)',
-          0.8, 'rgba(255, 0, 0, 0.85)',
-          0.9, 'rgba(139, 0, 0, 0.9)',
-          1, 'rgba(128, 0, 0, 0.95)'
-        ];
-      case 'ocean':
-        return [
-          0, 'rgba(8, 48, 107, 0)',
-          0.2, 'rgba(8, 81, 156, 0.3)',
-          0.4, 'rgba(33, 113, 181, 0.5)',
-          0.6, 'rgba(66, 146, 198, 0.7)',
-          0.8, 'rgba(107, 174, 214, 0.8)',
-          1, 'rgba(158, 202, 225, 0.9)'
-        ];
-      case 'thermal':
-        return [
-          0, 'rgba(0, 0, 0, 0)',
-          0.2, 'rgba(128, 0, 128, 0.4)',
-          0.4, 'rgba(255, 0, 0, 0.6)',
-          0.6, 'rgba(255, 165, 0, 0.7)',
-          0.8, 'rgba(255, 255, 0, 0.8)',
-          1, 'rgba(255, 255, 255, 0.9)'
-        ];
+  // Function to get symbol based on type
+  const getSymbolByType = (symbolType: string, customSymbol?: string) => {
+    switch (symbolType) {
+      case 'arrow':
+        return '→';
+      case 'triangle':
+        return '▲';
+      case 'circle':
+        return '●';
+      case 'square':
+        return '■';
       case 'custom':
-        return [
-          0, 'rgba(0, 0, 0, 0)',
-          0.33, customColors?.lowPressure || '#0066cc',
-          0.66, customColors?.mediumPressure || '#ffff00',
-          1, customColors?.highPressure || '#ff3300'
-        ];
+        return customSymbol || '→';
       default:
-        return [
-          0, 'rgba(0, 100, 150, 0)',
-          0.1, 'rgba(0, 150, 200, 0.3)',
-          0.2, 'rgba(50, 200, 220, 0.4)',
-          0.3, 'rgba(100, 220, 200, 0.5)',
-          0.4, 'rgba(150, 240, 180, 0.6)',
-          0.5, 'rgba(200, 250, 150, 0.7)',
-          0.6, 'rgba(240, 230, 120, 0.75)',
-          0.7, 'rgba(250, 200, 100, 0.8)',
-          0.8, 'rgba(255, 160, 80, 0.85)',
-          0.9, 'rgba(255, 120, 60, 0.9)',
-          1, 'rgba(220, 80, 40, 0.95)'
-        ];
+        return '→';
     }
   };
 
@@ -223,6 +203,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     };
   }, [toast]);
 
+  useEffect(() => {
+    if (!activeLayers || !isMapLoaded) return;
+
+    Object.entries(activeLayers).forEach(([layerType, enabled]) => {
+      if (enabled && layerType in dtnOverlays && !activeOverlays.includes(layerType)) {
+        handleOverlayClick(layerType);
+      } else if (!enabled && activeOverlays.includes(layerType)) {
+        removeOverlay(layerType);
+      }
+    });
+  }, [activeLayers, isMapLoaded]);
+
   const fetchDTNSourceLayer = async (layerId: string) => {
     try {
       const token = getDTNToken();
@@ -249,26 +241,68 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-  const getLayerConfig = (overlay: string): WeatherConfig => {
-    return weatherConfigs[overlay] || {
-      fillOpacity: 0.8,
-      heatmapIntensity: 2.5,
-      heatmapRadius: 25,
-      heatmapWeight: 1,
-      lineOpacity: 0.8,
-      lineWidth: 2,
-      colorScheme: 'default',
-      customColors: {
-        lowPressure: '#0066cc',
-        mediumPressure: '#ffff00',
-        highPressure: '#ff3300'
-      },
-      enableAnimation: false,
-      animationSpeed: 1,
-      blendMode: 'normal',
-      smoothing: true,
-      contourInterval: 4
-    };
+  // Enhanced layer update functions
+  const updateLayerProperties = (layerType: string, properties: Record<string, any>) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-${layerType}`;
+    
+    if (!mapref.current.getLayer(layerId)) return;
+
+    Object.entries(properties).forEach(([property, value]) => {
+      try {
+        mapref.current!.setPaintProperty(layerId, property, value);
+        console.log(`Updated ${layerType} ${property} to`, value);
+      } catch (error) {
+        console.warn(`Failed to update ${property}:`, error);
+      }
+    });
+  };
+
+  const updateLayoutProperties = (layerType: string, properties: Record<string, any>) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-${layerType}`;
+    
+    if (!mapref.current.getLayer(layerId)) return;
+
+    Object.entries(properties).forEach(([property, value]) => {
+      try {
+        mapref.current!.setLayoutProperty(layerId, property, value);
+        console.log(`Updated ${layerType} layout ${property} to`, value);
+      } catch (error) {
+        console.warn(`Failed to update layout ${property}:`, error);
+      }
+    });
+  };
+
+  // Add animation to swell layer
+  const animateSwell = () => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+    
+    const layerId = `dtn-layer-swell`;
+    
+    if (mapref.current.getLayer(layerId)) {
+      let offset = 0;
+      
+      const animate = () => {
+        if (!mapref.current || !mapref.current.getLayer(layerId)) return;
+        
+        offset += layerConfigs.swell.animationSpeed;
+        
+        if (layerConfigs.swell.animationEnabled) {
+          mapref.current.setPaintProperty(layerId, 'fill-translate', [
+            Math.sin(offset * 2) * 2,
+            Math.cos(offset) * 1
+          ]);
+        }
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      console.log('Started swell animation');
+    }
   };
 
   const handleOverlayClick = async (overlay: string) => {
@@ -293,10 +327,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const { dtnLayerId, tileSetId } = dtnOverlays[overlay];
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
-    const config = getLayerConfig(overlay);
 
     try {
-      console.log(`Adding overlay with config:`, { overlay, config });
+      console.log(`Adding overlay details:`, { overlay, dtnLayerId, tileSetId, sourceId, layerId });
       
       const token = getDTNToken();
       const authToken = token.replace('Bearer ', '');
@@ -315,108 +348,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
-        // Layer styling based on type with applied configuration
-        if (overlay === 'symbol') {
-          mapref.current.addLayer({
-            id: layerId,
-            type: "symbol",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            layout: {
-              "icon-image": [
-                'case',
-                ['has', 'symbol_type'], ['get', 'symbol_type'],
-                'circle'
-              ],
-              "icon-size": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0, 0.5,
-                6, 0.8,
-                10, 1.2,
-                14, 1.5
-              ],
-              "icon-allow-overlap": true,
-              "visibility": "visible"
-            },
-            paint: {
-              "icon-opacity": config.fillOpacity,
-              "icon-color": config.colorScheme === 'custom' ? config.customColors.mediumPressure : '#ff6600'
-            }
-          });
-        } else if (overlay === 'wind-barb') {
-          mapref.current.addLayer({
-            id: layerId,
-            type: "symbol",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            layout: {
-              "icon-image": "wind-barb",
-              "icon-size": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0, 0.3,
-                6, 0.6,
-                10, 1.0,
-                14, 1.4
-              ],
-              "icon-rotation-alignment": "map",
-              "icon-rotate": ['get', 'wind_direction'],
-              "icon-allow-overlap": false,
-              "symbol-spacing": 100,
-              "visibility": "visible"
-            },
-            paint: {
-              "icon-opacity": config.fillOpacity,
-              "icon-color": [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'wind_speed'], 0],
-                0, '#0066cc',
-                10, '#00ccff',
-                20, '#66ff66',
-                30, '#ffff00',
-                40, '#ff9900',
-                50, '#ff3300'
-              ]
-            }
-          });
-        } else if (overlay === 'swell') {
-          const colorScheme = getColorScheme(config.colorScheme, config.customColors);
-          
-          mapref.current.addLayer({
-            id: layerId,
-            type: "fill",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            paint: {
-              "fill-color": [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'swell_height'], 0],
-                0, 'rgba(0, 100, 200, 0.2)',
-                1, 'rgba(0, 150, 255, 0.4)',
-                2, 'rgba(50, 200, 255, 0.5)',
-                3, 'rgba(100, 255, 200, 0.6)',
-                4, 'rgba(150, 255, 150, 0.7)',
-                5, 'rgba(200, 255, 100, 0.75)',
-                6, 'rgba(255, 200, 50, 0.8)',
-                7, 'rgba(255, 150, 0, 0.85)',
-                8, 'rgba(255, 100, 0, 0.9)',
-                10, 'rgba(200, 50, 0, 0.95)'
-              ],
-              "fill-opacity": config.fillOpacity,
-              "fill-outline-color": 'rgba(255, 255, 255, 0.5)'
-            },
-            layout: {
-              "visibility": "visible"
-            }
-          });
-        } else if (overlay === 'pressure-gradient') {
-          const colorScheme = getColorScheme(config.colorScheme, config.customColors);
-          
+        let beforeId = undefined;
+
+        if (overlay === 'pressure') {
+          // Create extremely smooth pressure gradient using heatmap layer with enhanced settings
           mapref.current.addLayer({
             id: layerId,
             type: "heatmap",
@@ -427,183 +362,222 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                 'interpolate',
                 ['linear'],
                 ['heatmap-density'],
-                ...colorScheme
+                0, 'rgba(128, 0, 128, 0)',
+                0.1, 'rgba(128, 0, 128, 0.2)',
+                0.2, 'rgba(0, 0, 255, 0.3)',
+                0.3, 'rgba(0, 128, 255, 0.4)',
+                0.4, 'rgba(0, 255, 255, 0.5)',
+                0.5, 'rgba(128, 255, 128, 0.4)',
+                0.6, 'rgba(255, 255, 0, 0.5)',
+                0.7, 'rgba(255, 128, 0, 0.6)',
+                0.8, 'rgba(255, 0, 0, 0.7)',
+                1, 'rgba(128, 0, 0, 0.8)'
               ],
               "heatmap-radius": [
                 'interpolate',
                 ['exponential', 2],
                 ['zoom'],
-                0, config.heatmapRadius * 0.5,
-                6, config.heatmapRadius,
-                10, config.heatmapRadius * 2,
-                14, config.heatmapRadius * 3
+                0, layerConfigs.pressure.heatmapRadius,
+                6, layerConfigs.pressure.heatmapRadius * 2,
+                10, layerConfigs.pressure.heatmapRadius * 4,
+                14, layerConfigs.pressure.heatmapRadius * 6
               ],
               "heatmap-intensity": [
                 'interpolate',
                 ['exponential', 1.5],
                 ['zoom'],
-                0, config.heatmapIntensity,
-                6, config.heatmapIntensity * 1.2,
-                10, config.heatmapIntensity * 1.4,
-                14, config.heatmapIntensity * 1.6
+                0, layerConfigs.pressure.heatmapIntensity,
+                6, layerConfigs.pressure.heatmapIntensity * 1.2,
+                10, layerConfigs.pressure.heatmapIntensity * 1.5,
+                14, layerConfigs.pressure.heatmapIntensity * 2
               ],
-              "heatmap-opacity": config.fillOpacity,
+              "heatmap-opacity": [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, layerConfigs.pressure.fillOpacity * 0.6,
+                6, layerConfigs.pressure.fillOpacity * 0.8,
+                10, layerConfigs.pressure.fillOpacity,
+                14, layerConfigs.pressure.fillOpacity * 1.1
+              ],
               "heatmap-weight": [
                 'interpolate',
                 ['linear'],
                 ['to-number', ['get', 'value'], 1013],
-                980, config.heatmapWeight,
-                1013, config.heatmapWeight * 0.5,
-                1050, config.heatmapWeight
+                980, 1,
+                1013, 0.5,
+                1050, 1
               ]
             },
             layout: {
               "visibility": "visible"
             }
+          }, beforeId);
+
+        } else if (overlay === 'swell') {
+          const colorExpression: any[] = [
+            'interpolate',
+            ['exponential', 1.5],
+            ['to-number', ['get', 'value'], 0]
+          ];
+
+          layerConfigs.swell.gradient.forEach((item) => {
+            const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+            colorExpression.push(heightValue, item.color);
           });
-        } else if (overlay === 'pressure-lines' || overlay === 'surface-pressure' || overlay === 'pressure-analysis') {
-          mapref.current.addLayer({
-            id: layerId,
-            type: "line",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            paint: {
-              "line-color": config.colorScheme === 'custom' ? [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'value'], 1013],
-                980, config.customColors.lowPressure,
-                1013, config.customColors.mediumPressure,
-                1050, config.customColors.highPressure
-              ] : [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'value'], 1013],
-                980, '#0066cc',
-                990, '#0080ff',
-                1000, '#00ccff',
-                1010, '#66ff66',
-                1013, '#ffff00',
-                1020, '#ff9900',
-                1030, '#ff6600',
-                1040, '#ff3300',
-                1050, '#cc0000'
-              ],
-              "line-width": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0, config.lineWidth * 0.5,
-                6, config.lineWidth,
-                10, config.lineWidth * 1.5,
-                14, config.lineWidth * 2
-              ],
-              "line-opacity": config.lineOpacity
-            },
-            layout: {
-              "visibility": "visible",
-              "line-cap": "round",
-              "line-join": "round"
-            }
-          });
-        } else if (overlay === 'pressure-tendency') {
-          mapref.current.addLayer({
-            id: layerId,
-            type: "line",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            paint: {
-              "line-color": [
-                'interpolate',
-                ['linear'],
-                ['to-number', ['get', 'value'], 0],
-                -5, '#ff0000',
-                -2, '#ff6600',
-                -1, '#ffaa00',
-                0, '#ffffff',
-                1, '#66ff66',
-                2, '#00ff00',
-                5, '#006600'
-              ],
-              "line-width": config.lineWidth,
-              "line-opacity": config.lineOpacity
-            },
-            layout: {
-              "visibility": "visible",
-              "line-cap": "round",
-              "line-join": "round"
-            }
-          });
-        } else if (overlay === 'high-pressure-centers' || overlay === 'low-pressure-centers') {
-          mapref.current.addLayer({
-            id: layerId,
-            type: "circle",
-            source: sourceId,
-            "source-layer": sourceLayer,
-            paint: {
-              "circle-radius": [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0, 8,
-                6, 12,
-                10, 16,
-                14, 20
-              ],
-              "circle-color": overlay === 'high-pressure-centers' ? '#ff6600' : '#0066ff',
-              "circle-opacity": config.fillOpacity,
-              "circle-stroke-width": 2,
-              "circle-stroke-color": '#ffffff',
-              "circle-stroke-opacity": 1
-            },
-            layout: {
-              "visibility": "visible"
-            }
-          });
-        } else if (overlay === 'pressure-systems') {
+
           mapref.current.addLayer({
             id: layerId,
             type: "fill",
             source: sourceId,
             "source-layer": sourceLayer,
             paint: {
-              "fill-color": [
+              "fill-color": colorExpression,
+              "fill-opacity": [
                 'interpolate',
                 ['linear'],
-                ['to-number', ['get', 'pressure_type'], 0],
-                0, 'rgba(0, 100, 200, 0.3)',
-                1, 'rgba(200, 100, 0, 0.3)'
+                ['zoom'],
+                2, 0.4,
+                6, layerConfigs.swell.fillOpacity,
+                14, layerConfigs.swell.fillOpacity * 1.1
               ],
-              "fill-opacity": config.fillOpacity,
-              "fill-outline-color": '#ffffff'
+              "fill-outline-color": layerConfigs.swell.fillOutlineColor,
+              "fill-translate": [0, 0],
+              "fill-translate-transition": {
+                "duration": 1000,
+                "delay": 0
+              },
+              "fill-antialias": true
             },
             layout: {
               "visibility": "visible"
             }
-          });
-        }
+          }, beforeId);
 
-        // Apply blend mode if supported
-        if (config.blendMode !== 'normal' && mapref.current.getLayer(layerId)) {
-          try {
-            mapref.current.setPaintProperty(layerId, 'raster-blend-mode', config.blendMode);
-          } catch (e) {
-            console.log('Blend mode not supported for this layer type');
-          }
+          mapref.current.addLayer({
+            id: `${layerId}-blur`,
+            type: "fill",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            paint: {
+              "fill-color": colorExpression,
+              "fill-opacity": [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'value'], 0],
+                0, 0.1,
+                5, 0.15,
+                10, 0.2
+              ],
+              "fill-translate": [1, 1],
+              "fill-antialias": true
+            },
+            layout: {
+              "visibility": "visible"
+            }
+          }, layerId);
+          
+          setTimeout(() => animateSwell(), 100);
+        } else if (overlay === 'wind') {
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "text-field": [
+                "case",
+                ["<", ["to-number", ["get", "value"], 0], 3], "○",
+                ["<", ["to-number", ["get", "value"], 0], 8], "│",
+                ["<", ["to-number", ["get", "value"], 0], 13], "╸│",
+                ["<", ["to-number", ["get", "value"], 0], 18], "━│",
+                ["<", ["to-number", ["get", "value"], 0], 23], "━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 28], "━━│",
+                ["<", ["to-number", ["get", "value"], 0], 33], "━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 38], "━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 43], "━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 48], "━━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 53], "━━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 63], "◤│",
+                ["<", ["to-number", ["get", "value"], 0], 68], "◤╸│",
+                ["<", ["to-number", ["get", "value"], 0], 73], "◤━│",
+                ["<", ["to-number", ["get", "value"], 0], 78], "◤━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 83], "◤━━│",
+                ["<", ["to-number", ["get", "value"], 0], 88], "◤━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 93], "◤━━━│",
+                ["<", ["to-number", ["get", "value"], 0], 98], "◤━━━╸│",
+                ["<", ["to-number", ["get", "value"], 0], 103], "◤━━━━│",
+                "◤◤│"
+              ],
+              "text-size": layerConfigs.wind.textSize,
+              "text-rotation-alignment": "map",
+              "text-rotate": [
+                "case",
+                ["has", "direction"],
+                ["get", "direction"],
+                ["has", "value1"], 
+                ["get", "value1"],
+                0
+              ],
+              "text-allow-overlap": layerConfigs.wind.allowOverlap,
+              "text-ignore-placement": true,
+              "symbol-spacing": layerConfigs.wind.symbolSpacing,
+              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+              "text-anchor": "bottom"
+            },
+            paint: {
+              "text-color": layerConfigs.wind.textColor,
+              "text-opacity": layerConfigs.wind.textOpacity,
+              "text-halo-color": layerConfigs.wind.haloColor,
+              "text-halo-width": layerConfigs.wind.haloWidth
+            },
+          }, beforeId);
+        } else if (overlay === 'symbol') {
+          const symbolConfig = layerConfigs.symbol;
+          const symbolText = getSymbolByType(symbolConfig.symbolType, symbolConfig.customSymbol);
+          
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "text-field": symbolText,
+              "text-size": symbolConfig.textSize,
+              "text-rotation-alignment": symbolConfig.rotationAlignment,
+              "text-rotate": [
+                "case",
+                ["has", "direction"],
+                ["get", "direction"],
+                ["has", "value1"], 
+                ["get", "value1"],
+                0
+              ],
+              "text-allow-overlap": symbolConfig.allowOverlap,
+              "text-ignore-placement": true,
+              "symbol-spacing": symbolConfig.symbolSpacing
+            },
+            paint: {
+              "text-color": symbolConfig.textColor,
+              "text-opacity": symbolConfig.textOpacity,
+              "text-halo-color": symbolConfig.haloColor,
+              "text-halo-width": symbolConfig.haloWidth
+            },
+          }, beforeId);
         }
 
         setActiveOverlays(prev => [...prev, overlay]);
-        console.log(`Successfully added ${overlay} layer with config`);
+        console.log(`Successfully added ${overlay} layer`);
         
         toast({
-          title: `${dtnOverlays[overlay].name} Layer`,
-          description: `Successfully loaded ${dtnOverlays[overlay].name} overlay with custom configuration`
+          title: `${overlay.charAt(0).toUpperCase() + overlay.slice(1)} Layer`,
+          description: `Successfully loaded ${overlay} overlay`
         });
       } else {
         console.log(`Layer "${overlay}" already exists`);
         toast({
           title: "Layer Already Active",
-          description: `${dtnOverlays[overlay].name} layer is already active on the map`
+          description: `${overlay} layer is already active on the map`
         });
       }
     } catch (error: any) {
@@ -611,7 +585,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       
       toast({
         title: "Layer Error",
-        description: `Failed to add ${dtnOverlays[overlay].name} layer. Please check the token and try again.`,
+        description: `Failed to add ${overlay} layer. Please check the token and try again.`,
         variant: "destructive"
       });
     }
@@ -622,7 +596,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
+    const blurLayerId = `${layerId}-blur`;
+    const fillLayerId = `${layerId}-fill`;
 
+    // Remove all related layers
+    if (mapref.current.getLayer(fillLayerId)) {
+      mapref.current.removeLayer(fillLayerId);
+    }
+    if (mapref.current.getLayer(blurLayerId)) {
+      mapref.current.removeLayer(blurLayerId);
+    }
     if (mapref.current.getLayer(layerId)) {
       mapref.current.removeLayer(layerId);
     }
@@ -643,101 +626,629 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
-  // Update layer configuration when weatherConfigs change
-  useEffect(() => {
-    if (!mapref.current || !isMapLoaded) return;
-
-    activeOverlays.forEach(overlay => {
-      const layerId = `dtn-layer-${overlay}`;
-      const config = getLayerConfig(overlay);
-      
-      if (mapref.current.getLayer(layerId)) {
-        // Update layer properties based on type
-        if (overlay === 'pressure-gradient') {
-          const colorScheme = getColorScheme(config.colorScheme, config.customColors);
-          mapref.current.setPaintProperty(layerId, 'heatmap-color', [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            ...colorScheme
-          ]);
-          mapref.current.setPaintProperty(layerId, 'heatmap-opacity', config.fillOpacity);
-          mapref.current.setPaintProperty(layerId, 'heatmap-intensity', [
-            'interpolate',
-            ['exponential', 1.5],
-            ['zoom'],
-            0, config.heatmapIntensity,
-            6, config.heatmapIntensity * 1.2,
-            10, config.heatmapIntensity * 1.4,
-            14, config.heatmapIntensity * 1.6
-          ]);
-        } else if (overlay === 'pressure-lines' || overlay === 'surface-pressure' || overlay === 'pressure-analysis') {
-          mapref.current.setPaintProperty(layerId, 'line-opacity', config.lineOpacity);
-          mapref.current.setPaintProperty(layerId, 'line-width', [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            0, config.lineWidth * 0.5,
-            6, config.lineWidth,
-            10, config.lineWidth * 1.5,
-            14, config.lineWidth * 2
-          ]);
-          
-          if (config.colorScheme === 'custom') {
-            mapref.current.setPaintProperty(layerId, 'line-color', [
-              'interpolate',
-              ['linear'],
-              ['to-number', ['get', 'value'], 1013],
-              980, config.customColors.lowPressure,
-              1013, config.customColors.mediumPressure,
-              1050, config.customColors.highPressure
-            ]);
-          }
-        }
+  // Enhanced configuration update functions
+  const updateConfigValue = (layerType: string, property: string, value: any) => {
+    setLayerConfigs(prev => ({
+      ...prev,
+      [layerType]: {
+        ...prev[layerType],
+        [property]: value
       }
+    }));
+  };
+
+  const applyLayerConfiguration = () => {
+    const config = layerConfigs[selectedWeatherType];
+    
+    if (selectedWeatherType === 'pressure') {
+      updateLayerProperties(selectedWeatherType, {
+        'heatmap-opacity': config.fillOpacity,
+        'heatmap-intensity': config.heatmapIntensity,
+        'heatmap-radius': config.heatmapRadius
+      });
+    } else if (selectedWeatherType === 'swell') {
+      const colorExpression: any[] = [
+        'interpolate',
+        ['exponential', 1.5],
+        ['to-number', ['get', 'value'], 0]
+      ];
+
+      config.gradient.forEach((item: any) => {
+        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+        colorExpression.push(heightValue, item.color);
+      });
+
+      updateLayerProperties(selectedWeatherType, {
+        'fill-color': colorExpression,
+        'fill-opacity': config.fillOpacity,
+        'fill-outline-color': config.fillOutlineColor,
+        'fill-antialias': config.fillAntialias
+      });
+    } else if (selectedWeatherType === 'wind') {
+      updateLayerProperties(selectedWeatherType, {
+        'text-color': config.textColor,
+        'text-opacity': config.textOpacity,
+        'text-halo-color': config.haloColor,
+        'text-halo-width': config.haloWidth
+      });
+      
+      updateLayoutProperties(selectedWeatherType, {
+        'text-size': config.textSize,
+        'text-allow-overlap': config.allowOverlap,
+        'symbol-spacing': config.symbolSpacing
+      });
+    } else if (selectedWeatherType === 'symbol') {
+      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
+      
+      updateLayerProperties(selectedWeatherType, {
+        'text-color': config.textColor,
+        'text-opacity': config.textOpacity,
+        'text-halo-color': config.haloColor,
+        'text-halo-width': config.haloWidth
+      });
+      
+      updateLayoutProperties(selectedWeatherType, {
+        'text-size': config.textSize,
+        'text-allow-overlap': config.allowOverlap,
+        'symbol-spacing': config.symbolSpacing,
+        'text-rotation-alignment': config.rotationAlignment,
+        'text-field': symbolText
+      });
+    }
+
+    toast({
+      title: "Configuration Applied",
+      description: `${selectedWeatherType} layer configuration updated`
     });
-  }, [weatherConfigs, activeOverlays, isMapLoaded]);
+  };
+
+  const convertRgbToHex = (rgbString: string) => {
+    const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (!match) return rgbString;
+    
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
+    
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  const convertHexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return hex;
+    
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  const renderConfigurationPanel = () => {
+    const config = layerConfigs[selectedWeatherType];
+
+    return (
+      <div className="space-y-4">
+        {selectedWeatherType === 'pressure' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-sm font-medium text-gray-700">Pressure Configuration</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.fillOpacity]}
+                  onValueChange={([value]) => updateConfigValue('pressure', 'fillOpacity', value)}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.fillOpacity}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Heatmap Intensity</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.heatmapIntensity]}
+                  onValueChange={([value]) => updateConfigValue('pressure', 'heatmapIntensity', value)}
+                  min={0.5}
+                  max={5}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.heatmapIntensity}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Heatmap Radius</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.heatmapRadius]}
+                  onValueChange={([value]) => updateConfigValue('pressure', 'heatmapRadius', value)}
+                  min={10}
+                  max={100}
+                  step={5}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.heatmapRadius}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-2">Pressure Gradient (980mb to 1050mb+)</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {config.gradient.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 border rounded bg-white">
+                    <Input
+                      type="color"
+                      value={convertRgbToHex(item.color)}
+                      onChange={(e) => {
+                        const newGradient = [...config.gradient];
+                        newGradient[index].color = convertHexToRgb(e.target.value);
+                        updateConfigValue('pressure', 'gradient', newGradient);
+                      }}
+                      className="w-10 h-8 p-0 border-2"
+                    />
+                    <span className="text-xs w-16 font-medium text-gray-700">{item.value}</span>
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-600 mb-1 block">Opacity: {item.opacity.toFixed(1)}</Label>
+                      <Slider
+                        value={[item.opacity]}
+                        onValueChange={([value]) => {
+                          const newGradient = [...config.gradient];
+                          newGradient[index].opacity = value;
+                          updateConfigValue('pressure', 'gradient', newGradient);
+                        }}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'swell' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-sm font-medium text-gray-700">Swell Configuration</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.fillOpacity]}
+                  onValueChange={([value]) => updateConfigValue('swell', 'fillOpacity', value)}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.fillOpacity}</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Outline Color</Label>
+              <Input
+                type="color"
+                value={config.fillOutlineColor === 'transparent' ? '#000000' : config.fillOutlineColor}
+                onChange={(e) => updateConfigValue('swell', 'fillOutlineColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.fillAntialias}
+                onCheckedChange={(checked) => updateConfigValue('swell', 'fillAntialias', checked)}
+              />
+              <Label className="text-xs">Anti-aliasing</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.animationEnabled}
+                onCheckedChange={(checked) => updateConfigValue('swell', 'animationEnabled', checked)}
+              />
+              <Label className="text-xs">Animation</Label>
+            </div>
+
+            {config.animationEnabled && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Animation Speed</Label>
+                <Slider
+                  value={[config.animationSpeed * 1000]}
+                  onValueChange={([value]) => updateConfigValue('swell', 'animationSpeed', value / 1000)}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  className="flex-1"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-2">Wave Height Gradient (0m to 10m+)</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {config.gradient.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 border rounded bg-white">
+                    <Input
+                      type="color"
+                      value={convertRgbToHex(item.color)}
+                      onChange={(e) => {
+                        const newGradient = [...config.gradient];
+                        newGradient[index].color = convertHexToRgb(e.target.value);
+                        updateConfigValue('swell', 'gradient', newGradient);
+                      }}
+                      className="w-10 h-8 p-0 border-2"
+                    />
+                    <span className="text-xs w-14 font-medium text-gray-700">{item.value}</span>
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-600 mb-1 block">Opacity: {item.opacity.toFixed(1)}</Label>
+                      <Slider
+                        value={[item.opacity]}
+                        onValueChange={([value]) => {
+                          const newGradient = [...config.gradient];
+                          newGradient[index].opacity = value;
+                          updateConfigValue('swell', 'gradient', newGradient);
+                        }}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'wind' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Color</Label>
+              <Input
+                type="color"
+                value={config.textColor}
+                onChange={(e) => updateConfigValue('wind', 'textColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Size</Label>
+              <Slider
+                value={[config.textSize]}
+                onValueChange={([value]) => updateConfigValue('wind', 'textSize', value)}
+                min={8}
+                max={32}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Wind Barb Opacity</Label>
+              <Slider
+                value={[config.textOpacity]}
+                onValueChange={([value]) => updateConfigValue('wind', 'textOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
+              <Input
+                type="color"
+                value={config.haloColor}
+                onChange={(e) => updateConfigValue('wind', 'haloColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
+              <Slider
+                value={[config.haloWidth]}
+                onValueChange={([value]) => updateConfigValue('wind', 'haloWidth', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Barb Spacing</Label>
+              <Slider
+                value={[config.symbolSpacing]}
+                onValueChange={([value]) => updateConfigValue('wind', 'symbolSpacing', value)}
+                min={20}
+                max={200}
+                step={10}
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.allowOverlap}
+                onCheckedChange={(checked) => updateConfigValue('wind', 'allowOverlap', checked)}
+              />
+              <Label className="text-xs">Allow Overlap</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Speed Unit</Label>
+              <Select 
+                value={config.speedUnit} 
+                onValueChange={(value) => updateConfigValue('wind', 'speedUnit', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="knots">Knots</SelectItem>
+                  <SelectItem value="ms">m/s</SelectItem>
+                  <SelectItem value="kmh">km/h</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+              <div className="font-semibold mb-1">Meteorological Wind Barb Legend:</div>
+              <div>○ = Calm (0-2 kts)</div>
+              <div>│ = Light air (3-7 kts)</div>
+              <div>╸│ = Half barb (5 kts)</div>
+              <div>━│ = Full barb (10 kts)</div>
+              <div>◤│ = Pennant (50 kts)</div>
+              <div className="mt-1 text-xs text-blue-600">
+                Wind direction: Points toward where wind is blowing
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'symbol' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Type</Label>
+              <Select 
+                value={config.symbolType} 
+                onValueChange={(value) => updateConfigValue('symbol', 'symbolType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="arrow">Arrow (→)</SelectItem>
+                  <SelectItem value="triangle">Triangle (▲)</SelectItem>
+                  <SelectItem value="circle">Circle (●)</SelectItem>
+                  <SelectItem value="square">Square (■)</SelectItem>
+                  <SelectItem value="custom">Custom Symbol</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {config.symbolType === 'custom' && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Custom Symbol</Label>
+                <Input
+                  type="text"
+                  value={config.customSymbol}
+                  onChange={(e) => updateConfigValue('symbol', 'customSymbol', e.target.value)}
+                  placeholder="Enter custom symbol (e.g., ★, ✈, ⚡)"
+                  maxLength={3}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Color</Label>
+              <Input
+                type="color"
+                value={config.textColor}
+                onChange={(e) => updateConfigValue('symbol', 'textColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
+              <Slider
+                value={[config.textSize]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
+                min={8}
+                max={32}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Opacity</Label>
+              <Slider
+                value={[config.textOpacity]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'textOpacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Color</Label>
+              <Input
+                type="color"
+                value={config.haloColor}
+                onChange={(e) => updateConfigValue('symbol', 'haloColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Halo Width</Label>
+              <Slider
+                value={[config.haloWidth]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'haloWidth', value)}
+                min={0}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Spacing</Label>
+              <Slider
+                value={[config.symbolSpacing]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'symbolSpacing', value)}
+                min={20}
+                max={200}
+                step={10}
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.allowOverlap}
+                onCheckedChange={(checked) => updateConfigValue('symbol', 'allowOverlap', checked)}
+              />
+              <Label className="text-xs">Allow Overlap</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Rotation Alignment</Label>
+              <Select 
+                value={config.rotationAlignment} 
+                onValueChange={(value) => updateConfigValue('symbol', 'rotationAlignment', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="map">Map</SelectItem>
+                  <SelectItem value="viewport">Viewport</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="relative h-full w-full">
+      <MapTopControls />
+      <DirectTokenInput />
       <div ref={mapContainerRef} className="absolute inset-0" />
 
       <button
         onClick={() => setShowLayers(!showLayers)}
-        className="absolute top-4 left-4 z-20 bg-white rounded-lg shadow-lg p-3 hover:bg-gray-50 transition-colors"
+        className="absolute top-20 left-4 z-20 bg-white rounded-lg shadow-lg p-3 hover:bg-gray-50 transition-colors"
       >
         Toggle DTN Layers
       </button>
 
       {showLayers && (
-        <div className="absolute top-16 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[250px] max-h-[70vh] overflow-y-auto">
+        <div className="absolute top-32 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
           <h3 className="text-sm font-semibold mb-3">DTN Weather Layers</h3>
-          <div className="grid gap-1">
-            {Object.entries(dtnOverlays).map(([overlay, config]) => (
-              <div
-                key={overlay}
-                onClick={() => handleOverlayClick(overlay)}
-                className={`p-2 rounded cursor-pointer transition-colors text-sm ${
-                  activeOverlays.includes(overlay)
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-black'
-                }`}
-              >
-                {config.name}
-                {activeOverlays.includes(overlay) && <span className="ml-2">✓</span>}
-              </div>
-            ))}
-          </div>
+          {Object.keys(dtnOverlays).map((overlay) => (
+            <div
+              key={overlay}
+              onClick={() => handleOverlayClick(overlay)}
+              className={`p-2 m-1 rounded cursor-pointer transition-colors ${
+                activeOverlays.includes(overlay)
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-black'
+              }`}
+            >
+              {overlay.charAt(0).toUpperCase() + overlay.slice(1)}
+              {activeOverlays.includes(overlay) && <span className="ml-2">✓</span>}
+            </div>
+          ))}
           {activeOverlays.length > 0 && (
             <button
               onClick={removeAllOverlays}
-              className="w-full mt-3 p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
+              className="w-full mt-2 p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
             >
               Remove All Layers ({activeOverlays.length})
             </button>
           )}
         </div>
       )}
+
+      <div className="absolute top-32 right-4 z-20 bg-white rounded-lg shadow-lg min-w-[360px] max-h-[80vh] overflow-hidden">
+        <Collapsible open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+          <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+            <h3 className="text-sm font-semibold">Weather Layer Configuration</h3>
+            {isConfigOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="overflow-y-auto max-h-[calc(80vh-60px)]">
+            <div className="p-4 pt-0 space-y-4">
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Weather Type
+                </Label>
+                <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select weather type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border shadow-lg z-50">
+                    <SelectItem value="wind">Wind Barbs</SelectItem>
+                    <SelectItem value="pressure">Pressure</SelectItem>
+                    <SelectItem value="swell">Swell (Filled)</SelectItem>
+                    <SelectItem value="symbol">Symbol</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {renderConfigurationPanel()}
+
+              <Button 
+                onClick={applyLayerConfiguration}
+                className="w-full"
+                size="sm"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Apply Configuration
+              </Button>
+
+              <div className="text-xs text-gray-500 mt-4 pt-4 border-t">
+                <div className="font-medium mb-2">Active Layers: {activeOverlays.length}</div>
+                {activeOverlays.map(layer => (
+                  <div key={layer} className="text-xs capitalize">
+                    • {layer}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
     </div>
   );
 };
