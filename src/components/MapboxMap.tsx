@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 import MapTopControls from './MapTopControls';
 import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
+import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
+import { generateMockVessels } from '@/lib/vessel-data';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -31,9 +33,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
+  const vesselMarkersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapVessels, setMapVessels] = useState<any[]>([]);
   
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
@@ -115,6 +119,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     'pressure-gradient': { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-gradient', tileSetId: '3fca4d12-8e9a-4c15-9876-1a2b3c4d5e6f' },
   };
 
+  // Generate vessels when component mounts
+  useEffect(() => {
+    const mockVessels = generateMockVessels(25);
+    setMapVessels(mockVessels);
+  }, []);
+
   // Listen for configuration updates from sidebar
   useEffect(() => {
     const handleConfigUpdate = (event: CustomEvent) => {
@@ -139,7 +149,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current!,
-      style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
+      style: 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7',
       center: [83.167, 6.887],
       zoom: 4,
       attributionControl: false
@@ -173,12 +183,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       if (mapref.current) {
+        cleanupVesselMarkers(vesselMarkersRef);
         mapref.current.remove();
         mapref.current = null;
       }
       setIsMapLoaded(false);
     };
   }, [toast]);
+
+  // Add vessels to map when map is loaded and vessels are available
+  useEffect(() => {
+    if (!mapref.current || !isMapLoaded || mapVessels.length === 0) return;
+
+    console.log("Adding vessels to map:", mapVessels.length);
+    createVesselMarkers(mapref.current, mapVessels, vesselMarkersRef);
+  }, [isMapLoaded, mapVessels]);
 
   useEffect(() => {
     if (!activeLayers || !isMapLoaded) return;
@@ -321,7 +340,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         ['to-number', ['get', 'value'], 0]
       ];
 
-      config.gradient.forEach((item: any) => {
+      layerConfigs.swell.gradient.forEach((item: any) => {
         const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
         colorExpression.push(heightValue, item.color);
       });
