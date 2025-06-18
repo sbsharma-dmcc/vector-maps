@@ -61,11 +61,6 @@ const Dashboard = () => {
     setActiveBaseLayer(layer);
   };
 
-  const handleVesselClick = (vessel: Vessel) => {
-    // Track vessel selection
-    trackVesselSelected(vessel.id, vessel.name);
-  };
-
   const handleLayersPanelToggle = () => {
     trackButtonClicked('Layers_Panel_Toggle', 'Dashboard');
     setShowLayersPanel(!showLayersPanel);
@@ -95,7 +90,6 @@ const Dashboard = () => {
         vessels={filteredVessels} 
         activeLayers={activeLayers}
         activeBaseLayer={activeBaseLayer}
-        onVesselClick={handleVesselClick}
       />
     </div>
   );

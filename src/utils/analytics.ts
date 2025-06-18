@@ -1,5 +1,5 @@
 
-import { init, track, setUserId, setUserProperties } from '@amplitude/analytics-browser';
+import { init, track, setUserId, identify } from '@amplitude/analytics-browser';
 
 // Initialize Amplitude
 const AMPLITUDE_API_KEY = '86a69223d8d1c74f106bb392555b6a0';
@@ -78,7 +78,7 @@ export const trackSlowLoadingScreen = (screen: string, loadTime: string) => {
   track('Slow_Loading_Screen', { screen, load_time: loadTime });
 };
 
-// Set user properties
+// Set user properties using identify
 export const setUserRole = (role: string) => {
-  setUserProperties({ user_role: role });
+  identify({ user_role: role });
 };
