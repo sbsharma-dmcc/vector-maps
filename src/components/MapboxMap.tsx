@@ -5,11 +5,13 @@ import { useToast } from '@/hooks/use-toast';
 import MapTopControls from './MapTopControls';
 import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
+import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
+import type { Vessel } from '@/utils/vesselMarkers';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
 interface MapboxMapProps {
-  vessels?: any[];
+  vessels?: Vessel[];
   accessToken?: string;
   showRoutes?: boolean;
   baseRoute?: [number, number][];
@@ -31,6 +33,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -173,6 +176,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       if (mapref.current) {
+        cleanupVesselMarkers(markersRef);
         mapref.current.remove();
         mapref.current = null;
       }
@@ -669,6 +673,24 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       description: "All weather layers have been removed from the map"
     });
   };
+
+  // Add vessels to map when they change or map loads
+  useEffect(() => {
+    if (!mapref.current || !isMapLoaded || !vessels.length) return;
+
+    console.log(`Adding ${vessels.length} vessels to map`);
+    
+    // Clean up existing markers
+    cleanupVesselMarkers(markersRef);
+    
+    // Create new vessel markers
+    createVesselMarkers(mapref.current, vessels, markersRef);
+    
+    toast({
+      title: "Vessels Loaded",
+      description: `Successfully added ${vessels.length} vessels to the map`
+    });
+  }, [vessels, isMapLoaded, toast]);
 
   return (
     <div className="relative h-full w-full">
