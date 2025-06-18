@@ -80,5 +80,5 @@ export const trackSlowLoadingScreen = (screen: string, loadTime: string) => {
 
 // Set user properties using identify
 export const setUserRole = (role: string) => {
-  identify({ user_role: role });
+  identify(undefined, { user_role: role });
 };
