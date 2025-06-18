@@ -321,32 +321,33 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         ['to-number', ['get', 'value'], 0]
       ];
 
-      config.gradient.forEach((item: any) => {
+      layerConfigs.swell.gradient.forEach((item) => {
         const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
         colorExpression.push(heightValue, item.color);
       });
 
       updateLayerProperties(layerType, {
         'fill-color': colorExpression,
-        'fill-opacity': config.fillOpacity,
-        'fill-outline-color': config.fillOutlineColor,
-        'fill-antialias': config.fillAntialias
+        'fill-opacity': layerConfigs.swell.fillOpacity,
+        'fill-outline-color': layerConfigs.swell.fillOutlineColor,
+        'fill-antialias': true
       });
     } else if (layerType === 'symbol') {
-      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
+      const symbolConfig = layerConfigs.symbol;
+      const symbolText = getSymbolByType(symbolConfig.symbolType, symbolConfig.customSymbol);
       
       updateLayerProperties(layerType, {
-        'text-color': config.textColor,
-        'text-opacity': config.textOpacity,
-        'text-halo-color': config.haloColor,
-        'text-halo-width': config.haloWidth
+        'text-color': symbolConfig.textColor,
+        'text-opacity': symbolConfig.textOpacity,
+        'text-halo-color': symbolConfig.haloColor,
+        'text-halo-width': symbolConfig.haloWidth
       });
       
       updateLayoutProperties(layerType, {
-        'text-size': config.textSize,
-        'text-allow-overlap': config.allowOverlap,
-        'symbol-spacing': config.symbolSpacing,
-        'text-rotation-alignment': config.rotationAlignment,
+        'text-size': symbolConfig.textSize,
+        'text-allow-overlap': symbolConfig.allowOverlap,
+        'symbol-spacing': symbolConfig.symbolSpacing,
+        'text-rotation-alignment': symbolConfig.rotationAlignment,
         'text-field': symbolText
       });
     }
@@ -499,7 +500,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             ['to-number', ['get', 'value'], 0]
           ];
 
-          config.gradient.forEach((item) => {
+          layerConfigs.swell.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
             colorExpression.push(heightValue, item.color);
           });
