@@ -139,7 +139,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current!,
-      style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
+      style: 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7',
       center: [83.167, 6.887],
       zoom: 4,
       attributionControl: false
@@ -499,7 +499,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             ['to-number', ['get', 'value'], 0]
           ];
 
-          layerConfigs.swell.gradient.forEach((item) => {
+          config.gradient.forEach((item) => {
             const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
             colorExpression.push(heightValue, item.color);
           });
