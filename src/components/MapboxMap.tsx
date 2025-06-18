@@ -5,13 +5,11 @@ import { useToast } from '@/hooks/use-toast';
 import MapTopControls from './MapTopControls';
 import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
-import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
-import type { Vessel } from '@/utils/vesselMarkers';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
 interface MapboxMapProps {
-  vessels?: Vessel[];
+  vessels?: any[];
   accessToken?: string;
   showRoutes?: boolean;
   baseRoute?: [number, number][];
@@ -33,7 +31,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -142,7 +139,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current!,
-      style: 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7',
+      style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
       center: [83.167, 6.887],
       zoom: 4,
       attributionControl: false
@@ -176,7 +173,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       if (mapref.current) {
-        cleanupVesselMarkers(markersRef);
         mapref.current.remove();
         mapref.current = null;
       }
@@ -325,33 +321,32 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         ['to-number', ['get', 'value'], 0]
       ];
 
-      layerConfigs.swell.gradient.forEach((item) => {
+      config.gradient.forEach((item: any) => {
         const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
         colorExpression.push(heightValue, item.color);
       });
 
       updateLayerProperties(layerType, {
         'fill-color': colorExpression,
-        'fill-opacity': layerConfigs.swell.fillOpacity,
-        'fill-outline-color': layerConfigs.swell.fillOutlineColor,
-        'fill-antialias': true
+        'fill-opacity': config.fillOpacity,
+        'fill-outline-color': config.fillOutlineColor,
+        'fill-antialias': config.fillAntialias
       });
     } else if (layerType === 'symbol') {
-      const symbolConfig = layerConfigs.symbol;
-      const symbolText = getSymbolByType(symbolConfig.symbolType, symbolConfig.customSymbol);
+      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
       
       updateLayerProperties(layerType, {
-        'text-color': symbolConfig.textColor,
-        'text-opacity': symbolConfig.textOpacity,
-        'text-halo-color': symbolConfig.haloColor,
-        'text-halo-width': symbolConfig.haloWidth
+        'text-color': config.textColor,
+        'text-opacity': config.textOpacity,
+        'text-halo-color': config.haloColor,
+        'text-halo-width': config.haloWidth
       });
       
       updateLayoutProperties(layerType, {
-        'text-size': symbolConfig.textSize,
-        'text-allow-overlap': symbolConfig.allowOverlap,
-        'symbol-spacing': symbolConfig.symbolSpacing,
-        'text-rotation-alignment': symbolConfig.rotationAlignment,
+        'text-size': config.textSize,
+        'text-allow-overlap': config.allowOverlap,
+        'symbol-spacing': config.symbolSpacing,
+        'text-rotation-alignment': config.rotationAlignment,
         'text-field': symbolText
       });
     }
@@ -673,24 +668,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       description: "All weather layers have been removed from the map"
     });
   };
-
-  // Add vessels to map when they change or map loads
-  useEffect(() => {
-    if (!mapref.current || !isMapLoaded || !vessels.length) return;
-
-    console.log(`Adding ${vessels.length} vessels to map`);
-    
-    // Clean up existing markers
-    cleanupVesselMarkers(markersRef);
-    
-    // Create new vessel markers
-    createVesselMarkers(mapref.current, vessels, markersRef);
-    
-    toast({
-      title: "Vessels Loaded",
-      description: `Successfully added ${vessels.length} vessels to the map`
-    });
-  }, [vessels, isMapLoaded, toast]);
 
   return (
     <div className="relative h-full w-full">

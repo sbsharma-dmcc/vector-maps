@@ -14,11 +14,11 @@ export const layerConfigs = {
   wind: { dtnLayerId: 'fcst-onefx-wind-speed-contours', tileSetId: '1fed7688-ee77-4c15-acfa-3e6d5d0fb2a9' }
 };
 
-// Base layer styles - updated with new theme
+// Base layer styles - always use the same default style
 export const baseLayerStyles = {
-  default: "mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7",
-  swell: "mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7",
-  wave: "mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7"
+  default: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66",
+  swell: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66",
+  wave: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66"
 };
 
 export const defaultMapToken = 'pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q';
