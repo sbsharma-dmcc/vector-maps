@@ -1,4 +1,3 @@
-
 import { init, track, setUserId, identify } from '@amplitude/analytics-browser';
 
 // Initialize Amplitude
@@ -28,6 +27,14 @@ export const trackUserLoggedOut = (userId: string) => {
 
 export const trackSessionStarted = (device: string, appVersion: string) => {
   track('Session_Started', { device, app_version: appVersion });
+};
+
+export const trackSessionInclude = (errorCode?: string, screen?: string, screenName?: string) => {
+  track('Session_include', { 
+    error_code: errorCode,
+    screen: screen,
+    screen_name: screenName
+  });
 };
 
 // Navigation & Screen Views
