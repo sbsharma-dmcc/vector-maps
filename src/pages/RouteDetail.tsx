@@ -1,11 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell, CheckCircle, MoreHorizontal } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
 import RT001MapInterface from '../components/RT001MapInterface';
 import CompleteVoyageDialog from '../components/CompleteVoyageDialog';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -159,6 +165,13 @@ const RouteDetail = () => {
     setIsCompleteDialogOpen(true);
   };
 
+  const handleModifyVoyage = () => {
+    toast({
+      title: "Modify Voyage",
+      description: "Voyage modification feature will be available soon."
+    });
+  };
+
   const handleVoyageCompletion = (comments: string) => {
     console.log('Voyage completed with comments:', comments);
     setVoyageStatus('completed');
@@ -237,6 +250,25 @@ const RouteDetail = () => {
               <Button variant="ghost" size="icon" className="text-white">
                 <Bell className="h-5 w-5" />
               </Button>
+              
+              {/* More Options Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-white">
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white">
+                  <DropdownMenuItem onClick={handleModifyVoyage}>
+                    Modify Voyage
+                  </DropdownMenuItem>
+                  {voyageStatus === 'active' && (
+                    <DropdownMenuItem onClick={handleCompleteVoyage}>
+                      Complete Voyage
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           
@@ -288,19 +320,6 @@ const RouteDetail = () => {
               <p className="font-bold">10kt - 12kt</p>
             </div>
           </div>
-
-          {/* Complete Voyage Button */}
-          {voyageStatus === 'active' && (
-            <div className="mt-4">
-              <Button 
-                onClick={handleCompleteVoyage}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Complete Voyage
-              </Button>
-            </div>
-          )}
 
           {voyageStatus === 'completed' && (
             <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-600">
