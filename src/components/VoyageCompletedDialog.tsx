@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,13 @@ const VoyageCompletedDialog: React.FC<VoyageCompletedDialogProps> = ({
   onClose,
   routeName
 }) => {
+  const navigate = useNavigate();
+
+  const handleOkClick = () => {
+    onClose();
+    navigate('/routes');
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md border-2 border-dashed border-blue-300 bg-white">
@@ -47,7 +55,7 @@ const VoyageCompletedDialog: React.FC<VoyageCompletedDialogProps> = ({
         
         <div className="pt-6 pb-4">
           <Button 
-            onClick={onClose}
+            onClick={handleOkClick}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 text-lg"
           >
             Ok
