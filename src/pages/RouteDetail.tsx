@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell } from 'lucide-react';
+import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell, CheckCircle } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
 import RT001MapInterface from '../components/RT001MapInterface';
+import CompleteVoyageDialog from '../components/CompleteVoyageDialog';
 import { Button } from '@/components/ui/button';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +24,8 @@ const RouteDetail = () => {
     current: false,
     wind: false
   });
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
+  const [voyageStatus, setVoyageStatus] = useState<'active' | 'completed'>('active');
   const animationRef = useRef<number | null>(null);
   const { toast } = useToast();
   
@@ -39,8 +41,7 @@ const RouteDetail = () => {
     }
   }, [id]);
 
-  // Create mock route coordinates
-  // In a real app, these would come from the backend
+  // Route coordinates for visualization
   const baseRouteCoordinates: [number, number][] = [
     [121.08295, 29.52432], // Start point (from the example image)
     [124.08295, 32.52432], 
@@ -154,6 +155,23 @@ const RouteDetail = () => {
     });
   };
 
+  const handleCompleteVoyage = () => {
+    setIsCompleteDialogOpen(true);
+  };
+
+  const handleVoyageCompletion = (comments: string) => {
+    console.log('Voyage completed with comments:', comments);
+    setVoyageStatus('completed');
+    
+    // In a real app, you would send this data to your backend
+    // Example: completeVoyage({ routeId: id, comments, completedAt: new Date() });
+    
+    toast({
+      title: "Voyage Completed Successfully",
+      description: "The voyage has been marked as completed and all data has been saved."
+    });
+  };
+
   const handleLayerToggle = (layerType: string, enabled: boolean) => {
     console.log(`Layer ${layerType} ${enabled ? 'enabled' : 'disabled'}`);
     
@@ -225,8 +243,12 @@ const RouteDetail = () => {
           <div>
             <h1 className="text-xl font-semibold flex items-center">
               {route?.name}
-              <span className="bg-green-500 text-xs font-medium ml-2 px-2 py-0.5 rounded">
-                {route?.status}
+              <span className={`text-xs font-medium ml-2 px-2 py-0.5 rounded ${
+                voyageStatus === 'completed' 
+                  ? 'bg-gray-500 text-white' 
+                  : 'bg-green-500 text-white'
+              }`}>
+                {voyageStatus === 'completed' ? 'Completed' : route?.status}
               </span>
             </h1>
             <div className="flex text-sm text-gray-300">
@@ -266,6 +288,28 @@ const RouteDetail = () => {
               <p className="font-bold">10kt - 12kt</p>
             </div>
           </div>
+
+          {/* Complete Voyage Button */}
+          {voyageStatus === 'active' && (
+            <div className="mt-4">
+              <Button 
+                onClick={handleCompleteVoyage}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Complete Voyage
+              </Button>
+            </div>
+          )}
+
+          {voyageStatus === 'completed' && (
+            <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-600">
+              <div className="flex items-center text-gray-300">
+                <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
+                <span className="text-sm">Voyage completed successfully</span>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Sidebar content */}
@@ -448,6 +492,14 @@ const RouteDetail = () => {
           </>
         )}
       </div>
+
+      {/* Complete Voyage Dialog */}
+      <CompleteVoyageDialog
+        isOpen={isCompleteDialogOpen}
+        onClose={() => setIsCompleteDialogOpen(false)}
+        onComplete={handleVoyageCompletion}
+        routeName={route?.name || ''}
+      />
     </div>
   );
 };
