@@ -5,6 +5,7 @@ import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
 import RT001MapInterface from '../components/RT001MapInterface';
 import CompleteVoyageDialog from '../components/CompleteVoyageDialog';
+import VoyageCompletedDialog from '../components/VoyageCompletedDialog';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ const RouteDetail = () => {
     wind: false
   });
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
+  const [isCompletedConfirmationOpen, setIsCompletedConfirmationOpen] = useState(false);
   const [voyageStatus, setVoyageStatus] = useState<'active' | 'completed'>('active');
   const animationRef = useRef<number | null>(null);
   const { toast } = useToast();
@@ -183,6 +185,9 @@ const RouteDetail = () => {
       title: "Voyage Completed Successfully",
       description: "The voyage has been marked as completed and all data has been saved."
     });
+
+    // Show the confirmation popup
+    setIsCompletedConfirmationOpen(true);
   };
 
   const handleLayerToggle = (layerType: string, enabled: boolean) => {
@@ -517,6 +522,13 @@ const RouteDetail = () => {
         isOpen={isCompleteDialogOpen}
         onClose={() => setIsCompleteDialogOpen(false)}
         onComplete={handleVoyageCompletion}
+        routeName={route?.name || ''}
+      />
+
+      {/* Voyage Completed Confirmation Dialog */}
+      <VoyageCompletedDialog
+        isOpen={isCompletedConfirmationOpen}
+        onClose={() => setIsCompletedConfirmationOpen(false)}
         routeName={route?.name || ''}
       />
     </div>
