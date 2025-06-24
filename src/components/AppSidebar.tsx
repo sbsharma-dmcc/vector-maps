@@ -1,6 +1,6 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Route, History, Ship, Search, Plus, Settings, CloudRain } from "lucide-react";
+import { LayoutDashboard, Route, History, Ship, Search, Plus, Settings, CloudRain, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import {
@@ -24,6 +24,7 @@ import WeatherLayerConfig from "./WeatherLayerConfig";
 
 const navigationItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
+  { title: "Maps", path: "/maps", icon: FolderOpen },
   { title: "Routes", path: "/routes", icon: Route },
   { title: "History", path: "/history", icon: History },
 ];
