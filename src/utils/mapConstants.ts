@@ -21,6 +21,17 @@ export const baseLayerStyles = {
   wave: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66"
 };
 
+// Bathymetry depth contour configurations
+export const bathymetryContours = {
+  depths: [0, 25, 50, 100], // meters
+  colors: {
+    0: '#0066CC',    // Deep blue for 0m (coastline)
+    25: '#3399FF',   // Medium blue for 25m
+    50: '#66B2FF',   // Light blue for 50m
+    100: '#99CCFF'   // Very light blue for 100m
+  }
+};
+
 export const defaultMapToken = 'pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q';
 
 // Updated DTN token with correct map API permissions
