@@ -1,14 +1,27 @@
 
+/**
+ * MAP LAYERS PANEL COMPONENT
+ * 
+ * This component provides a UI panel for managing map layers including:
+ * - Weather overlay layers (wind, pressure, storm, current)
+ * - Base layer styles (default, swell, wave)
+ * - Globe view toggle
+ * 
+ * The panel communicates with the parent component through callbacks
+ * to enable/disable layers and change base map styles.
+ */
+
 import React, { useState } from 'react';
 import { X, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+// Props interface for layer panel control
 interface MapLayersPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onLayerToggle: (layerType: string, enabled: boolean) => void;
-  activeLayer: string;
-  onBaseLayerChange: (layer: string) => void;
+  isOpen: boolean;                                        // Panel visibility state
+  onClose: () => void;                                    // Close panel callback
+  onLayerToggle: (layerType: string, enabled: boolean) => void; // Layer toggle callback
+  activeLayer: string;                                    // Currently active base layer
+  onBaseLayerChange: (layer: string) => void;             // Base layer change callback
 }
 
 const MapLayersPanel: React.FC<MapLayersPanelProps> = ({

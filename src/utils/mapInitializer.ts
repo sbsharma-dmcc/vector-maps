@@ -1,42 +1,55 @@
 
+/**
+ * MAP INITIALIZATION AND LAYER MANAGEMENT
+ * 
+ * This file handles the core map initialization and layer management including:
+ * - Setting up the Mapbox map instance with proper configuration
+ * - Adding bathymetry depth contours for marine navigation
+ * - Managing terrain layers and fallback visualizations
+ * - Handling map controls and interaction settings
+ */
+
 import mapboxgl from 'mapbox-gl';
 import { baseLayerStyles, bathymetryContours } from './mapConstants';
 
+// MAIN MAP INITIALIZATION FUNCTION
+// Creates and configures a new Mapbox map instance
 export const initializeMap = (
-  container: HTMLDivElement,
-  token: string,
-  showRoutes: boolean,
-  baseRoute: [number, number][]
+  container: HTMLDivElement,          // DOM container for the map
+  token: string,                      // Mapbox access token
+  showRoutes: boolean,                // Whether to show route visualization
+  baseRoute: [number, number][]       // Route coordinates for centering
 ): mapboxgl.Map => {
   console.log("Setting mapbox access token");
   mapboxgl.accessToken = token;
   
+  // MAP CONFIGURATION - Calculate center and zoom based on route data
   const mapOptions: mapboxgl.MapboxOptions = {
     container,
-    style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
+    style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66', // Custom marine style
     center: showRoutes && baseRoute.length > 0 
-      ? [(baseRoute[0][0] + baseRoute[baseRoute.length - 1][0]) / 2, 
+      ? [(baseRoute[0][0] + baseRoute[baseRoute.length - 1][0]) / 2,    // Center between start and end
          (baseRoute[0][1] + baseRoute[baseRoute.length - 1][1]) / 2] 
-      : [83.167, 6.887],
-    zoom: showRoutes ? 5 : 4,
-    attributionControl: false
+      : [83.167, 6.887],                                               // Default center (Indian Ocean)
+    zoom: showRoutes ? 5 : 4,                                          // Closer zoom for routes
+    attributionControl: false                                          // Hide default attribution
   };
 
   console.log("Creating map with options:", mapOptions);
   const map = new mapboxgl.Map(mapOptions);
 
-  // Add navigation controls
+  // MAP CONTROLS - Add navigation and interaction controls
   map.addControl(
-    new mapboxgl.NavigationControl(),
-    'bottom-right'
+    new mapboxgl.NavigationControl(),   // Zoom and rotation controls
+    'bottom-right'                      // Position in bottom-right corner
   );
 
-  // Enable zoom controls
+  // Enable zoom controls for user interaction
   map.scrollZoom.enable();
 
-  // Add bathymetry contours when map loads
+  // LAYER INITIALIZATION - Add depth contours when map finishes loading
   map.on('load', () => {
-    addBathymetryContours(map);
+    addBathymetryContours(map);         // Add underwater terrain visualization
   });
 
   return map;
