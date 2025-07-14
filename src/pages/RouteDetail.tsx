@@ -1,24 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Map, Navigation, ChevronRight, Layers, Search, Plus, Bell, CheckCircle, MoreHorizontal } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
 import RT001MapInterface from '../components/RT001MapInterface';
 import CompleteVoyageDialog from '../components/CompleteVoyageDialog';
 import VoyageCompletedDialog from '../components/VoyageCompletedDialog';
+import RouteHeader from '../components/RouteHeader';
+import RouteTabs from '../components/RouteTabs';
+import RouteStats from '../components/RouteStats';
+import RouteTimeline from '../components/RouteTimeline';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
 import { useToast } from '@/hooks/use-toast';
 
 const RouteDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [route, setRoute] = useState<Route | null>(null);
   const [activeTab, setActiveTab] = useState<'base' | 'weather'>('base');
   const [vesselPosition, setVesselPosition] = useState<[number, number] | null>(null);
@@ -236,210 +233,22 @@ const RouteDetail = () => {
     <div className="absolute inset-0 flex">
       {/* Left sidebar with header and details */}
       <div className="w-96 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="bg-[#0c1c3d] text-white p-4">
-          <div className="flex items-center justify-between mb-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white" 
-              onClick={() => navigate('/routes')}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" className="text-white">
-                <Search className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-white">
-                <Bell className="h-5 w-5" />
-              </Button>
-              
-              {/* More Options Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-white">
-                    <MoreHorizontal className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-white">
-                  <DropdownMenuItem onClick={handleModifyVoyage}>
-                    Modify Voyage
-                  </DropdownMenuItem>
-                  {voyageStatus === 'active' && (
-                    <DropdownMenuItem onClick={handleCompleteVoyage}>
-                      Complete Voyage
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          
-          <div>
-            <h1 className="text-xl font-semibold flex items-center">
-              {route?.name}
-              <span className={`text-xs font-medium ml-2 px-2 py-0.5 rounded ${
-                voyageStatus === 'completed' 
-                  ? 'bg-gray-500 text-white' 
-                  : 'bg-green-500 text-white'
-              }`}>
-                {voyageStatus === 'completed' ? 'Completed' : route?.status}
-              </span>
-            </h1>
-            <div className="flex text-sm text-gray-300">
-              <span>29° 52' 43.2" N</span>
-              <span className="mx-2">•</span>
-              <span>{route?.startPort}</span>
-            </div>
-            <div className="text-sm text-gray-300">
-              <span>121° 08' 29.5" E</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-6 mt-4">
-            <div className="border-r border-gray-700 pr-4">
-              <p className="text-xs text-gray-400">Route ID</p>
-              <p className="font-bold">#{id}</p>
-            </div>
-            <div className="border-r border-gray-700 pr-4">
-              <p className="text-xs text-gray-400">Start Date</p>
-              <p className="font-bold">{new Date(route?.departureDate).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">Time</p>
-              <p className="font-bold">07:40 UTC</p>
-            </div>
-
-            <div className="border-r border-gray-700 pr-4">
-              <p className="text-xs text-gray-400">Distance</p>
-              <p className="font-bold">{route?.distance} nm</p>
-            </div>
-            <div className="border-r border-gray-700 pr-4">
-              <p className="text-xs text-gray-400">Est. Time</p>
-              <p className="font-bold">{route?.estimatedTime}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">Planned Speed</p>
-              <p className="font-bold">10kt - 12kt</p>
-            </div>
-          </div>
-
-          {voyageStatus === 'completed' && (
-            <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-600">
-              <div className="flex items-center text-gray-300">
-                <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
-                <span className="text-sm">Voyage completed successfully</span>
-              </div>
-            </div>
-          )}
-        </div>
+        <RouteHeader 
+          route={route}
+          routeId={id!}
+          voyageStatus={voyageStatus}
+          onModifyVoyage={handleModifyVoyage}
+          onCompleteVoyage={handleCompleteVoyage}
+        />
         
         {/* Sidebar content */}
         <div className="flex-1 bg-gray-100 overflow-y-auto">
-          <div className="bg-white">
-            <div className="flex">
-              <Button 
-                variant="ghost" 
-                className={`flex-1 rounded-none py-6 ${activeTab === 'base' ? 'bg-gray-100' : ''}`}
-                onClick={() => setActiveTab('base')}
-              >
-                <span>Base Route</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                className={`flex-1 rounded-none py-6 ${activeTab === 'weather' ? 'bg-gray-100' : ''}`}
-                onClick={() => setActiveTab('weather')}
-              >
-                <span>Weather Routing</span>
-              </Button>
-            </div>
-          </div>
+          <RouteTabs 
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
           
-          <div className="p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white p-4 rounded">
-                <div className="flex flex-col items-center">
-                  <p className="text-sm text-gray-500">21st May 25</p>
-                  <p className="font-medium">11:50 UTC</p>
-                </div>
-              </div>
-              <div className="bg-white p-4 rounded">
-                <div className="flex flex-col items-center">
-                  <p className="text-sm text-green-500">21st May 25</p>
-                  <p className="font-medium text-green-500">08:49 UTC</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <div className="bg-white rounded">
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Total Distance</p>
-                    <p className="font-medium">1,342 nm</p>
-                  </div>
-                  <div className="p-4 flex">
-                    <p className="font-medium text-red-500">1,351 nm</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Total Consumption</p>
-                    <p className="font-medium">154 mt</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium text-green-500">151 mt</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Fuel Cost</p>
-                    <p className="font-medium">$0</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium">$0</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 border-b">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Hire Cost</p>
-                    <p className="font-medium">$0</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium">$0</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2">
-                  <div className="p-4 border-r">
-                    <p className="text-sm text-gray-500">Total Est. Cost</p>
-                    <p className="font-medium">$0</p>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-medium">$0</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-between bg-white hover:bg-gray-50 py-6"
-              >
-                <div className="flex items-center">
-                  <div className="font-medium">More Details</div>
-                  <div className="text-sm text-gray-500 ml-2">Route ID, Weather, Waypoints etc...</div>
-                </div>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
+          <RouteStats />
         </div>
       </div>
       
@@ -486,33 +295,10 @@ const RouteDetail = () => {
               activeBaseLayer={activeBaseLayer}
             />
             
-            {/* Timeline Navigation */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-80 text-white">
-              <div className="flex overflow-x-auto">
-                {Array.from({ length: 5 }, (_, i) => {
-                  const date = new Date();
-                  date.setDate(date.getDate() + i);
-                  return {
-                    day: i === 0 ? 'Today' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
-                    date: date.getDate(),
-                    active: i === 0
-                  };
-                }).map((day, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex-1 p-4 text-center cursor-pointer border-t-2 ${
-                      day.active ? 'bg-gray-900 border-blue-500' : 'border-transparent'
-                    } hover:bg-gray-700 transition-colors`}
-                    onClick={() => animateVessel(index)}
-                  >
-                    <div className="text-sm">{day.date} {day.day}</div>
-                  </div>
-                ))}
-                <div className="p-4 flex items-center justify-center cursor-pointer">
-                  <ChevronRight className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
+            <RouteTimeline 
+              onDayClick={animateVessel}
+              isAnimating={isAnimating}
+            />
           </>
         )}
       </div>
