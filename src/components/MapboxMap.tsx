@@ -626,6 +626,102 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-halo-color": symbolConfig.haloColor,
               "text-halo-width": symbolConfig.haloWidth
             },
+           }, beforeId);
+        } else if (overlay === 'tropicalStorms') {
+          // Add tropical cyclone layers based on DTN API response
+          
+          // Add cone border layer
+          mapref.current.addLayer({
+            id: `${layerId}-cone-border`,
+            type: "line",
+            source: sourceId,
+            "source-layer": "tropical_cyclone_consensus_cones",
+            paint: {
+              "line-color": "#FFFFFF",
+              "line-width": 4
+            },
+            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          }, beforeId);
+
+          // Add cone layer
+          mapref.current.addLayer({
+            id: `${layerId}-cone`,
+            type: "line", 
+            source: sourceId,
+            "source-layer": "tropical_cyclone_consensus_cones",
+            paint: {
+              "line-color": "#000000",
+              "line-width": 2
+            },
+            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          }, beforeId);
+
+          // Add history track border
+          mapref.current.addLayer({
+            id: `${layerId}-history-border`,
+            type: "line",
+            source: sourceId,
+            "source-layer": "tropical_cyclone_consensus_history_track", 
+            paint: {
+              "line-color": "#FFFFFF",
+              "line-width": 3
+            },
+            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          }, beforeId);
+
+          // Add history track
+          mapref.current.addLayer({
+            id: `${layerId}-history`,
+            type: "line",
+            source: sourceId,
+            "source-layer": "tropical_cyclone_consensus_history_track",
+            paint: {
+              "line-color": "#000000"
+            },
+            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          }, beforeId);
+
+          // Add forecast track border
+          mapref.current.addLayer({
+            id: `${layerId}-forecast-border`,
+            type: "line",
+            source: sourceId,
+            "source-layer": "tropical_cyclone_consensus_forecast_track",
+            paint: {
+              "line-color": "#FFFFFF", 
+              "line-width": 1
+            },
+            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          }, beforeId);
+
+          // Add forecast track
+          mapref.current.addLayer({
+            id: `${layerId}-forecast`,
+            type: "line",
+            source: sourceId,
+            "source-layer": "tropical_cyclone_consensus_forecast_track",
+            paint: {
+              "line-color": "#000000",
+              "line-dasharray": [7, 5]
+            },
+            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          }, beforeId);
+
+          // Add storm points
+          mapref.current.addLayer({
+            id: `${layerId}-points`,
+            type: "circle",
+            source: sourceId,
+            "source-layer": "tropical_cyclone_consensus_points",
+            paint: {
+              "circle-stroke-width": 2,
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 1.5, 6, 5],
+              "circle-stroke-opacity": ["case", ["==", ["coalesce", ["get", "positionTypeStyle"], ["get", "positionType"]], 1], 0, 0.6],
+              "circle-stroke-color": ["case", ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false], "#000000", "#FFFFFF"],
+              "circle-opacity": ["case", ["==", ["coalesce", ["get", "positionTypeStyle"], ["get", "positionType"]], 1], 0, 1],
+              "circle-color": "#BEBEBE"
+            },
+            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
           }, beforeId);
         }
 
@@ -662,16 +758,37 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     const blurLayerId = `${layerId}-blur`;
     const fillLayerId = `${layerId}-fill`;
 
-    // Remove all related layers
-    if (mapref.current.getLayer(fillLayerId)) {
-      mapref.current.removeLayer(fillLayerId);
+    // Remove tropical storms specific layers
+    if (overlay === 'tropicalStorms') {
+      const tropicalLayers = [
+        `${layerId}-cone-border`,
+        `${layerId}-cone`,
+        `${layerId}-history-border`,
+        `${layerId}-history`,
+        `${layerId}-forecast-border`,
+        `${layerId}-forecast`,
+        `${layerId}-points`,
+        `${layerId}-symbols`
+      ];
+      
+      tropicalLayers.forEach(layer => {
+        if (mapref.current.getLayer(layer)) {
+          mapref.current.removeLayer(layer);
+        }
+      });
+    } else {
+      // Remove all related layers for other overlays
+      if (mapref.current.getLayer(fillLayerId)) {
+        mapref.current.removeLayer(fillLayerId);
+      }
+      if (mapref.current.getLayer(blurLayerId)) {
+        mapref.current.removeLayer(blurLayerId);
+      }
+      if (mapref.current.getLayer(layerId)) {
+        mapref.current.removeLayer(layerId);
+      }
     }
-    if (mapref.current.getLayer(blurLayerId)) {
-      mapref.current.removeLayer(blurLayerId);
-    }
-    if (mapref.current.getLayer(layerId)) {
-      mapref.current.removeLayer(layerId);
-    }
+    
     if (mapref.current.getSource(sourceId)) {
       mapref.current.removeSource(sourceId);
     }
