@@ -117,6 +117,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
     pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
     'pressure-gradient': { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-gradient', tileSetId: '3fca4d12-8e9a-4c15-9876-1a2b3c4d5e6f' },
+    tropicalStorms: { dtnLayerId: 'sevwx-dtn-tropical-cyclones-plot', tileSetId: 'f785e1fe-1624-40a3-be75-ed14c2c4a53c' }
   };
 
   // Generate vessels when component mounts
