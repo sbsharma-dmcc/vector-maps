@@ -12,7 +12,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Wind } from 'lucide-react';
+import { X, Wind, CloudLightning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Props interface for layer panel control
@@ -32,7 +32,8 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
   onBaseLayerChange
 }) => {
   const [enabledLayers, setEnabledLayers] = useState<Record<string, boolean>>({
-    wind: false
+    wind: false,
+    tropicalStorms: false
   });
 
   const [globeView, setGlobeView] = useState(false);
@@ -46,9 +47,10 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
     onLayerToggle(layerType, newState);
   };
 
-  // Only wind layer active for testing
+  // Weather overlay layers available for toggle
   const overlayLayers = [
-    { id: 'wind', name: 'Wind', icon: Wind }
+    { id: 'wind', name: 'Wind', icon: Wind },
+    { id: 'tropicalStorms', name: 'Tropical Storms', icon: CloudLightning }
   ];
 
   const baseLayers = [
@@ -69,7 +71,7 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
         </Button>
       </div>
 
-      {/* Overlay Layers - Only Wind for now */}
+      {/* Overlay Layers - Weather layers including tropical storms */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {overlayLayers.map((layer) => {
           const IconComponent = layer.icon;

@@ -20,6 +20,10 @@ interface LayerConfigs {
   };
   swell: any;
   symbol: any;
+  tropicalStorms: {
+    opacity: number;
+    showLabels: boolean;
+  };
 }
 
 const WeatherLayerConfig: React.FC = () => {
@@ -89,6 +93,10 @@ const WeatherLayerConfig: React.FC = () => {
       rotationAlignment: 'map',
       symbolType: 'arrow',
       customSymbol: '→'
+    },
+    tropicalStorms: {
+      opacity: 0.8,
+      showLabels: true
     }
   });
 
@@ -534,6 +542,34 @@ const WeatherLayerConfig: React.FC = () => {
             </div>
           </>
         )}
+
+        {selectedWeatherType === 'tropicalStorms' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-sm font-medium text-gray-700">Tropical Storms Configuration</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Storm Opacity</Label>
+              <Slider
+                value={[config.opacity]}
+                onValueChange={([value]) => updateConfigValue('tropicalStorms', 'opacity', value)}
+                min={0}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.showLabels}
+                onCheckedChange={(checked) => updateConfigValue('tropicalStorms', 'showLabels', checked)}
+              />
+              <Label className="text-xs">Show Storm Labels</Label>
+            </div>
+          </>
+        )}
       </div>
     );
   };
@@ -553,6 +589,7 @@ const WeatherLayerConfig: React.FC = () => {
             <SelectItem value="pressure">Pressure</SelectItem>
             <SelectItem value="swell">Swell (Filled)</SelectItem>
             <SelectItem value="symbol">Symbol</SelectItem>
+            <SelectItem value="tropicalStorms">Tropical Storms</SelectItem>
           </SelectContent>
         </Select>
       </div>
