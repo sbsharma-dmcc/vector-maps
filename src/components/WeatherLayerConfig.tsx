@@ -19,6 +19,7 @@ interface LayerConfigs {
     lowPressureColor: string;
   };
   swell: any;
+  waves: any;
   symbol: any;
 }
 
@@ -76,6 +77,23 @@ const WeatherLayerConfig: React.FC = () => {
         { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },
         { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },
         { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
+      ]
+    },
+    waves: {
+      fillOpacity: 0.8,
+      fillOutlineColor: 'transparent',
+      animationSpeed: 0.0006,
+      animationEnabled: false,
+      fillAntialias: true,
+      smoothing: true,
+      blurRadius: 2,
+      edgeFeathering: 1.5,
+      gradient: [
+        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
+        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
+        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
+        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
+        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 }
       ]
     },
     symbol: {

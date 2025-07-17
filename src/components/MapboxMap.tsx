@@ -7,6 +7,7 @@ import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
 import { generateMockVessels } from '@/lib/vessel-data';
+import LayerConfigPanel from './LayerConfigPanel';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -40,6 +41,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapVessels, setMapVessels] = useState<any[]>([]);
   
+  // Load saved configurations from session storage
+  useEffect(() => {
+    const savedConfigs = sessionStorage.getItem('layerConfigs');
+    if (savedConfigs) {
+      try {
+        setLayerConfigs(prev => ({ ...prev, ...JSON.parse(savedConfigs) }));
+      } catch (error) {
+        console.error('Error loading saved layer configs:', error);
+      }
+    }
+  }, []);
+
   // Enhanced configuration state for each layer type
   const [layerConfigs, setLayerConfigs] = useState({
     wind: {
@@ -251,7 +264,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       if (mapref.current) {
-        cleanupVesselMarkers(vesselMarkersRef);
+        cleanupVesselMarkers(vesselMarkersRef.current, mapref.current);
         mapref.current.remove();
         mapref.current = null;
       }
@@ -397,7 +410,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
 
-  // Enhanced configuration application
+  // Update layer configuration with session persistence
+  const updateLayerConfig = (layerType: string, config: any) => {
+    setLayerConfigs(prev => {
+      const updated = { ...prev, [layerType]: { ...prev[layerType], ...config } };
+      sessionStorage.setItem('layerConfigs', JSON.stringify(updated));
+      return updated;
+    });
+    
+    // Apply configuration immediately to active layers
+    if (activeOverlays.includes(layerType)) {
+      applyLayerConfiguration(layerType, { ...layerConfigs[layerType], ...config });
+    }
+  };
+
+// Enhanced configuration application
 const applyLayerConfiguration = (layerType: string, config: any) => {
   if (!mapref.current || !mapref.current.isStyleLoaded()) return;
 
@@ -1016,7 +1043,12 @@ const applyLayerConfiguration = (layerType: string, config: any) => {
       <DirectTokenInput />
       <div ref={mapContainerRef} className="absolute inset-0" />
 
-      
+      {/* Real-time Layer Configuration Panel */}
+      <LayerConfigPanel 
+        activeLayers={activeOverlays}
+        layerConfigs={layerConfigs}
+        onConfigChange={updateLayerConfig}
+      />
 
       {showLayers && (
         <div className="absolute top-32 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">

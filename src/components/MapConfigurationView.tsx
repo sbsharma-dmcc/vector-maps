@@ -156,10 +156,7 @@ const MapConfigurationView: React.FC<MapConfigurationViewProps> = ({
               
               <TabsContent value="weather" className="flex-1 overflow-y-auto">
                 <div className="space-y-4">
-                  <WeatherLayerConfig 
-                    currentConfigs={currentWeatherConfig}
-                    onConfigChange={setCurrentWeatherConfig}
-                  />
+                  <WeatherLayerConfig />
                 </div>
               </TabsContent>
               
