@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Settings, Save } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -55,18 +55,17 @@ const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
     }
   }, [activeLayers, selectedLayer]);
 
-  const saveConfiguration = () => {
+  // Auto-save configurations on change
+  useEffect(() => {
     const configsToSave = {};
     activeLayers.forEach(layer => {
       configsToSave[layer] = layerConfigs[layer];
     });
     
-    sessionStorage.setItem('savedLayerConfigs', JSON.stringify(configsToSave));
-    toast({
-      title: "Configuration Saved",
-      description: "Layer configurations saved for this session"
-    });
-  };
+    if (Object.keys(configsToSave).length > 0) {
+      sessionStorage.setItem('savedLayerConfigs', JSON.stringify(configsToSave));
+    }
+  }, [layerConfigs, activeLayers]);
 
   const renderWindConfig = () => {
     const config = layerConfigs.wind || {};
@@ -395,11 +394,6 @@ const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
             )}
 
             {renderConfigContent()}
-
-            <Button onClick={saveConfiguration} className="w-full mt-4">
-              <Save className="h-4 w-4 mr-2" />
-              Save Configuration
-            </Button>
           </CardContent>
         )}
       </Card>
