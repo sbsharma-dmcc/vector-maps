@@ -1,4 +1,3 @@
-
 /**
  * MAP LAYERS PANEL COMPONENT
  * 
@@ -12,7 +11,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Wind, CloudLightning } from 'lucide-react';
+import { X, Wind, Compass, Gauge, Type, Waves, Droplets, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Props interface for layer panel control
@@ -33,7 +32,12 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
 }) => {
   const [enabledLayers, setEnabledLayers] = useState<Record<string, boolean>>({
     wind: false,
-    tropicalStorms: false
+    tropicalStorms: false,
+    swell: false, // Add swell to enabled layers state
+    waves: false,
+    pressure: false,
+    current: false,
+    symbol: false
   });
 
   const [globeView, setGlobeView] = useState(false);
@@ -47,16 +51,36 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
     onLayerToggle(layerType, newState);
   };
 
-  // Weather overlay layers available for toggle
+  const handleBaseLayerChange = (layerId: string) => {
+    onBaseLayerChange(layerId);
+
+    // Turn off both first
+    if (enabledLayers.swell) handleLayerToggle('swell');
+    if (enabledLayers.waves) handleLayerToggle('waves');
+
+    // Then turn on selected one
+    if (layerId === 'swell' && !enabledLayers.swell) {
+      handleLayerToggle('swell');
+    } else if (layerId === 'waves' && !enabledLayers.waves) {
+      handleLayerToggle('waves');
+    }
+  };
+
+
+
+  // Only wind layer active for testing
   const overlayLayers = [
     { id: 'wind', name: 'Wind', icon: Wind },
-    { id: 'tropicalStorms', name: 'Tropical Storms', icon: CloudLightning }
+    { id: 'tropicalStorms', name: 'Tropical Storms', icon: () => <span className="text-xl">🌀</span> },
+    { id: 'current', name: 'Current', icon: Compass },
+    { id: 'symbol', name: 'Symbol', icon: Type },
+    { id: 'pressure', name: 'Pressure', icon: Gauge }
   ];
 
   const baseLayers = [
-    { id: 'default', name: 'Default' },
-    { id: 'swell', name: 'Swell' },
-    { id: 'wave', name: 'Wave' }
+    { id: 'default', name: 'Default', icon: Map },
+    { id: 'swell', name: 'Swell', icon: Waves },
+    { id: 'waves', name: 'Waves', icon: Droplets }
   ];
 
   if (!isOpen) return null;
@@ -102,24 +126,24 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
       <div className="mb-4">
         <h4 className="text-sm font-semibold mb-3">Base layer</h4>
         <div className="grid grid-cols-3 gap-3">
-          {baseLayers.map((layer) => (
-            <div key={layer.id} className="flex flex-col items-center">
-              <button
-                onClick={() => onBaseLayerChange(layer.id)}
-                className={`w-16 h-16 rounded-lg border-2 transition-colors ${
-                  activeLayer === layer.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-                }`}
-              >
-                <div className={`w-full h-full rounded-md ${
-                  layer.id === 'default' ? 'bg-blue-500' :
-                  layer.id === 'swell' ? 'bg-blue-300' : 'bg-blue-200'
-                }`}></div>
-              </button>
-              <span className="text-xs mt-1">{layer.name}</span>
-            </div>
-          ))}
+          {baseLayers.map((layer) => {
+            const IconComponent = layer.icon;
+            return (
+              <div key={layer.id} className="flex flex-col items-center">
+                <button
+                  onClick={() => handleBaseLayerChange(layer.id)}
+                  className={`w-16 h-16 rounded-lg flex items-center justify-center mb-2 transition-colors ${
+                    activeLayer === layer.id
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <IconComponent className="h-8 w-8" />
+                </button>
+                <span className="text-xs mt-1">{layer.name}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

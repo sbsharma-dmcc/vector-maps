@@ -32,7 +32,7 @@ export const layerConfigs = {
 export const baseLayerStyles = {
   default: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66",  // Standard marine view
   swell: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66",    // Swell-focused view
-  wave: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66"      // Wave-focused view
+  waves: "mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66"      // Wave-focused view
 };
 
 // BATHYMETRY DEPTH CONTOURS CONFIGURATION

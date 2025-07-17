@@ -20,10 +20,6 @@ interface LayerConfigs {
   };
   swell: any;
   symbol: any;
-  tropicalStorms: {
-    opacity: number;
-    showLabels: boolean;
-  };
 }
 
 const WeatherLayerConfig: React.FC = () => {
@@ -93,10 +89,6 @@ const WeatherLayerConfig: React.FC = () => {
       rotationAlignment: 'map',
       symbolType: 'arrow',
       customSymbol: '→'
-    },
-    tropicalStorms: {
-      opacity: 0.8,
-      showLabels: true
     }
   });
 
@@ -123,7 +115,7 @@ const WeatherLayerConfig: React.FC = () => {
     setLayerConfigs(prev => ({
       ...prev,
       [layerType]: {
-        ...prev[layerType],
+        ...layerConfigs[layerType],
         [property]: value
       }
     }));
@@ -161,6 +153,44 @@ const WeatherLayerConfig: React.FC = () => {
       }
     }));
   };
+
+  const updateWindWaveGradientItem = (
+    index: number,
+    field: 'value' | 'color',
+    newValue: string
+  ) => {
+    setLayerConfigs(prev => ({
+      ...prev,
+      waves: {
+        ...prev.waves,
+        gradient: prev.waves.gradient.map((item: any, i: number) =>
+          i === index ? { ...item, [field]: newValue } : item
+        )
+      }
+    }));
+  };
+
+  const addWindWaveGradientItem = () => {
+    const newItem = { value: '0.0', color: 'rgba(100, 100, 100, 0.5)', opacity: 0.5 };
+    setLayerConfigs(prev => ({
+      ...prev,
+      waves: {
+        ...prev.waves,
+        gradient: [...prev.waves.gradient, newItem]
+      }
+    }));
+  };
+
+  const removeWindWaveGradientItem = (index: number) => {
+    setLayerConfigs(prev => ({
+      ...prev,
+      waves: {
+        ...prev.waves,
+        gradient: prev.waves.gradient.filter((_: any, i: number) => i !== index)
+      }
+    }));
+  };
+
 
   const convertRgbaToHex = (rgba: string) => {
     const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
@@ -483,8 +513,161 @@ const WeatherLayerConfig: React.FC = () => {
             </div>
           </>
         )}
+        {selectedWeatherType === 'waves' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-sm font-medium text-gray-700">Wind Waves Configuration</Label>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Fill Opacity</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[config.fillOpacity]}
+                  onValueChange={([value]) => updateConfigValue('waves', 'fillOpacity', value)}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs w-12">{config.fillOpacity}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={config.animationEnabled}
+                onCheckedChange={(checked) =>
+                  updateConfigValue('waves', 'animationEnabled', checked)
+                }
+              />
+              <Label className="text-xs">Animation</Label>
+            </div>
+
+            {config.animationEnabled && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Animation Speed</Label>
+                <Slider
+                  value={[config.animationSpeed * 1000]}
+                  onValueChange={([value]) => updateConfigValue('waves', 'animationSpeed', value / 1000)}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  className="flex-1"
+                />
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-gray-700">Color Gradient</Label>
+                <Button
+                  onClick={addWindWaveGradientItem}
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2"
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {config.gradient.map((item: any, index: number) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <Input
+                      type="text"
+                      value={item.value}
+                      onChange={(e) => updateWindWaveGradientItem(index, 'value', e.target.value)}
+                      className="w-16 h-6 text-xs"
+                      placeholder="0m"
+                    />
+                    <Input
+                      type="color"
+                      value={convertRgbaToHex(item.color)}
+                      onChange={(e) => {
+                        const opacity = parseFloat(item.color.match(/[\d.]+(?=\))/)?.[0] || '1');
+                        const newColor = convertHexToRgba(e.target.value, opacity);
+                        updateWindWaveGradientItem(index, 'color', newColor);
+                      }}
+                      className="w-8 h-6 p-0 border-2"
+                    />
+                    <Button
+                      onClick={() => removeWindWaveGradientItem(index)}
+                      size="sm"
+                      variant="outline"
+                      className="h-6 w-6 p-0"
+                      disabled={config.gradient.length <= 2}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
 
         {selectedWeatherType === 'symbol' && (
+          <>
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Type</Label>
+              <Select 
+                value={config.symbolType} 
+                onValueChange={(value) => updateConfigValue('symbol', 'symbolType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="arrow">Arrow (→)</SelectItem>
+                  <SelectItem value="triangle">Triangle (▲)</SelectItem>
+                  <SelectItem value="circle">Circle (●)</SelectItem>
+                  <SelectItem value="square">Square (■)</SelectItem>
+                  <SelectItem value="custom">Custom Symbol</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {config.symbolType === 'custom' && (
+              <div>
+                <Label className="text-xs font-medium text-gray-700">Custom Symbol</Label>
+                <Input
+                  type="text"
+                  value={config.customSymbol}
+                  onChange={(e) => updateConfigValue('symbol', 'customSymbol', e.target.value)}
+                  placeholder="Enter custom symbol (e.g., ★, ✈, ⚡)"
+                  maxLength={3}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Color</Label>
+              <Input
+                type="color"
+                value={config.textColor}
+                onChange={(e) => updateConfigValue('symbol', 'textColor', e.target.value)}
+                className="w-full h-8"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
+              <Slider
+                value={[config.textSize]}
+                onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
+                min={8}
+                max={32}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+          </>
+        )}
+
+        {selectedWeatherType === 'current' && (
           <>
             <div>
               <Label className="text-xs font-medium text-gray-700">Symbol Type</Label>
@@ -588,6 +771,7 @@ const WeatherLayerConfig: React.FC = () => {
             <SelectItem value="wind">Wind Barbs</SelectItem>
             <SelectItem value="pressure">Pressure</SelectItem>
             <SelectItem value="swell">Swell (Filled)</SelectItem>
+            <SelectItem value="waves">Waves (Filled)</SelectItem>
             <SelectItem value="symbol">Symbol</SelectItem>
             <SelectItem value="tropicalStorms">Tropical Storms</SelectItem>
           </SelectContent>

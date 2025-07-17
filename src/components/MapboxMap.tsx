@@ -35,6 +35,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const mapref = useRef<mapboxgl.Map | null>(null);
   const vesselMarkersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
+  
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapVessels, setMapVessels] = useState<any[]>([]);
@@ -95,6 +96,41 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
       ]
     },
+    waves: {
+      fillOpacity: 0.9,
+      fillOutlineColor: 'transparent',
+      animationSpeed: 0.0006,
+      animationEnabled: false,
+      fillAntialias: true,
+      smoothing: true,
+      blurRadius: 2,
+      edgeFeathering: 1.2,
+      gradient: [
+        { value: '0.0', color: 'rgba(0, 0, 178, 0.2)' },
+        { value: '0.5', color: 'rgba(0, 50, 255, 0.3)' },
+        { value: '1.0', color: 'rgba(0, 102, 255, 0.4)' },
+        { value: '1.5', color: 'rgba(51, 204, 255, 0.45)' },
+        { value: '2.0', color: 'rgba(102, 255, 255, 0.5)' },
+        { value: '2.5', color: 'rgba(0, 255, 204, 0.55)' },
+        { value: '3.0', color: 'rgba(0, 255, 102, 0.6)' },
+        { value: '3.5', color: 'rgba(153, 255, 0, 0.65)' },
+        { value: '4.0', color: 'rgba(255, 255, 0, 0.7)' },
+        { value: '4.5', color: 'rgba(255, 221, 0, 0.72)' },
+        { value: '5.0', color: 'rgba(255, 170, 0, 0.74)' },
+        { value: '6.0', color: 'rgba(255, 128, 0, 0.76)' },
+        { value: '7.0', color: 'rgba(255, 64, 0, 0.78)' },
+        { value: '8.0', color: 'rgba(255, 0, 0, 0.8)' },
+        { value: '9.0', color: 'rgba(255, 153, 153, 0.85)' },
+        { value: '10.0', color: 'rgba(255, 204, 255, 0.88)' },
+        { value: '11.0', color: 'rgba(255, 153, 255, 0.9)' },
+        { value: '12.0', color: 'rgba(255, 0, 255, 0.92)' },
+        { value: '13.0', color: 'rgba(204, 0, 204, 0.94)' },
+        { value: '14.0', color: 'rgba(153, 0, 204, 0.96)' },
+        { value: '15.0', color: 'rgba(170, 170, 170, 1)' }
+      ]
+
+    },
+
     symbol: {
       textColor: '#ff0000',
       textSize: 16,
@@ -106,7 +142,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       rotationAlignment: 'map',
       symbolType: 'arrow',
       customSymbol: '→'
+    },
+    current: {
+      textColor: '#f9f9ff',
+      textSize: 16,
+      textOpacity: 0.8,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 100, // 🔄 FIXED: should be `symbolSpacing`, not `currentSpacing`
+      allowOverlap: true,
+      rotationAlignment: 'map',
+      symbolType: 'arrow',
+      customSymbol: '→'
     }
+
+
+
   });
 
   const { toast } = useToast();
@@ -115,15 +166,31 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
     wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
     swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
-    pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
-    'pressure-gradient': { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-gradient', tileSetId: '3fca4d12-8e9a-4c15-9876-1a2b3c4d5e6f' },
-    tropicalStorms: { dtnLayerId: 'sevwx-dtn-tropical-cyclones-plot', tileSetId: 'f785e1fe-1624-40a3-be75-ed14c2c4a53c' }
+    pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-4mb-isolines', tileSetId: '340fb38d-bece-48b4-a23f-db51dc834992' },
+    current: {dtnLayerId: 'fcst-manta-current-direction-grid', tileSetId: '670bca59-c4a0-491e-83bf-4423a3d84d6f'},
+    waves:{ dtnLayerId :'fcst-sea-wave-height-wind-waves-contours', tileSetId:'53d29013-6670-4bf7-9320-d27602d967ec'},
+    tropicalStorms: { dtnLayerId: 'sevwx-dtn-tropical-cyclones-plot', tileSetId: 'f785e1fe-1624-40a3-be75-ed14c2c4a53c' },
+    'pressure-gradient': { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-gradient', tileSetId: '3fca4d12-8e9a-4c15-9876-1a2b3c4d5e6f' }
   };
 
-  // Generate vessels when component mounts
+  // Generate or load vessels when component mounts
   useEffect(() => {
-    const mockVessels = generateMockVessels(25);
-    setMapVessels(mockVessels);
+    // Generate or load vessels when component mounts
+    const savedVessels = localStorage.getItem('mockVessels');
+    if (savedVessels) {
+      try {
+        setMapVessels(JSON.parse(savedVessels));
+      } catch (e) {
+        console.error("Error parsing saved vessels, generating new ones.", e);
+        const newMockVessels = generateMockVessels(5);
+        setMapVessels(newMockVessels);
+        localStorage.setItem('mockVessels', JSON.stringify(newMockVessels));
+      }
+    } else {
+      const newMockVessels = generateMockVessels(5);
+      setMapVessels(newMockVessels);
+      localStorage.setItem('mockVessels', JSON.stringify(newMockVessels));
+    }
   }, []);
 
   // Listen for configuration updates from sidebar
@@ -150,9 +217,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current!,
-      style: 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7',
-      center: [83.167, 6.887],
-      zoom: 4,
+      style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
+      center: [0, 20],
+      zoom: 2,
       attributionControl: false
     });
 
@@ -301,76 +368,108 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       console.log('Started swell animation');
     }
   };
-
-  // Enhanced configuration application
-  const applyLayerConfiguration = (layerType: string, config: any) => {
+  const animateWindWaves = () => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
-    
-    if (layerType === 'pressure') {
-      updateLayerProperties(layerType, {
-        'line-width': config.contourWidth || 1,
-        'line-opacity': config.contourOpacity || 0.8,
-        'line-color': [
-          'interpolate',
-          ['linear'],
-          ['to-number', ['get', 'value'], 1013],
-          980, config.lowPressureColor,
-          1000, config.lowPressureColor,
-          1013, config.mediumPressureColor,
-          1030, config.highPressureColor,
-          1050, config.highPressureColor
-        ]
-      });
-    } else if (layerType === 'wind') {
-      updateLayerProperties(layerType, {
-        'text-color': config.textColor,
-        'text-opacity': config.textOpacity,
-        'text-halo-color': config.haloColor,
-        'text-halo-width': config.haloWidth
-      });
-      
-      updateLayoutProperties(layerType, {
-        'text-size': config.textSize,
-        'text-allow-overlap': config.allowOverlap,
-        'symbol-spacing': config.symbolSpacing
-      });
-    } else if (layerType === 'swell') {
-      const colorExpression: any[] = [
-        'interpolate',
-        ['exponential', 1.5],
-        ['to-number', ['get', 'value'], 0]
-      ];
 
-      layerConfigs.swell.gradient.forEach((item: any) => {
-        const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-        colorExpression.push(heightValue, item.color);
-      });
+    const layerId = `dtn-layer-windwave`;
 
-      updateLayerProperties(layerType, {
-        'fill-color': colorExpression,
-        'fill-opacity': config.fillOpacity,
-        'fill-outline-color': config.fillOutlineColor,
-        'fill-antialias': config.fillAntialias
-      });
-    } else if (layerType === 'symbol') {
-      const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
-      
-      updateLayerProperties(layerType, {
-        'text-color': config.textColor,
-        'text-opacity': config.textOpacity,
-        'text-halo-color': config.haloColor,
-        'text-halo-width': config.haloWidth
-      });
-      
-      updateLayoutProperties(layerType, {
-        'text-size': config.textSize,
-        'text-allow-overlap': config.allowOverlap,
-        'symbol-spacing': config.symbolSpacing,
-        'text-rotation-alignment': config.rotationAlignment,
-        'text-field': symbolText
-      });
+    if (mapref.current.getLayer(layerId)) {
+      let offset = 0;
+
+      const animate = () => {
+        if (!mapref.current || !mapref.current.getLayer(layerId)) return;
+
+        offset += layerConfigs.waves.animationSpeed;
+
+        if (layerConfigs.waves.animationEnabled) {
+          mapref.current.setPaintProperty(layerId, 'fill-translate', [
+            Math.sin(offset * 2) * 2,
+            Math.cos(offset) * 1
+          ]);
+        }
+
+        requestAnimationFrame(animate);
+      };
+
+      animate();
+      console.log('Started wind wave animation');
     }
   };
+
+
+  // Enhanced configuration application
+const applyLayerConfiguration = (layerType: string, config: any) => {
+  if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+
+  if (layerType === 'pressure') {
+    updateLayerProperties(layerType, {
+      'line-width': config.contourWidth || 1,
+      'line-opacity': config.contourOpacity || 0.8,
+      'line-color': [
+        'interpolate',
+        ['linear'],
+        ['to-number', ['get', 'value'], 1013],
+        980, config.lowPressureColor,
+        1000, config.lowPressureColor,
+        1013, config.mediumPressureColor,
+        1030, config.highPressureColor,
+        1050, config.highPressureColor
+      ]
+    });
+
+  } else if (layerType === 'wind') {
+    updateLayerProperties(layerType, {
+      'text-color': config.textColor,
+      'text-opacity': config.textOpacity,
+      'text-halo-color': config.haloColor,
+      'text-halo-width': config.haloWidth
+    });
+
+    updateLayoutProperties(layerType, {
+      'text-size': config.textSize,
+      'text-allow-overlap': config.allowOverlap,
+      'symbol-spacing': config.symbolSpacing
+    });
+
+  } else if (layerType === 'swell') {
+    const colorExpression: any[] = [
+      'interpolate',
+      ['exponential', 1.5],
+      ['to-number', ['get', 'value'], 0]
+    ];
+
+    layerConfigs.swell.gradient.forEach((item: any) => {
+      const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+      colorExpression.push(heightValue, item.color);
+    });
+
+    updateLayerProperties(layerType, {
+      'fill-color': colorExpression,
+      'fill-opacity': config.fillOpacity,
+      'fill-outline-color': config.fillOutlineColor,
+      'fill-antialias': config.fillAntialias
+    });
+
+  } else if (layerType === 'symbol' || layerType === 'current') {
+    const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
+
+    updateLayerProperties(layerType, {
+      'text-color': config.textColor,
+      'text-opacity': config.textOpacity,
+      'text-halo-color': config.haloColor,
+      'text-halo-width': config.haloWidth
+    });
+
+    updateLayoutProperties(layerType, {
+      'text-size': config.textSize,
+      'text-allow-overlap': config.allowOverlap,
+      'symbol-spacing': config.symbolSpacing,
+      'text-rotation-alignment': config.rotationAlignment,
+      'text-field': symbolText
+    });
+  }
+};
+
 
   // Function to get symbol based on type
   const getSymbolByType = (symbolType: string, customSymbol?: string) => {
@@ -433,7 +532,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           maxzoom: 14,
         });
 
-        let beforeId = undefined;
+        const bottomLayers = ['swell', 'waves'];
+        const isBottomLayer = bottomLayers.includes(overlay);
+
+        let beforeId: string | undefined = undefined;
+
+        if (isBottomLayer) {
+          // Find the first "top" layer and insert before it
+          const topLayer = activeOverlays.find(l => !bottomLayers.includes(l));
+          if (topLayer) {
+            beforeId = `dtn-layer-${topLayer}`;
+          }
+        } else {
+          // For top layers, we don't need to do anything special,
+          // as they will be added on top by default.
+        }
 
         if (overlay === 'pressure') {
           const config = layerConfigs.pressure;
@@ -595,7 +708,36 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-halo-width": layerConfigs.wind.haloWidth
             },
           }, beforeId);
-        } else if (overlay === 'symbol') {
+        } else if (overlay === 'waves') {
+            const colorExpression: any[] = [
+              'interpolate',
+              ['exponential', 1.5],
+              ['to-number', ['get', 'value'], 0]
+            ];
+
+            layerConfigs.waves.gradient.forEach((item) => {
+              const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+              colorExpression.push(heightValue, item.color);
+            });
+
+            mapref.current.addLayer({
+              id: layerId,
+              type: "fill",
+              source: sourceId,
+              "source-layer": sourceLayer,
+              paint: {
+                "fill-color": colorExpression,
+                "fill-opacity": layerConfigs.waves.fillOpacity,
+                "fill-outline-color": layerConfigs.waves.fillOutlineColor,
+                "fill-antialias": layerConfigs.waves.fillAntialias
+              },
+              layout: {
+                visibility: "visible"
+              }
+            }, beforeId);
+
+            setTimeout(() => animateWindWaves(), 100);
+          } else if (overlay === 'symbol') {
           const symbolConfig = layerConfigs.symbol;
           const symbolText = getSymbolByType(symbolConfig.symbolType, symbolConfig.customSymbol);
           
@@ -723,6 +865,38 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             },
             filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
           }, beforeId);
+        } else if (overlay === 'current') {
+            const symbolConfig = layerConfigs.current;
+            const symbolText = getSymbolByType(symbolConfig.symbolType, symbolConfig.customSymbol);
+            
+          mapref.current.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            "source-layer": sourceLayer,
+            layout: {
+              "text-field": symbolText,
+              "text-size": symbolConfig.textSize,
+              "text-rotation-alignment": symbolConfig.rotationAlignment,
+              "text-rotate": [
+                "case",
+                ["has", "direction"],
+                ["get", "direction"],
+                ["has", "value1"], 
+                ["get", "value1"],
+                0
+              ],
+              "text-allow-overlap": symbolConfig.allowOverlap,
+              "text-ignore-placement": true,
+              "symbol-spacing": symbolConfig.symbolSpacing
+            },
+            paint: {
+              "text-color": symbolConfig.textColor,
+              "text-opacity": symbolConfig.textOpacity,
+              "text-halo-color": symbolConfig.haloColor,
+              "text-halo-width": symbolConfig.haloWidth
+            },
+          }, beforeId);
         }
 
         setActiveOverlays(prev => [...prev, overlay]);
@@ -788,6 +962,36 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         mapref.current.removeLayer(layerId);
       }
     }
+
+    if (overlay === 'tropicalStorms') {
+      const tropicalLayers = [
+        `${layerId}-cone-border`,
+        `${layerId}-cone`,
+        `${layerId}-history-border`,
+        `${layerId}-history`,
+        `${layerId}-forecast-border`,
+        `${layerId}-forecast`,
+        `${layerId}-points`,
+        `${layerId}-symbols`
+      ];
+      
+      tropicalLayers.forEach(layer => {
+        if (mapref.current.getLayer(layer)) {
+          mapref.current.removeLayer(layer);
+        }
+      });
+    } else {
+      // Remove all related layers for other overlays
+      if (mapref.current.getLayer(fillLayerId)) {
+        mapref.current.removeLayer(fillLayerId);
+      }
+      if (mapref.current.getLayer(blurLayerId)) {
+        mapref.current.removeLayer(blurLayerId);
+      }
+      if (mapref.current.getLayer(layerId)) {
+        mapref.current.removeLayer(layerId);
+      }
+    }
     
     if (mapref.current.getSource(sourceId)) {
       mapref.current.removeSource(sourceId);
@@ -812,12 +1016,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       <DirectTokenInput />
       <div ref={mapContainerRef} className="absolute inset-0" />
 
-      <button
-        onClick={() => setShowLayers(!showLayers)}
-        className="absolute top-20 left-4 z-20 bg-white rounded-lg shadow-lg p-3 hover:bg-gray-50 transition-colors"
-      >
-        Toggle DTN Layers
-      </button>
+      
 
       {showLayers && (
         <div className="absolute top-32 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">

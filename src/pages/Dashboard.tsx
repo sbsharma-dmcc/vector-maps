@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layers } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
@@ -13,7 +12,14 @@ const Dashboard = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | VesselType>('all');
   const [showLayersPanel, setShowLayersPanel] = useState(false);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
-    wind: false
+    wind: false,
+    pressure: false,
+    swell: false,
+    waves: false,
+    current: false,
+    tropicalStorms: false,
+    'pressure-gradient': false,
+    symbol: false
   });
   const [activeBaseLayer, setActiveBaseLayer] = useState('default');
 
@@ -45,11 +51,19 @@ const Dashboard = () => {
     
     // Track layer toggle as button click
     trackButtonClicked(`Toggle_${layerType}`, 'Dashboard');
-    
-    setActiveLayers(prev => ({
-      ...prev,
-      [layerType]: enabled
-    }));
+
+    setActiveLayers(prev => {
+      const newLayers = { ...prev, [layerType]: enabled };
+
+      // Mutually exclusive logic
+      if (layerType === 'swell' && enabled) {
+        newLayers.waves = false;
+      } else if (layerType === 'waves' && enabled) {
+        newLayers.swell = false;
+      }
+
+      return newLayers;
+    });
   };
 
   const handleBaseLayerChange = (layer: string) => {

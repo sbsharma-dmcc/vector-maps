@@ -9,81 +9,125 @@ export interface Vessel {
 
 export type VesselType = 'green' | 'orange' | 'circle';
 
-// Function to add a vessel to the Mapbox map with zoom-responsive sizing
-const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
-  if (!map) return null;
-  
-  // Validate vessel object
-  if (!vessel || !vessel.position || !Array.isArray(vessel.position) || vessel.position.length !== 2) {
-    console.error('Invalid vessel data. Vessel must have a position array [longitude, latitude]');
-    return null;
-  }
-  
-  // Determine vessel icon based on type
-  let vesselIcon;
-  if (vessel.type === 'circle') {
-    vesselIcon = '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'; // Orange circle icon
+// No longer need addVessel as a separate function for HTML markers
+// We will manage icons via Mapbox layers
+
+// Helper to get the correct image path
+const getVesselIconPath = (type: VesselType) => {
+  if (type === 'circle') {
+    return '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'; // Orange circle icon
+  } else if (type === 'green') {
+    return '/lovable-uploads/0f873953-504d-4dad-92ca-1beb7dcadb7e.png'; // New green vessel icon
   } else {
-    vesselIcon = vessel.type === 'green' 
-      ? '/lovable-uploads/0f873953-504d-4dad-92ca-1beb7dcadb7e.png' // New green vessel icon
-      : '/lovable-uploads/014473a7-fb4d-4278-a424-5697503bb89a.png'; // New orange vessel icon
+    return '/lovable-uploads/014473a7-fb4d-4278-a424-5697503bb89a.png'; // New orange vessel icon
   }
-  
-  // Create a vessel marker element using the uploaded images
-  const el = document.createElement('div');
-  el.className = 'vessel-marker';
-  el.style.position = 'relative';
-  el.style.cursor = 'pointer';
-  el.style.backgroundImage = `url(${vesselIcon})`;
-  el.style.backgroundSize = 'contain';
-  el.style.backgroundRepeat = 'no-repeat';
-  el.style.backgroundPosition = 'center';
-  
-  // Function to calculate size based on zoom level - reduced by another 1x (3x total reduction)
-  const updateVesselSize = () => {
-    const zoom = map.getZoom();
-    // Base size reduced from 12px to 6px at zoom level 6 (3x total reduction from original 24px)
-    // Scale: higher zoom = larger size, lower zoom = smaller size
-    const baseSize = 6; // Reduced from 12 to 6
-    const baseZoom = 6;
-    const scaleFactor = Math.pow(0.75, zoom - baseZoom); // Inverse scaling for smaller sizes on zoom out
-    const size = Math.max(2, Math.min(12, baseSize * scaleFactor)); // Clamp between 2px and 12px (reduced from 3-24px)
-    
-    el.style.width = `${size}px`;
-    
-    // Different height ratios for different vessel types
-    if (vessel.type === 'circle') {
-      el.style.height = `${size}px`; // Square for circle vessels
-    } else {
-      el.style.height = `${size * 2}px`; // Height is double width for ship vessels
+};
+
+// Function to load image into Mapbox map
+const loadImageToMap = (map: mapboxgl.Map, id: string, url: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (map.hasImage(id)) {
+      resolve(); // Image already loaded
+      return;
     }
+    map.loadImage(url, (error, image) => {
+      if (error) {
+        console.error(`Failed to load image ${id}:`, error);
+        reject(error);
+        return;
+      }
+      if (image) {
+        map.addImage(id, image);
+        resolve();
+      } else {
+        reject(new Error(`Image data is null for ${id}`));
+      }
+    });
+  });
+};
+
+export const createVesselMarkers = async ( // Made async to handle image loading
+  map: mapboxgl.Map,
+  vessels: Vessel[],
+  markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }> // This ref will now store layer IDs or simply be empty if we're not using individual markers
+) => {
+  // Load vessel icons into the map's style
+  const vesselTypes = ['green', 'orange', 'circle'] as VesselType[];
+  const loadPromises = vesselTypes.map(type => {
+    const iconId = `vessel-${type}-icon`;
+    const iconUrl = getVesselIconPath(type);
+    return loadImageToMap(map, iconId, iconUrl);
+  });
+
+  await Promise.all(loadPromises); // Wait for all images to load
+
+  // Define source and layer IDs
+  const sourceId = 'vessels-source';
+  const layerId = 'vessels-layer';
+
+  // --- CLEANUP EXISTING LAYERS AND SOURCES ---
+  if (map.getLayer(layerId)) {
+    map.removeLayer(layerId);
+  }
+  if (map.getSource(sourceId)) {
+    map.removeSource(sourceId);
+  }
+  // No need to cleanup markersRef if we're not using individual HTML markers
+
+  // Prepare GeoJSON features from vessel data
+  const geojsonFeatures: GeoJSON.Feature[] = vessels.map(vessel => ({
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: vessel.position,
+    },
+    properties: {
+      id: vessel.id,
+      name: vessel.name,
+      type: vessel.type,
+      icon: `vessel-${vessel.type}-icon`, // This will reference the loaded image ID
+    },
+  }));
+
+  const geojsonSource: GeoJSON.FeatureCollection = {
+    type: 'FeatureCollection',
+    features: geojsonFeatures,
   };
-  
-  // Set initial size
-  updateVesselSize();
-  
-  // Create a mapbox marker with draggable disabled to lock position
-  const marker = new mapboxgl.Marker({
-    element: el,
-    draggable: false // Lock the position
-  })
-    .setLngLat(vessel.position)
-    .addTo(map);
-  
-  // Add zoom event listener to update size
-  const handleZoom = () => {
-    updateVesselSize();
-  };
-  
-  map.on('zoom', handleZoom);
-  
-  // Store the cleanup function on the marker element for later removal
-  (marker as any)._cleanupZoomListener = () => {
-    map.off('zoom', handleZoom);
-  };
-  
-  // Add click event handler for vessel popup
-  marker.getElement().addEventListener('click', () => {
+
+  // Add a GeoJSON source to the map
+  map.addSource(sourceId, {
+    type: 'geojson',
+    data: geojsonSource,
+  });
+
+  // Add a symbol layer to display the vessel icons
+  map.addLayer({
+    id: layerId,
+    type: 'symbol',
+    source: sourceId,
+    layout: {
+      'icon-image': ['get', 'icon'], // Use the 'icon' property from feature properties
+      'icon-size': 0.2, // Adjust this value to control the constant size of the icons
+      'icon-allow-overlap': true, // Allow icons to overlap
+      'icon-ignore-placement': true, // Prevent collision detection from hiding icons
+    },
+    paint: {
+      // You can add paint properties here if needed, e.g., 'icon-opacity'
+    }
+  });
+
+  // Add click event for the layer to show popups
+  map.on('click', layerId, (e) => {
+    if (!e.features || e.features.length === 0) return;
+
+    const feature = e.features[0];
+    const vessel = {
+      id: feature.properties?.id,
+      name: feature.properties?.name,
+      type: feature.properties?.type,
+      position: feature.geometry && 'coordinates' in feature.geometry ? (feature.geometry.coordinates as [number, number]) : [0, 0]
+    };
+
     // Create popup content
     const popupContent = `
       <div style="padding: 10px; font-family: Arial, sans-serif;">
@@ -94,83 +138,51 @@ const addVessel = (map: mapboxgl.Map, vessel: Vessel) => {
         </p>
       </div>
     `;
-    
+
     new mapboxgl.Popup({ offset: 25 })
       .setLngLat(vessel.position)
       .setHTML(popupContent)
       .addTo(map);
   });
-  
-  // Return the marker for later reference or removal
-  return marker;
-};
 
-export const createVesselMarkers = (
-  map: mapboxgl.Map,
-  vessels: Vessel[],
-  markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }>
-) => {
-  // Add CSS for vessel marker without animations or waves
-  if (!document.getElementById('vessel-marker-styles')) {
-    const styleSheet = document.createElement('style');
-    styleSheet.id = 'vessel-marker-styles';
-    styleSheet.textContent = `
-      .vessel-marker {
-        transform: rotate(45deg);
-        transform-origin: center;
-        cursor: pointer;
-        transition: width 0.2s ease, height 0.2s ease;
-      }
-      
-      .vessel-marker:hover {
-        transform: rotate(45deg) scale(1.1);
-      }
-    `;
-    document.head.appendChild(styleSheet);
-  }
-
-  // Add vessel popup styles if not already in document
-  if (!document.getElementById('vessel-popup-styles')) {
-    const popupStyleSheet = document.createElement('style');
-    popupStyleSheet.id = 'vessel-popup-styles';
-    popupStyleSheet.textContent = `
-      .mapboxgl-popup-content {
-        border-radius: 8px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-      }
-      
-      .mapboxgl-popup-close-button {
-        font-size: 16px !important;
-        padding: 4px !important;
-      }
-    `;
-    document.head.appendChild(popupStyleSheet);
-  }
-
-  // Create vessel markers
-  vessels.forEach(vessel => {
-    const marker = addVessel(map, vessel);
-    if (marker) {
-      markersRef.current[vessel.id] = marker;
-    }
+  // Optional: Change the cursor to a pointer when hovering over the vessels layer
+  map.on('mouseenter', layerId, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+  map.on('mouseleave', layerId, () => {
+    map.getCanvas().style.cursor = '';
   });
 
-  console.log(`Created ${vessels.length} vessel markers on the map with locked positions and zoom-responsive sizing`);
+  console.log(`Created ${vessels.length} vessel markers on the map using a symbol layer for stable positioning and constant sizing.`);
 };
 
+// --- CLEANUP ---
 export const cleanupVesselMarkers = (
+  map: mapboxgl.Map, // Now needs the map instance to remove layers/sources
   markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }>
 ) => {
+  const layerId = 'vessels-layer';
+  const sourceId = 'vessels-source';
+
+  // Remove the layer and source if they exist
+  if (map.getLayer(layerId)) {
+    map.removeLayer(layerId);
+  }
+  if (map.getSource(sourceId)) {
+    map.removeSource(sourceId);
+  }
+
+  // If you were previously storing mapboxgl.Marker instances in markersRef,
+  // this loop will still be useful for removing any lingering ones
   Object.values(markersRef.current).forEach(marker => {
-    // Clean up zoom listener if it exists
-    if ((marker as any)._cleanupZoomListener) {
+    if ((marker as any)._cleanupZoomListener) { // This part is now redundant but safe to keep
       (marker as any)._cleanupZoomListener();
     }
     marker.remove();
   });
   markersRef.current = {};
   
-  // Remove the styles to keep DOM clean
+  // Remove the styles as they are still useful for the hover effect and popup styling
   const existingStyle = document.getElementById('vessel-marker-styles');
   if (existingStyle) {
     existingStyle.remove();
@@ -180,4 +192,5 @@ export const cleanupVesselMarkers = (
   if (existingPopupStyle) {
     existingPopupStyle.remove();
   }
+  console.log('Cleaned up vessel layers and sources.');
 };

@@ -1,15 +1,14 @@
-
 import { Vessel } from '@/utils/vesselMarkers';
+import * as turf from '@turf/turf'; // Import turf.js
 
 export type { Vessel } from '@/utils/vesselMarkers';
-
 export type VesselType = 'green' | 'orange' | 'circle';
 
 export interface VesselEvent {
   id: string;
   vesselId: string;
-  timestamp: string;  // Changed from Date to string to match usage
-  eventType: 'departure' | 'arrival' | 'position' | 'status' | 'alert';  // Changed from 'type' to 'eventType' and added missing types
+  timestamp: string;
+  eventType: 'departure' | 'arrival' | 'position' | 'status' | 'alert';
   location: string;
   description: string;
 }
@@ -17,12 +16,12 @@ export interface VesselEvent {
 export interface Route {
   id: string;
   name: string;
-  vesselId: string;  // Added vesselId property
+  vesselId: string;
   startPort: string;
   endPort: string;
-  departureDate: string;  // Added departureDate property
-  arrivalDate: string;    // Added arrivalDate property
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';  // Added status property
+  departureDate: string;
+  arrivalDate: string;
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
   distance: number;
   estimatedTime: string;
   coordinates: [number, number][];
@@ -30,147 +29,129 @@ export interface Route {
 }
 
 export const vessels: Vessel[] = [
-  // Green vessels (ships) - spread across ocean bed
+  // Green vessels – updated to be in open oceans
   {
     id: 'vessel-1',
     name: 'Green Cargo Ship Alpha',
     type: 'green',
-    position: [139.7514, 35.6851] // Near Tokyo Bay
+    position: [-73.0, 39.5] // North Atlantic (off US East Coast)
   },
   {
     id: 'vessel-2',
     name: 'Green Cargo Ship Beta',
     type: 'green',
-    position: [140.1234, 35.4567] // East of Tokyo
+    position: [-157.5, 21.0] // North Pacific (south of Hawaii)
   },
   {
     id: 'vessel-3',
     name: 'Green Cargo Ship Gamma',
     type: 'green',
-    position: [139.2345, 35.8901] // West of Tokyo
+    position: [0.0, 47.0] // North Atlantic (mid-ocean west of France)
   },
   {
     id: 'vessel-4',
     name: 'Green Cargo Ship Delta',
     type: 'green',
-    position: [138.5432, 34.9876] // Southwest waters
+    position: [104.5, 0.5] // South China Sea
   },
   {
     id: 'vessel-5',
     name: 'Green Cargo Ship Epsilon',
     type: 'green',
-    position: [141.2345, 36.1234] // Northeast waters
-  },
-  
-  // Orange vessels (ships) - spread across ocean bed
-  {
-    id: 'vessel-6',
-    name: 'Orange Freight Alpha',
-    type: 'orange',
-    position: [139.9876, 35.2345] // South of Tokyo
-  },
-  {
-    id: 'vessel-7',
-    name: 'Orange Freight Beta',
-    type: 'orange',
-    position: [140.5432, 35.7890] // Northeast of Tokyo
-  },
-  {
-    id: 'vessel-8',
-    name: 'Orange Freight Gamma',
-    type: 'orange',
-    position: [138.8765, 35.5432] // Southwest of Tokyo
-  },
-  {
-    id: 'vessel-9',
-    name: 'Orange Freight Delta',
-    type: 'orange',
-    position: [140.8765, 34.7654] // Southeast waters
-  },
-  {
-    id: 'vessel-10',
-    name: 'Orange Freight Epsilon',
-    type: 'orange',
-    position: [138.1234, 36.3456] // Northwest waters
-  },
-  
-  // Circle vessels (floating objects/buoys) - well distributed across ocean bed
-  {
-    id: 'circle-1',
-    name: 'Navigation Buoy Alpha',
-    type: 'circle',
-    position: [139.6123, 35.7234] // Tokyo Bay entrance
-  },
-  {
-    id: 'circle-2',
-    name: 'Navigation Buoy Beta',
-    type: 'circle',
-    position: [139.8456, 35.5678] // Central Tokyo Bay
-  },
-  {
-    id: 'circle-3',
-    name: 'Navigation Buoy Gamma',
-    type: 'circle',
-    position: [140.2789, 35.8123] // Eastern waters
-  },
-  {
-    id: 'circle-4',
-    name: 'Navigation Buoy Delta',
-    type: 'circle',
-    position: [139.3456, 35.4567] // Western waters
-  },
-  {
-    id: 'circle-5',
-    name: 'Navigation Buoy Epsilon',
-    type: 'circle',
-    position: [140.6789, 35.3456] // Far eastern waters
-  },
-  {
-    id: 'circle-6',
-    name: 'Navigation Buoy Zeta',
-    type: 'circle',
-    position: [138.9876, 35.9123] // Northwestern waters
-  },
-  {
-    id: 'circle-7',
-    name: 'Navigation Buoy Eta',
-    type: 'circle',
-    position: [140.1234, 35.1234] // Southern waters
-  },
-  {
-    id: 'circle-8',
-    name: 'Navigation Buoy Theta',
-    type: 'circle',
-    position: [139.7890, 35.9876] // Northern waters
-  },
-  {
-    id: 'circle-9',
-    name: 'Navigation Buoy Iota',
-    type: 'circle',
-    position: [141.0123, 35.6789] // Far eastern waters
-  },
-  {
-    id: 'circle-10',
-    name: 'Navigation Buoy Kappa',
-    type: 'circle',
-    position: [138.4567, 35.2345] // Far western waters
-  },
-  {
-    id: 'circle-11',
-    name: 'Navigation Buoy Lambda',
-    type: 'circle',
-    position: [140.3456, 36.0123] // Northern eastern waters
-  },
-  {
-    id: 'circle-12',
-    name: 'Navigation Buoy Mu',
-    type: 'circle',
-    position: [139.1234, 34.8765] // Southern western waters
+    position: [-122.5, 33.5] // Pacific Ocean (west of California)
   }
 ];
 
-export const generateMockVessels = (count: number = 20): Vessel[] => {
-  return vessels.slice(0, count);
+// Hardcoded land polygons for testing purposes
+const hardcodedLandPolygons = turf.multiPolygon([
+  // North America (simplified rectangle)
+  [[[-130, 25], [-60, 25], [-60, 50], [-130, 50], [-130, 25]]],
+  // Europe/Asia (simplified rectangle)
+  [[[0, 30], [180, 30], [180, 70], [0, 70], [0, 30]]]
+]);
+
+// Enhanced function to generate more realistic ocean positions
+export const generateMockVessels = (count: number = 5): Vessel[] => {
+  const oceanRegions = [
+    // North Atlantic
+    { minLng: -80, maxLng: 20, minLat: 30, maxLat: 70 },
+    // South Atlantic  
+    { minLng: -60, maxLng: 20, minLat: -60, maxLat: 30 },
+    // North Pacific (note: this region spans the antimeridian, handled below)
+    { minLng: 120, maxLng: -120, minLat: 20, maxLat: 60 },
+    // South Pacific (note: this region spans the antimeridian, handled below)
+    { minLng: 120, maxLng: -70, minLat: -60, maxLat: 20 },
+    // Indian Ocean
+    { minLng: 20, maxLng: 120, minLat: -60, maxLat: 30 },
+    // Arctic Ocean (more constrained latitudes to stay watery)
+    { minLng: -180, maxLng: 180, minLat: 70, maxLat: 85 },
+    // Southern Ocean (more constrained latitudes to stay watery)
+    { minLng: -180, maxLng: 180, minLat: -80, maxLat: -55 }
+  ];
+
+  const vesselTypes: VesselType[] = ['green', 'orange', 'circle'];
+  const vesselNames = {
+    green: ['Cargo Master', 'Ocean Freight', 'Sea Carrier', 'Marine Express', 'Blue Wave'],
+    orange: ['Trade Wind', 'Pacific Star', 'Atlantic Pioneer', 'Global Trader', 'Ocean Explorer'],
+    circle: ['Navigation Beacon', 'Weather Buoy', 'Safety Marker', 'Ocean Monitor', 'Sea Guard']
+  };
+
+  const generatedVessels: Vessel[] = [];
+  let attempts = 0;
+  const maxAttemptsPerVessel = 100; // Prevent infinite loops
+
+  for (let i = 0; i < count; i++) {
+    let position: [number, number] | null = null;
+    let isValidPosition = false;
+    attempts = 0;
+
+    while (!isValidPosition && attempts < maxAttemptsPerVessel) {
+      const region = oceanRegions[Math.floor(Math.random() * oceanRegions.length)];
+      
+      let longitude = Math.random() * (region.maxLng - region.minLng) + region.minLng;
+      
+      // Handle Pacific Ocean longitude wrap-around for random generation
+      if (region.minLng > region.maxLng) { // e.g., 120 to -120 implies spanning the 180/-180 meridian
+        const range1 = 180 - region.minLng; // Distance from minLng to 180
+        const range2 = region.maxLng - (-180); // Distance from -180 to maxLng
+        const totalRange = range1 + range2;
+        const randomPointInTotalRange = Math.random() * totalRange;
+
+        if (randomPointInTotalRange < range1) {
+          longitude = region.minLng + randomPointInTotalRange;
+        } else {
+          longitude = -180 + (randomPointInTotalRange - range1);
+        }
+      }
+      
+      const latitude = Math.random() * (region.maxLat - region.minLat) + region.minLat;
+      position = [longitude, latitude];
+
+      // --- Point-in-Polygon Check ---
+      const point = turf.point(position);
+      // If the point is NOT in any land polygon, it's in the ocean.
+      // `booleanPointInPolygon` returns true if inside. We want it to be false.
+      isValidPosition = !turf.booleanPointInPolygon(point, hardcodedLandPolygons);
+
+      attempts++;
+    }
+
+    if (isValidPosition && position) {
+      const type = vesselTypes[Math.floor(Math.random() * vesselTypes.length)];
+      const nameOptions = vesselNames[type];
+      
+      generatedVessels.push({
+        id: `generated-vessel-${i + 1}`,
+        name: `${nameOptions[Math.floor(Math.random() * nameOptions.length)]} ${i + 1}`,
+        type,
+        position: position
+      });
+    } else {
+      console.warn(`Could not find an ocean position for vessel ${i + 1} after ${maxAttemptsPerVessel} attempts.`);
+    }
+  }
+
+  return generatedVessels;
 };
 
 export const getVesselStats = () => {
@@ -189,7 +170,7 @@ export const getVesselStats = () => {
   };
 };
 
-export const generateMockHistory = (vessels: Vessel[], count: number = 50): VesselEvent[] => {
+export const generateMockHistory = (vessels: Vessel[], count: number = 10): VesselEvent[] => {
   const events: VesselEvent[] = [];
   const eventTypes: VesselEvent['eventType'][] = ['departure', 'arrival', 'position', 'status', 'alert'];
   const locations = ['Tokyo Bay', 'Yokohama Port', 'Osaka Bay', 'Kobe Port', 'Nagoya Port', 'Chiba Port', 'Kawasaki Port'];

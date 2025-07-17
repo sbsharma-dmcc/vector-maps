@@ -12,6 +12,8 @@ interface WeatherConfig {
   pressure: any;
   swell: any;
   symbol: any;
+  current: any;
+  waves:any;
 }
 
 interface ConfigDraft {
@@ -42,7 +44,9 @@ const WeatherConfigDrafts: React.FC<WeatherConfigDraftsProps> = ({
     wind: {},
     pressure: {},
     swell: {},
-    symbol: {}
+    symbol: {},
+    current:{},
+    waves:{}
   };
 
   // Use provided config or default

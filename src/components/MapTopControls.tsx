@@ -19,10 +19,10 @@ const MapTopControls: React.FC = () => {
           <span className="mr-1">+</span> New Voyage
         </button>
         
-        <div className="flex items-center bg-white rounded-md shadow-sm px-3 py-2">
+        {/* <div className="flex items-center bg-white rounded-md shadow-sm px-3 py-2">
           <span className="text-sm mr-1">Notifications Feed</span>
           <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">5</span>
-        </div>
+        </div> */}
       </div>
     </div>
   );
