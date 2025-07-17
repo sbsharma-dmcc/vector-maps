@@ -97,7 +97,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       ]
     },
     waves: {
-      fillOpacity: 0.9,
+      fillOpacity: 0.8,
       fillOutlineColor: 'transparent',
       animationSpeed: 0.0006,
       animationEnabled: false,
