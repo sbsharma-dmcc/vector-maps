@@ -513,6 +513,24 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
+  // Toggle layer visibility
+  const toggleLayerVisibility = (layerType: string, visible: boolean) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+
+    const layerIds = mapref.current.getStyle().layers
+      ?.filter(layer => layer.id.includes(layerType))
+      .map(layer => layer.id) || [];
+
+    layerIds.forEach(layerId => {
+      if (mapref.current?.getLayer(layerId)) {
+        mapref.current.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
+    });
+
+    // Update config to track visibility
+    updateLayerConfig(layerType, { visible });
+  };
+
 
 
   // Function to get symbol based on type
@@ -1065,6 +1083,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         activeLayers={activeOverlays}
         layerConfigs={layerConfigs}
         onConfigChange={updateLayerConfig}
+        onToggleLayer={toggleLayerVisibility}
       />
 
       {showLayers && (

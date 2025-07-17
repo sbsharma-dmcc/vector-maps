@@ -17,12 +17,14 @@ interface LayerConfigPanelProps {
   activeLayers: string[];
   layerConfigs: Record<string, LayerConfig>;
   onConfigChange: (layerType: string, config: LayerConfig) => void;
+  onToggleLayer: (layerType: string, visible: boolean) => void;
 }
 
 const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
   activeLayers,
   layerConfigs,
-  onConfigChange
+  onConfigChange,
+  onToggleLayer
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [selectedLayer, setSelectedLayer] = useState<string>('');
@@ -71,6 +73,24 @@ const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
     
     return (
       <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            checked={config.visible !== false}
+            onCheckedChange={(checked) => onToggleLayer('wind', checked)}
+          />
+          <Label>Show Layer</Label>
+        </div>
+
+        <div>
+          <Label>Arrow Color</Label>
+          <Input
+            type="color"
+            value={config.arrowColor || '#ffffff'}
+            onChange={(e) => onConfigChange('wind', { ...config, arrowColor: e.target.value })}
+            className="h-8"
+          />
+        </div>
+
         <div>
           <Label>Text Color</Label>
           <Input
@@ -150,6 +170,42 @@ const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
     
     return (
       <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            checked={config.visible !== false}
+            onCheckedChange={(checked) => onToggleLayer('swell', checked)}
+          />
+          <Label>Show Layer</Label>
+        </div>
+
+        <div>
+          <Label>Fill Color Scheme</Label>
+          <Select 
+            value={config.colorScheme || 'blue-green'} 
+            onValueChange={(value) => onConfigChange('swell', { ...config, colorScheme: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="blue-green">Blue-Green</SelectItem>
+              <SelectItem value="rainbow">Rainbow</SelectItem>
+              <SelectItem value="viridis">Viridis</SelectItem>
+              <SelectItem value="plasma">Plasma</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Outline Color</Label>
+          <Input
+            type="color"
+            value={config.fillOutlineColor || '#000000'}
+            onChange={(e) => onConfigChange('swell', { ...config, fillOutlineColor: e.target.value })}
+            className="h-8"
+          />
+        </div>
+        
         <div>
           <Label>Fill Opacity: {((config.fillOpacity || 0.9) * 100).toFixed(0)}%</Label>
           <Slider
@@ -190,6 +246,34 @@ const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
     
     return (
       <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            checked={config.visible !== false}
+            onCheckedChange={(checked) => onToggleLayer('tropicalStorms', checked)}
+          />
+          <Label>Show Layer</Label>
+        </div>
+
+        <div>
+          <Label>Storm Track Color</Label>
+          <Input
+            type="color"
+            value={config.trackColor || '#ff0000'}
+            onChange={(e) => onConfigChange('tropicalStorms', { ...config, trackColor: e.target.value })}
+            className="h-8"
+          />
+        </div>
+
+        <div>
+          <Label>Cone Color</Label>
+          <Input
+            type="color"
+            value={config.coneColor || '#ffff00'}
+            onChange={(e) => onConfigChange('tropicalStorms', { ...config, coneColor: e.target.value })}
+            className="h-8"
+          />
+        </div>
+
         <div>
           <Label>Layer Opacity: {((config.opacity || 1) * 100).toFixed(0)}%</Label>
           <Slider
@@ -218,6 +302,24 @@ const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
     
     return (
       <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            checked={config.visible !== false}
+            onCheckedChange={(checked) => onToggleLayer(layerType, checked)}
+          />
+          <Label>Show Layer</Label>
+        </div>
+
+        <div>
+          <Label>Color</Label>
+          <Input
+            type="color"
+            value={config.color || '#ffffff'}
+            onChange={(e) => onConfigChange(layerType, { ...config, color: e.target.value })}
+            className="h-8"
+          />
+        </div>
+
         <div>
           <Label>Opacity: {((config.opacity || 1) * 100).toFixed(0)}%</Label>
           <Slider
