@@ -8,6 +8,7 @@ import { getDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
 import { generateMockVessels } from '@/lib/vessel-data';
 import LayerConfigPanel from './LayerConfigPanel';
+import WeatherLayerConfig from './WeatherLayerConfig';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
@@ -37,7 +38,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const vesselMarkersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
   
+  
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
+  const activeWeatherLayers = activeOverlays.filter(layer => ['wind', 'swell', 'tropicalStorms', 'pressure', 'current', 'symbol', 'waves'].includes(layer));
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapVessels, setMapVessels] = useState<any[]>([]);
   
@@ -1078,7 +1081,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       <DirectTokenInput />
       <div ref={mapContainerRef} className="absolute inset-0" />
 
-      {/* Real-time Layer Configuration Panel */}
+      {/* Weather Layer Configuration Panel - Real-time on right side */}
+      <WeatherLayerConfig 
+        isOpen={activeWeatherLayers.length > 0}
+        activeLayers={activeWeatherLayers}
+      />
+
+      {/* Layer Configuration Panel */}
       <LayerConfigPanel 
         activeLayers={activeOverlays}
         layerConfigs={layerConfigs}

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Save, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LayerConfigs {
@@ -23,8 +23,13 @@ interface LayerConfigs {
   symbol: any;
 }
 
-const WeatherLayerConfig: React.FC = () => {
-  const [selectedWeatherType, setSelectedWeatherType] = useState('wind');
+const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; activeLayers?: string[] }> = ({ 
+  isOpen = true, 
+  onClose, 
+  activeLayers = ['wind'] 
+}) => {
+  const [selectedWeatherType, setSelectedWeatherType] = useState(activeLayers[0] || 'wind');
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { toast } = useToast();
   
   const [layerConfigs, setLayerConfigs] = useState<LayerConfigs>({
@@ -128,15 +133,33 @@ const WeatherLayerConfig: React.FC = () => {
     }
   };
 
-  // Enhanced configuration update functions
+  // Auto-select first active layer when layers change
+  useEffect(() => {
+    if (activeLayers.length > 0 && !activeLayers.includes(selectedWeatherType)) {
+      setSelectedWeatherType(activeLayers[0]);
+    }
+  }, [activeLayers, selectedWeatherType]);
+
+  // Enhanced configuration update functions with real-time application
   const updateConfigValue = (layerType: string, property: string, value: any) => {
+    const newConfig = {
+      ...layerConfigs[layerType],
+      [property]: value
+    };
+    
     setLayerConfigs(prev => ({
       ...prev,
-      [layerType]: {
-        ...layerConfigs[layerType],
-        [property]: value
-      }
+      [layerType]: newConfig
     }));
+
+    // Apply configuration immediately (real-time)
+    const configEvent = new CustomEvent('weatherConfigUpdate', {
+      detail: {
+        layerType,
+        config: newConfig
+      }
+    });
+    window.dispatchEvent(configEvent);
   };
 
   const updateSwellGradientItem = (index: number, field: 'value' | 'color', newValue: string) => {
@@ -232,21 +255,6 @@ const WeatherLayerConfig: React.FC = () => {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  const applyLayerConfiguration = () => {
-    // Emit custom event with configuration for MapboxMap to listen to
-    const configEvent = new CustomEvent('weatherConfigUpdate', {
-      detail: {
-        layerType: selectedWeatherType,
-        config: layerConfigs[selectedWeatherType]
-      }
-    });
-    window.dispatchEvent(configEvent);
-
-    toast({
-      title: "Configuration Applied",
-      description: `${selectedWeatherType} layer configuration updated`
-    });
-  };
 
   const convertRgbToHex = (rgbString: string) => {
     const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -775,37 +783,63 @@ const WeatherLayerConfig: React.FC = () => {
     );
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="space-y-4 p-4">
-      <div>
-        <Label className="block text-xs font-medium text-gray-700 mb-1">
-          Weather Type
-        </Label>
-        <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select weather type" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border shadow-lg z-50">
-            <SelectItem value="wind">Wind Barbs</SelectItem>
-            <SelectItem value="pressure">Pressure</SelectItem>
-            <SelectItem value="swell">Swell (Filled)</SelectItem>
-            <SelectItem value="waves">Waves (Filled)</SelectItem>
-            <SelectItem value="symbol">Symbol</SelectItem>
-            <SelectItem value="tropicalStorms">Tropical Storms</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className={`fixed top-4 right-4 z-50 transition-transform duration-300 ${
+      isCollapsed ? 'translate-x-[calc(100%-3rem)]' : 'translate-x-0'
+    }`}>
+      <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg w-80 max-h-[80vh] overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">Weather Layer Config</h3>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-8 w-8 p-0"
+            >
+              {isCollapsed ? '◀' : '▶'}
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-8 w-8 p-0"
+              >
+                ✕
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        {!isCollapsed && (
+          <div className="p-4 max-h-[calc(80vh-4rem)] overflow-y-auto">
+            {activeLayers.length > 1 && (
+              <div className="mb-4">
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Active Layer
+                </Label>
+                <Select value={selectedWeatherType} onValueChange={setSelectedWeatherType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select weather type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border shadow-lg z-50">
+                    {activeLayers.map(layer => (
+                      <SelectItem key={layer} value={layer}>
+                        {layer.charAt(0).toUpperCase() + layer.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {renderConfigurationPanel()}
+          </div>
+        )}
       </div>
-
-      {renderConfigurationPanel()}
-
-      <Button 
-        onClick={applyLayerConfiguration}
-        className="w-full"
-        size="sm"
-      >
-        <Save className="h-4 w-4 mr-2" />
-        Apply Configuration
-      </Button>
     </div>
   );
 };
