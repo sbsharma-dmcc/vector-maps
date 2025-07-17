@@ -410,6 +410,95 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
 
+  // Enhanced configuration application (moved before updateLayerConfig)
+  const applyLayerConfiguration = (layerType: string, config: any) => {
+    if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+
+    if (layerType === 'pressure') {
+      updateLayerProperties(layerType, {
+        'line-width': config.contourWidth || 1,
+        'line-opacity': config.contourOpacity || 0.8,
+        'line-color': [
+          'case',
+          ['>', ['get', 'PRES'], 1020], config.highPressureColor || '#ff0000',
+          ['>', ['get', 'PRES'], 1000], config.mediumPressureColor || '#80ff80',
+          config.lowPressureColor || '#800080'
+        ]
+      });
+    } else if (layerType === 'wind') {
+      updateLayoutProperties(layerType, {
+        'text-field': [
+          'case',
+          ['==', config.speedUnit || 'knots', 'mps'],
+          ['concat', ['round', ['*', ['get', 'WIND_SPEED_MS'], 1]], 'm/s'],
+          ['==', config.speedUnit || 'knots', 'kmh'],
+          ['concat', ['round', ['*', ['get', 'WIND_SPEED_MS'], 3.6]], 'km/h'],
+          ['concat', ['round', ['*', ['get', 'WIND_SPEED_MS'], 1.94384]], 'kt']
+        ],
+        'text-size': config.textSize || 16,
+        'text-color': config.textColor || '#ffffff',
+        'text-halo-color': config.haloColor || '#000000',
+        'text-halo-width': config.haloWidth || 1,
+        'text-allow-overlap': config.allowOverlap || true,
+        'symbol-spacing': config.symbolSpacing || 80
+      });
+
+      updateLayerProperties(layerType, {
+        'text-opacity': config.textOpacity || 0.9
+      });
+    } else if (layerType === 'swell') {
+      updateLayerProperties(layerType, {
+        'fill-opacity': config.fillOpacity || 0.9,
+        'fill-outline-color': config.fillOutlineColor || 'transparent'
+      });
+
+      if (config.animationEnabled) {
+        animateSwell();
+      }
+    } else if (layerType === 'waves') {
+      updateLayerProperties(layerType, {
+        'fill-opacity': config.fillOpacity || 0.8,
+        'fill-outline-color': config.fillOutlineColor || 'transparent'
+      });
+
+      if (config.animationEnabled) {
+        animateWindWaves();
+      }
+    } else if (layerType === 'symbol') {
+      updateLayoutProperties(layerType, {
+        'text-field': getSymbolByType(config.symbolType || 'arrow', config.customSymbol),
+        'text-size': config.textSize || 16,
+        'text-color': config.textColor || '#ff0000',
+        'text-halo-color': config.haloColor || '#000000',
+        'text-halo-width': config.haloWidth || 1,
+        'text-allow-overlap': config.allowOverlap || true,
+        'symbol-spacing': config.symbolSpacing || 100,
+        'text-rotation-alignment': config.rotationAlignment || 'map'
+      });
+
+      updateLayerProperties(layerType, {
+        'text-opacity': config.textOpacity || 0.8
+      });
+    } else if (layerType === 'tropicalStorms') {
+      // Handle tropical storms configuration
+      const opacity = config.opacity !== undefined ? config.opacity : 1;
+      const showLabels = config.showLabels !== false;
+      
+      // Update all tropical storm related layers
+      ['dtn-layer-tropicalStorms-cone', 'dtn-layer-tropicalStorms-track', 'dtn-layer-tropicalStorms-points'].forEach(layerId => {
+        if (mapref.current?.getLayer(layerId)) {
+          try {
+            mapref.current.setPaintProperty(layerId, 'fill-opacity', opacity);
+            mapref.current.setPaintProperty(layerId, 'line-opacity', opacity);
+            mapref.current.setPaintProperty(layerId, 'circle-opacity', opacity);
+          } catch (e) {
+            // Layer might not support all properties
+          }
+        }
+      });
+    }
+  };
+
   // Update layer configuration with session persistence
   const updateLayerConfig = (layerType: string, config: any) => {
     setLayerConfigs(prev => {
@@ -424,78 +513,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }
   };
 
-// Enhanced configuration application
-const applyLayerConfiguration = (layerType: string, config: any) => {
-  if (!mapref.current || !mapref.current.isStyleLoaded()) return;
-
-  if (layerType === 'pressure') {
-    updateLayerProperties(layerType, {
-      'line-width': config.contourWidth || 1,
-      'line-opacity': config.contourOpacity || 0.8,
-      'line-color': [
-        'interpolate',
-        ['linear'],
-        ['to-number', ['get', 'value'], 1013],
-        980, config.lowPressureColor,
-        1000, config.lowPressureColor,
-        1013, config.mediumPressureColor,
-        1030, config.highPressureColor,
-        1050, config.highPressureColor
-      ]
-    });
-
-  } else if (layerType === 'wind') {
-    updateLayerProperties(layerType, {
-      'text-color': config.textColor,
-      'text-opacity': config.textOpacity,
-      'text-halo-color': config.haloColor,
-      'text-halo-width': config.haloWidth
-    });
-
-    updateLayoutProperties(layerType, {
-      'text-size': config.textSize,
-      'text-allow-overlap': config.allowOverlap,
-      'symbol-spacing': config.symbolSpacing
-    });
-
-  } else if (layerType === 'swell') {
-    const colorExpression: any[] = [
-      'interpolate',
-      ['exponential', 1.5],
-      ['to-number', ['get', 'value'], 0]
-    ];
-
-    layerConfigs.swell.gradient.forEach((item: any) => {
-      const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
-      colorExpression.push(heightValue, item.color);
-    });
-
-    updateLayerProperties(layerType, {
-      'fill-color': colorExpression,
-      'fill-opacity': config.fillOpacity,
-      'fill-outline-color': config.fillOutlineColor,
-      'fill-antialias': config.fillAntialias
-    });
-
-  } else if (layerType === 'symbol' || layerType === 'current') {
-    const symbolText = getSymbolByType(config.symbolType, config.customSymbol);
-
-    updateLayerProperties(layerType, {
-      'text-color': config.textColor,
-      'text-opacity': config.textOpacity,
-      'text-halo-color': config.haloColor,
-      'text-halo-width': config.haloWidth
-    });
-
-    updateLayoutProperties(layerType, {
-      'text-size': config.textSize,
-      'text-allow-overlap': config.allowOverlap,
-      'symbol-spacing': config.symbolSpacing,
-      'text-rotation-alignment': config.rotationAlignment,
-      'text-field': symbolText
-    });
-  }
-};
 
 
   // Function to get symbol based on type
