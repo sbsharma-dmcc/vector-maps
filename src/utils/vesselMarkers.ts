@@ -114,7 +114,7 @@ export const createVesselMarkers = async ( // Made async to handle image loading
       'icon-ignore-placement': true,
     },
     paint: {}
-  }, topLayer ? topLayer.id : undefined);
+  }, 'vessel-layer');
 
   // Add click event for the layer to show popups
   map.on('click', layerId, (e) => {

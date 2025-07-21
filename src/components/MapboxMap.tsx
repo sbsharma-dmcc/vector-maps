@@ -7,7 +7,7 @@ import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
 import { generateMockVessels } from '@/lib/vessel-data';
-import LayerConfigPanel from './LayerConfigPanel';
+
 import WeatherLayerConfig from './WeatherLayerConfig';
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
@@ -255,6 +255,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         title: "Map Loaded",
         description: "Map has been successfully initialized"
       });
+
+      // Add a dummy layer for vessels to ensure they are on top
+      if (!map.getLayer('vessel-layer')) {
+        map.addLayer({
+          id: 'vessel-layer',
+          type: 'symbol',
+          source: {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: []
+            }
+          }
+        });
+      }
     });
 
     map.on('error', (e) => {
@@ -1134,13 +1149,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         activeLayers={activeWeatherLayers}
       />
 
-      {/* Layer Configuration Panel */}
-      <LayerConfigPanel 
-        activeLayers={activeOverlays}
-        layerConfigs={layerConfigs}
-        onConfigChange={updateLayerConfig}
-        onToggleLayer={toggleLayerVisibility}
-      />
+      
 
       {showLayers && (
         <div className="absolute top-32 left-4 z-20 bg-white rounded-lg shadow-lg p-4 min-w-[200px]">

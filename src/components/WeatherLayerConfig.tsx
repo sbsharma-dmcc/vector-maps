@@ -9,6 +9,121 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+const DEFAULT_LAYER_CONFIGS: LayerConfigs = {
+  wind: {
+    textColor: '#ffffff',
+    textSize: 16,
+    textOpacity: 0.9,
+    haloColor: '#000000',
+    haloWidth: 1,
+    symbolSpacing: 80,
+    allowOverlap: true,
+    barbStyle: 'full',
+    speedUnit: 'knots'
+  },
+  pressure: {
+    contourWidth: 1,
+    contourOpacity: 0.8,
+    highPressureColor: '#ff0000',
+    mediumPressureColor: '#80ff80',
+    lowPressureColor: '#800080'
+  },
+  swell: {
+    fillOpacity: 0.9,
+    fillOutlineColor: 'transparent',
+    animationSpeed: 0.0008,
+    animationEnabled: true,
+    fillAntialias: true,
+    smoothing: true,
+    blurRadius: 2,
+    edgeFeathering: 1.5,
+    gradient: [
+        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
+        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
+        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
+        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
+        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },
+        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 },
+        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },
+        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 },
+        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },
+        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 },
+        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },
+        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },
+        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },
+        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },
+        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },
+        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },
+        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },
+        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },
+        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },
+        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },
+        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
+    ]
+  },
+  waves: {
+      fillOpacity: 0.8,
+      fillOutlineColor: 'transparent',
+      animationSpeed: 0.0006,
+      animationEnabled: false,
+      fillAntialias: true,
+      smoothing: true,
+      blurRadius: 2,
+      edgeFeathering: 1.5,
+      gradient: [
+        { value: '0.0', color: 'rgba(0, 0, 178, 0.2)' },
+        { value: '0.5', color: 'rgba(0, 50, 255, 0.3)' },
+        { value: '1.0', color: 'rgba(0, 102, 255, 0.4)' },
+        { value: '1.5', color: 'rgba(51, 204, 255, 0.45)' },
+        { value: '2.0', color: 'rgba(102, 255, 255, 0.5)' },
+        { value: '2.5', color: 'rgba(0, 255, 204, 0.55)' },
+        { value: '3.0', color: 'rgba(0, 255, 102, 0.6)' },
+        { value: '3.5', color: 'rgba(153, 255, 0, 0.65)' },
+        { value: '4.0', color: 'rgba(255, 255, 0, 0.7)' },
+        { value: '4.5', color: 'rgba(255, 221, 0, 0.72)' },
+        { value: '5.0', color: 'rgba(255, 170, 0, 0.74)' },
+        { value: '6.0', color: 'rgba(255, 128, 0, 0.76)' },
+        { value: '7.0', color: 'rgba(255, 64, 0, 0.78)' },
+        { value: '8.0', color: 'rgba(255, 0, 0, 0.8)' },
+        { value: '9.0', color: 'rgba(255, 153, 153, 0.85)' },
+        { value: '10.0', color: 'rgba(255, 204, 255, 0.88)' },
+        { value: '11.0', color: 'rgba(255, 153, 255, 0.9)' },
+        { value: '12.0', color: 'rgba(255, 0, 255, 0.92)' },
+        { value: '13.0', color: 'rgba(204, 0, 204, 0.94)' },
+        { value: '14.0', color: 'rgba(153, 0, 204, 0.96)' },
+        { value: '15.0', color: 'rgba(170, 170, 170, 1)' }
+      ]
+  },
+  symbol: {
+    textColor: '#ff0000',
+    textSize: 16,
+    textOpacity: 0.8,
+    haloColor: '#000000',
+    haloWidth: 1,
+    symbolSpacing: 100,
+    allowOverlap: true,
+    rotationAlignment: 'map',
+    symbolType: 'arrow',
+    customSymbol: '→'
+  },
+  current: {
+    textColor: '#f9f9ff',
+    textSize: 16,
+    textOpacity: 0.8,
+    haloColor: '#000000',
+    haloWidth: 1,
+    symbolSpacing: 100,
+    allowOverlap: true,
+    rotationAlignment: 'map',
+    symbolType: 'arrow',
+    customSymbol: '→'
+  },
+  tropicalStorms: {
+    opacity: 1,
+    showLabels: true
+  }
+};
+
 interface LayerConfigs {
   wind: Record<string, unknown>;
   pressure: {
@@ -33,6 +148,29 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
   const [selectedWeatherType, setSelectedWeatherType] = useState(activeLayers[0] || 'wind');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { toast } = useToast();
+  
+  const handleReset = () => {
+    const defaultConfig = DEFAULT_LAYER_CONFIGS[selectedWeatherType];
+    if (defaultConfig) {
+      setLayerConfigs(prev => ({
+        ...prev,
+        [selectedWeatherType]: defaultConfig
+      }));
+
+      const configEvent = new CustomEvent('weatherConfigUpdate', {
+        detail: {
+          layerType: selectedWeatherType,
+          config: defaultConfig
+        }
+      });
+      window.dispatchEvent(configEvent);
+
+      toast({
+        title: `${selectedWeatherType.charAt(0).toUpperCase() + selectedWeatherType.slice(1)} Layer Reset`,
+        description: `The ${selectedWeatherType} layer has been reset to its default settings.`
+      });
+    }
+  };
   
   const [layerConfigs, setLayerConfigs] = useState<LayerConfigs>({
     wind: {
@@ -831,30 +969,35 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
     <div className={`fixed top-4 right-4 z-50 transition-transform duration-300 ${
       isCollapsed ? 'translate-x-[calc(100%-3rem)]' : 'translate-x-0'
     }`}>
-      <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg w-80 max-h-[80vh] overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold">Weather Layer Config</h3>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="h-8 w-8 p-0"
-            >
-              {isCollapsed ? '◀' : '▶'}
-            </Button>
-            {onClose && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-8 w-8 p-0"
-              >
-                ✕
-              </Button>
-            )}
-          </div>
-        </div>
+      <div className="absolute top-0 right-0 flex flex-col items-end space-y-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReset}
+          className="h-8 px-3"
+        >
+          Reset
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-8 w-8 p-0"
+        >
+          {isCollapsed ? '◀' : '▶'}
+        </Button>
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0"
+          >
+            ✕
+          </Button>
+        )}
+      </div>
+      <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg w-80 max-h-[80vh] overflow-hidden mt-12">
         
         {!isCollapsed && (
           <div className="p-4 max-h-[calc(80vh-4rem)] overflow-y-auto">
