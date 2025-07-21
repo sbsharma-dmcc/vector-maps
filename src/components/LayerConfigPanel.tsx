@@ -369,51 +369,49 @@ const LayerConfigPanel: React.FC<LayerConfigPanelProps> = ({
   if (activeLayers.length === 0) return null;
 
   return (
-    <div className={`fixed top-4 right-4 z-50 transition-transform duration-300 ${
-      isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-2rem)]'
-    }`}>
-      <Card className="w-80 max-h-[80vh] overflow-hidden shadow-lg bg-background/95 backdrop-blur-sm border">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Settings className="h-5 w-5" />
+    <div className={`fixed top-4 right-4 z-50`}>
+      <div className={`relative transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-3rem)]'}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute top-2 left-2 z-10 h-8 w-8 p-0 bg-background/80 rounded-full"
+        >
+          {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
+        <Card className="w-80 max-h-[80vh] overflow-hidden shadow-lg bg-background/95 backdrop-blur-sm border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-center">
+              <Settings className="h-5 w-5 mr-2" />
               <CardTitle className="text-lg">Layer Configuration</CardTitle>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsOpen(!isOpen)}
-              className="h-8 w-8 p-0"
-            >
-              {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
-          </div>
-        </CardHeader>
-        
-        {isOpen && (
-          <CardContent className="space-y-4 max-h-[calc(80vh-6rem)] overflow-y-auto">
-            {activeLayers.length > 1 && (
-              <div>
-                <Label>Active Layer</Label>
-                <Select value={selectedLayer} onValueChange={setSelectedLayer}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeLayers.map(layer => (
-                      <SelectItem key={layer} value={layer}>
-                        {layer.charAt(0).toUpperCase() + layer.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+          </CardHeader>
+          
+          {isOpen && (
+            <CardContent className="space-y-4 max-h-[calc(80vh-6rem)] overflow-y-auto">
+              {activeLayers.length > 1 && (
+                <div>
+                  <Label>Active Layer</Label>
+                  <Select value={selectedLayer} onValueChange={setSelectedLayer}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeLayers.map(layer => (
+                        <SelectItem key={layer} value={layer}>
+                          {layer.charAt(0).toUpperCase() + layer.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-            {renderConfigContent()}
-          </CardContent>
-        )}
-      </Card>
+              {renderConfigContent()}
+            </CardContent>
+          )}
+        </Card>
+      </div>
     </div>
   );
 };

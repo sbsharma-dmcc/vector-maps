@@ -213,6 +213,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   useEffect(() => {
     const handleConfigUpdate = (event: CustomEvent) => {
       const { layerType, config } = event.detail;
+      console.log('Received config update:', { layerType, config });
       setLayerConfigs(prev => ({
         ...prev,
         [layerType]: config
@@ -220,9 +221,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       applyLayerConfiguration(layerType, config);
     };
 
-    window.addEventListener('weatherConfigUpdate', handleConfigUpdate);
+    window.addEventListener('weatherConfigUpdate', handleConfigUpdate as EventListener);
     return () => {
-      window.removeEventListener('weatherConfigUpdate', handleConfigUpdate);
+      window.removeEventListener('weatherConfigUpdate', handleConfigUpdate as EventListener);
     };
   }, []);
 
@@ -422,11 +423,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'line-width': config.contourWidth || 1,
         'line-opacity': config.contourOpacity || 0.8,
         'line-color': [
-          'case',
-          ['>', ['get', 'PRES'], 1020], config.highPressureColor || '#ff0000',
-          ['>', ['get', 'PRES'], 1000], config.mediumPressureColor || '#80ff80',
-          config.lowPressureColor || '#800080'
-        ]
+          'interpolate',
+          ['linear'],
+          ['get', 'value'],
+          980,
+          config.lowPressureColor,
+          1000,
+          config.lowPressureColor,
+          1013,
+          config.mediumPressureColor,
+          1030,
+          config.highPressureColor,
+          1050,
+          config.highPressureColor,
+        ],
       });
     } else if (layerType === 'wind') {
       updateLayoutProperties(layerType, {
@@ -455,6 +465,19 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'fill-outline-color': config.fillOutlineColor || 'transparent'
       });
 
+      if (config.gradient) {
+        const colorExpression: any[] = [
+          'interpolate',
+          ['exponential', 1.5],
+          ['to-number', ['get', 'value'], 0]
+        ];
+        config.gradient.forEach((item: any) => {
+          const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+          colorExpression.push(heightValue, item.color);
+        });
+        updateLayerProperties(layerType, { 'fill-color': colorExpression });
+      }
+
       if (config.animationEnabled) {
         animateSwell();
       }
@@ -464,8 +487,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         'fill-outline-color': config.fillOutlineColor || 'transparent'
       });
 
-      if (config.animationEnabled) {
-        animateWindWaves();
+      if (config.gradient) {
+        const colorExpression: any[] = [
+          'interpolate',
+          ['exponential', 1.5],
+          ['to-number', ['get', 'value'], 0]
+        ];
+        config.gradient.forEach((item: any) => {
+          const heightValue = parseFloat(item.value.replace('m', '').replace('+', ''));
+          colorExpression.push(heightValue, item.color);
+        });
+        updateLayerProperties(layerType, { 'fill-color': colorExpression });
       }
     } else if (layerType === 'symbol') {
       updateLayoutProperties(layerType, {
@@ -481,6 +513,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       updateLayerProperties(layerType, {
         'text-opacity': config.textOpacity || 0.8
+      });
+    } else if (layerType === 'current') {
+      updateLayoutProperties(layerType, {
+        'text-field': getSymbolByType(config.symbolType || 'arrow', config.customSymbol),
+        'text-size': config.textSize || 16,
+        'text-rotation-alignment': config.rotationAlignment || 'map',
+        'text-allow-overlap': config.allowOverlap || true,
+        'symbol-spacing': config.symbolSpacing || 100,
+      });
+
+      updateLayerProperties(layerType, {
+        'text-color': config.textColor || '#f9f9ff',
+        'text-opacity': config.textOpacity || 0.8,
+        'text-halo-color': config.haloColor || '#000000',
+        'text-halo-width': config.haloWidth || 1,
       });
     } else if (layerType === 'tropicalStorms') {
       // Handle tropical storms configuration

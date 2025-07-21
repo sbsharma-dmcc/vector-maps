@@ -21,6 +21,8 @@ interface LayerConfigs {
   swell: Record<string, unknown>;
   waves: Record<string, unknown>;
   symbol: Record<string, unknown>;
+  current: Record<string, unknown>;
+  tropicalStorms: Record<string, unknown>;
 }
 
 const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; activeLayers?: string[] }> = ({ 
@@ -94,11 +96,27 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       blurRadius: 2,
       edgeFeathering: 1.5,
       gradient: [
-        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
-        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
-        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
-        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
-        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 }
+        { value: '0.0', color: 'rgba(0, 0, 178, 0.2)' },
+        { value: '0.5', color: 'rgba(0, 50, 255, 0.3)' },
+        { value: '1.0', color: 'rgba(0, 102, 255, 0.4)' },
+        { value: '1.5', color: 'rgba(51, 204, 255, 0.45)' },
+        { value: '2.0', color: 'rgba(102, 255, 255, 0.5)' },
+        { value: '2.5', color: 'rgba(0, 255, 204, 0.55)' },
+        { value: '3.0', color: 'rgba(0, 255, 102, 0.6)' },
+        { value: '3.5', color: 'rgba(153, 255, 0, 0.65)' },
+        { value: '4.0', color: 'rgba(255, 255, 0, 0.7)' },
+        { value: '4.5', color: 'rgba(255, 221, 0, 0.72)' },
+        { value: '5.0', color: 'rgba(255, 170, 0, 0.74)' },
+        { value: '6.0', color: 'rgba(255, 128, 0, 0.76)' },
+        { value: '7.0', color: 'rgba(255, 64, 0, 0.78)' },
+        { value: '8.0', color: 'rgba(255, 0, 0, 0.8)' },
+        { value: '9.0', color: 'rgba(255, 153, 153, 0.85)' },
+        { value: '10.0', color: 'rgba(255, 204, 255, 0.88)' },
+        { value: '11.0', color: 'rgba(255, 153, 255, 0.9)' },
+        { value: '12.0', color: 'rgba(255, 0, 255, 0.92)' },
+        { value: '13.0', color: 'rgba(204, 0, 204, 0.94)' },
+        { value: '14.0', color: 'rgba(153, 0, 204, 0.96)' },
+        { value: '15.0', color: 'rgba(170, 170, 170, 1)' }
       ]
     },
     symbol: {
@@ -112,6 +130,22 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       rotationAlignment: 'map',
       symbolType: 'arrow',
       customSymbol: '→'
+    },
+    current: {
+      textColor: '#f9f9ff',
+      textSize: 16,
+      textOpacity: 0.8,
+      haloColor: '#000000',
+      haloWidth: 1,
+      symbolSpacing: 100,
+      allowOverlap: true,
+      rotationAlignment: 'map',
+      symbolType: 'arrow',
+      customSymbol: '→'
+    },
+    tropicalStorms: {
+      opacity: 1,
+      showLabels: true
     }
   });
 
@@ -163,15 +197,19 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
   };
 
   const updateSwellGradientItem = (index: number, field: 'value' | 'color', newValue: string) => {
-    setLayerConfigs(prev => ({
-      ...prev,
-      swell: {
-        ...prev.swell,
-        gradient: prev.swell.gradient.map((item: any, i: number) => 
-          i === index ? { ...item, [field]: newValue } : item
-        )
-      }
-    }));
+    setLayerConfigs(prev => {
+      const newGradient = prev.swell.gradient.map((item: any, i: number) => 
+        i === index ? { ...item, [field]: newValue } : item
+      );
+      const newConfig = { ...prev.swell, gradient: newGradient };
+      
+      const configEvent = new CustomEvent('weatherConfigUpdate', {
+        detail: { layerType: 'swell', config: newConfig }
+      });
+      window.dispatchEvent(configEvent);
+
+      return { ...prev, swell: newConfig };
+    });
   };
 
   const addSwellGradientItem = () => {
@@ -200,15 +238,19 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
     field: 'value' | 'color',
     newValue: string
   ) => {
-    setLayerConfigs(prev => ({
-      ...prev,
-      waves: {
-        ...prev.waves,
-        gradient: prev.waves.gradient.map((item: any, i: number) =>
-          i === index ? { ...item, [field]: newValue } : item
-        )
-      }
-    }));
+    setLayerConfigs(prev => {
+      const newGradient = prev.waves.gradient.map((item: any, i: number) =>
+        i === index ? { ...item, [field]: newValue } : item
+      );
+      const newConfig = { ...prev.waves, gradient: newGradient };
+
+      const configEvent = new CustomEvent('weatherConfigUpdate', {
+        detail: { layerType: 'waves', config: newConfig }
+      });
+      window.dispatchEvent(configEvent);
+
+      return { ...prev, waves: newConfig };
+    });
   };
 
   const addWindWaveGradientItem = () => {
@@ -699,7 +741,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
               <Label className="text-xs font-medium text-gray-700">Symbol Type</Label>
               <Select 
                 value={config.symbolType} 
-                onValueChange={(value) => updateConfigValue('symbol', 'symbolType', value)}
+                onValueChange={(value) => updateConfigValue('current', 'symbolType', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -720,7 +762,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
                 <Input
                   type="text"
                   value={config.customSymbol}
-                  onChange={(e) => updateConfigValue('symbol', 'customSymbol', e.target.value)}
+                  onChange={(e) => updateConfigValue('current', 'customSymbol', e.target.value)}
                   placeholder="Enter custom symbol (e.g., ★, ✈, ⚡)"
                   maxLength={3}
                   className="w-full"
@@ -733,7 +775,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
               <Input
                 type="color"
                 value={config.textColor}
-                onChange={(e) => updateConfigValue('symbol', 'textColor', e.target.value)}
+                onChange={(e) => updateConfigValue('current', 'textColor', e.target.value)}
                 className="w-full h-8"
               />
             </div>
@@ -742,7 +784,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
               <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
               <Slider
                 value={[config.textSize]}
-                onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
+                onValueChange={([value]) => updateConfigValue('current', 'textSize', value)}
                 min={8}
                 max={32}
                 step={1}
