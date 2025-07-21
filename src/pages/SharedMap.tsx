@@ -16,8 +16,8 @@ const SharedMap = () => {
   const mapId = searchParams.get('map');
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const [mapData, setMapData] = useState<any>(null);
-  const [folderData, setFolderData] = useState<any>(null);
+  const [mapData, setMapData] = useState<Record<string, any> | null>(null);
+  const [folderData, setFolderData] = useState<Record<string, any> | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
