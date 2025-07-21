@@ -67,19 +67,22 @@ export const addBathymetryContours = (map: mapboxgl.Map) => {
     bathymetryContours.depths.forEach((depth, index) => {
       const layerId = `bathymetry-${depth}m`;
       
+      const layers = map.getStyle().layers;
+      const topLayer = layers.find(layer => layer.type === 'symbol' && layer.id.includes('label'));
+
       map.addLayer({
         'id': layerId,
         'type': 'line',
         'source': 'bathymetry-contours',
         'source-layer': 'depth',
-        'filter': ['==', ['get', 'DEPTH'], -depth], // Negative because bathymetry uses negative values for depth
+        'filter': ['==', ['get', 'DEPTH'], -depth],
         'paint': {
           'line-color': bathymetryContours.colors[depth],
           'line-width': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            4, depth === 0 ? 2 : 1,    // Coastline (0m) is thicker
+            4, depth === 0 ? 2 : 1,
             8, depth === 0 ? 3 : 1.5,
             12, depth === 0 ? 4 : 2
           ],
@@ -96,7 +99,7 @@ export const addBathymetryContours = (map: mapboxgl.Map) => {
           'line-cap': 'round',
           'line-join': 'round'
         }
-      });
+      }, topLayer ? topLayer.id : undefined);
 
       // Add depth labels
       map.addLayer({

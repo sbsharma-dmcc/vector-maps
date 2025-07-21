@@ -100,21 +100,21 @@ export const createVesselMarkers = async ( // Made async to handle image loading
     data: geojsonSource,
   });
 
-  // Add a symbol layer to display the vessel icons
+  const layers = map.getStyle().layers;
+  const topLayer = layers.find(layer => layer.type === 'symbol' && layer.id.includes('label'));
+
   map.addLayer({
     id: layerId,
     type: 'symbol',
     source: sourceId,
     layout: {
-      'icon-image': ['get', 'icon'], // Use the 'icon' property from feature properties
-      'icon-size': 0.2, // Adjust this value to control the constant size of the icons
-      'icon-allow-overlap': true, // Allow icons to overlap
-      'icon-ignore-placement': true, // Prevent collision detection from hiding icons
+      'icon-image': ['get', 'icon'],
+      'icon-size': 0.2,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
     },
-    paint: {
-      // You can add paint properties here if needed, e.g., 'icon-opacity'
-    }
-  });
+    paint: {}
+  }, topLayer ? topLayer.id : undefined);
 
   // Add click event for the layer to show popups
   map.on('click', layerId, (e) => {
@@ -175,9 +175,6 @@ export const cleanupVesselMarkers = (
   // If you were previously storing mapboxgl.Marker instances in markersRef,
   // this loop will still be useful for removing any lingering ones
   Object.values(markersRef.current).forEach(marker => {
-    if ((marker as any)._cleanupZoomListener) { // This part is now redundant but safe to keep
-      (marker as any)._cleanupZoomListener();
-    }
     marker.remove();
   });
   markersRef.current = {};

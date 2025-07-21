@@ -89,5 +89,5 @@ export const trackSlowLoadingScreen = (screen: string, loadTime: string) => {
 export const setUserRole = (role: string) => {
   identify(undefined, {
     user_role: role
-  } as any);
+  });
 };

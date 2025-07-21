@@ -6,7 +6,7 @@ export const updateWeatherLayer = (
   map: mapboxgl.Map | null,
   layerType: string,
   enabled: boolean,
-  toast: (options: any) => void
+  toast: (options: { title: string; description: string; variant?: string }) => void
 ) => {
   // Add comprehensive safety checks
   if (!map) {
@@ -42,9 +42,11 @@ export const updateWeatherLayer = (
         });
       }
 
-      // Add layer if it doesn't exist - add it as the top layer
       if (!map.getLayer(layerId)) {
         console.log("Adding new layer:", layerId);
+        const layers = map.getStyle().layers;
+        const topLayer = layers.find(layer => layer.type === 'symbol' && layer.id.includes('label'));
+
         map.addLayer({
           id: layerId,
           type: "raster",
@@ -52,7 +54,7 @@ export const updateWeatherLayer = (
           paint: {
             "raster-opacity": 0.9
           }
-        });
+        }, topLayer ? topLayer.id : undefined);
       } else {
         console.log("Updating existing layer:", layerId);
         // Make sure layer is visible and update opacity

@@ -180,7 +180,7 @@ const RouteDetail = () => {
         const progress = step / totalSteps;               // Overall progress (0 to 1)
         
         // Determine which segment we're currently animating between
-        let currentSegmentIndex = Math.min(
+        const currentSegmentIndex = Math.min(
           Math.floor(progress * (segmentPoints.length - 1)),
           segmentPoints.length - 2
         );

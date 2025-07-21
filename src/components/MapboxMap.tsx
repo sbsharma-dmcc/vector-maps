@@ -13,7 +13,7 @@ import WeatherLayerConfig from './WeatherLayerConfig';
 mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
 
 interface MapboxMapProps {
-  vessels?: any[];
+  vessels?: Record<string, unknown>[];
   accessToken?: string;
   showRoutes?: boolean;
   baseRoute?: [number, number][];
@@ -42,7 +42,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const activeWeatherLayers = activeOverlays.filter(layer => ['wind', 'swell', 'tropicalStorms', 'pressure', 'current', 'symbol', 'waves'].includes(layer));
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [mapVessels, setMapVessels] = useState<any[]>([]);
+  const [mapVessels, setMapVessels] = useState<Record<string, unknown>[]>([]);
   
   // Load saved configurations from session storage
   useEffect(() => {

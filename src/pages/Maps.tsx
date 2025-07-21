@@ -11,8 +11,8 @@ import MapConfigurationView from '@/components/MapConfigurationView';
 interface MapConfiguration {
   id: string;
   name: string;
-  weatherConfig: any;
-  mapSettings: any;
+  weatherConfig: Record<string, unknown>;
+  mapSettings: Record<string, unknown>;
   createdAt: string;
   lastModified: string;
 }

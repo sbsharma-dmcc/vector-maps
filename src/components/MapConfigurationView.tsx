@@ -12,9 +12,9 @@ import WeatherConfigDrafts from './WeatherConfigDrafts';
 import { defaultMapToken } from '@/utils/mapConstants';
 
 interface MapConfigurationViewProps {
-  map: any;
-  folder: any;
-  onSave: (config: any) => void;
+  map: mapboxgl.Map;
+  folder: { id: string; name: string };
+  onSave: (config: { weatherConfig: Record<string, unknown>; mapSettings: Record<string, unknown> }) => void;
   onClose: () => void;
 }
 
@@ -50,7 +50,7 @@ const MapConfigurationView: React.FC<MapConfigurationViewProps> = ({
     );
 
     // Listen for weather configuration updates
-    const handleWeatherConfigUpdate = (event: any) => {
+    const handleWeatherConfigUpdate = (event: CustomEvent) => {
       const { layerType, config } = event.detail;
       console.log('Weather config update:', layerType, config);
       

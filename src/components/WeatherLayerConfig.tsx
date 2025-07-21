@@ -10,7 +10,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LayerConfigs {
-  wind: any;
+  wind: Record<string, unknown>;
   pressure: {
     contourWidth: number;
     contourOpacity: number;
@@ -18,9 +18,9 @@ interface LayerConfigs {
     mediumPressureColor: string;
     lowPressureColor: string;
   };
-  swell: any;
-  waves: any;
-  symbol: any;
+  swell: Record<string, unknown>;
+  waves: Record<string, unknown>;
+  symbol: Record<string, unknown>;
 }
 
 const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; activeLayers?: string[] }> = ({ 

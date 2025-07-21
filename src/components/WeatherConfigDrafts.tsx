@@ -8,12 +8,12 @@ import { Save, Trash2, Download, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface WeatherConfig {
-  wind: any;
-  pressure: any;
-  swell: any;
-  symbol: any;
-  current: any;
-  waves:any;
+  wind: Record<string, unknown>;
+  pressure: Record<string, unknown>;
+  swell: Record<string, unknown>;
+  symbol: Record<string, unknown>;
+  current: Record<string, unknown>;
+  waves: Record<string, unknown>;
 }
 
 interface ConfigDraft {

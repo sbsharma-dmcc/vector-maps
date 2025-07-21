@@ -10,7 +10,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 
 interface LayerConfig {
-  [key: string]: any;
+  visible?: boolean;
+  arrowColor?: string;
+  textColor?: string;
+  textSize?: number;
+  textOpacity?: number;
+  symbolSpacing?: number;
+  allowOverlap?: boolean;
+  speedUnit?: string;
+  colorScheme?: string;
+  fillOutlineColor?: string;
+  fillOpacity?: number;
+  animationSpeed?: number;
+  animationEnabled?: boolean;
+  trackColor?: string;
+  coneColor?: string;
+  opacity?: number;
+  showLabels?: boolean;
+  color?: string;
 }
 
 interface LayerConfigPanelProps {

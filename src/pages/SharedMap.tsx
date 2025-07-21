@@ -27,10 +27,10 @@ const SharedMap = () => {
     const savedFolders = localStorage.getItem('mapFolders');
     if (savedFolders) {
       try {
-        const folders = JSON.parse(savedFolders);
-        const folder = folders.find((f: any) => f.id === folderId);
+        const folders: Record<string, any>[] = JSON.parse(savedFolders);
+        const folder = folders.find((f) => f.id === folderId);
         if (folder) {
-          const map = folder.maps.find((m: any) => m.id === mapId);
+          const map = folder.maps.find((m: Record<string, any>) => m.id === mapId);
           if (map) {
             setMapData(map);
             setFolderData(folder);
