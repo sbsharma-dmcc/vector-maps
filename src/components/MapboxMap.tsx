@@ -80,7 +80,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       fillOpacity: 0.7
     },
     swell: {
-      fillOpacity: 0.9,
+      fillOpacity: 0.3,
       fillOutlineColor: 'transparent',
       animationSpeed: 0.0008,
       animationEnabled: true,
@@ -89,22 +89,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       blurRadius: 2,
       edgeFeathering: 1.5,
       gradient: [
-        { value: '0m', color: '#072144', opacity: 0.3 },
-        { value: '0.5m', color: '#0011CC', opacity: 0.3 },
-        { value: '1m', color: '#016DD2', opacity: 0.5 },
-        { value: '1.5m', color: '#14A2FF', opacity: 0.55 },
-        { value: '2m', color: '#66D5FF', opacity: 0.6 },
-        { value: '2.5m', color: '#C3DEFF', opacity: 0.65 },
-        { value: '3m', color: '#56FFF7', opacity: 0.7 },
-        { value: '3.5m', color: '#03FFC2', opacity: 0.75 },
-        { value: '4m', color: '#1EFF7B', opacity: 0.8 },
-        { value: '4.5m', color: '#A0F214', opacity: 0.82 },
-        { value: '5m', color: '#A1FF00', opacity: 0.84 },
-        { value: '6m', color: '#D1FF03', opacity: 0.88 },
-        { value: '7m', color: '#FFC167', opacity: 0.9 },
-        { value: '8m', color: '#FF9257', opacity: 0.9 },
-        { value: '9m', color: '#FF4A01', opacity: 0.9 },
-        { value: '10m+', color: '#8F0A10', opacity: 0.9 }
+        { value: '0m', color: '#072144' },
+        { value: '0.5m', color: '#1926bd' },
+        { value: '1m', color: '#0c5eaa' },
+        { value: '1.5m', color: '#0d7bc2', },
+        { value: '2m', color: '#16b6b3' },
+        { value: '2.5m', color: '#15d5a5' },
+        { value: '3m', color: '#10b153' },
+        { value: '3.5m', color: '#82c510' },
+        { value: '4m', color: '#d1d112' },
+        { value: '4.5m', color: '#c5811e' },
+        { value: '5m', color: '#c35215'},
+        { value: '6m', color: '#B03f12' },
+        { value: '7m', color: '#e05219' },
+        { value: '8m', color: '#c6141c' },
+        { value: '9m', color: '#8f0a10' },
+        { value: '10m+', color: '#56001d' }
       ]
     },
     waves: {
@@ -947,7 +947,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-ignore-placement": true,
               "symbol-spacing": symbolConfig.symbolSpacing
             },
-           }, beforeId);
+          }, beforeId);
         } else if (overlay === 'tropicalStorms') {
           const source = sourceId;
           const f = ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false];
@@ -1112,7 +1112,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       tropicalLayers.forEach(layer => {
         if (mapref.current.getLayer(layer)) {
           mapref.current.removeLayer(layer);
-        }
+      }
       });
     } else {
       // Remove all related layers for other overlays

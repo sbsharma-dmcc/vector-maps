@@ -3,18 +3,20 @@ import mapboxgl from 'mapbox-gl';
 export interface Vessel {
   id: string;
   name: string;
-  type: 'green' | 'orange';
+  type: 'green' | 'orange' | 'circle';
   position: [number, number];
 }
 
-export type VesselType = 'green' | 'orange';
+export type VesselType = 'green' | 'orange' | 'circle';
 
 // No longer need addVessel as a separate function for HTML markers
 // We will manage icons via Mapbox layers
 
 // Helper to get the correct image path
 const getVesselIconPath = (type: VesselType) => {
-  if (type === 'green') {
+  if (type === 'circle') {
+    return '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'; // Orange circle icon
+  } else if (type === 'green') {
     return '/lovable-uploads/Variant12.png'; // New green vessel icon
   } else {
     return '/lovable-uploads/Variant13.png'; // New orange vessel icon

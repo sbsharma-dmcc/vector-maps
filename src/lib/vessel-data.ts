@@ -2,7 +2,7 @@ import { Vessel } from '@/utils/vesselMarkers';
 import * as turf from '@turf/turf'; // Import turf.js
 
 export type { Vessel } from '@/utils/vesselMarkers';
-export type VesselType = 'green' | 'orange' ;
+export type VesselType = 'green' | 'orange' | 'circle';
 
 export interface VesselEvent {
   id: string;
@@ -89,10 +89,11 @@ export const generateMockVessels = (count: number = 5): Vessel[] => {
     { minLng: -180, maxLng: 180, minLat: -80, maxLat: -55 }
   ];
 
-  const vesselTypes: VesselType[] = ['green', 'orange'];
+  const vesselTypes: VesselType[] = ['green', 'orange', 'circle'];
   const vesselNames = {
     green: ['Cargo Master', 'Ocean Freight', 'Sea Carrier', 'Marine Express', 'Blue Wave'],
-    orange: ['Trade Wind', 'Pacific Star', 'Atlantic Pioneer', 'Global Trader', 'Ocean Explorer']
+    orange: ['Trade Wind', 'Pacific Star', 'Atlantic Pioneer', 'Global Trader', 'Ocean Explorer'],
+    circle: ['Navigation Beacon', 'Weather Buoy', 'Safety Marker', 'Ocean Monitor', 'Sea Guard']
   };
 
   const generatedVessels: Vessel[] = [];
@@ -157,13 +158,13 @@ export const getVesselStats = () => {
   const totalVessels = vessels.length;
   const greenVessels = vessels.filter(v => v.type === 'green').length;
   const orangeVessels = vessels.filter(v => v.type === 'orange').length;
-  // const circleVessels = vessels.filter(v => v.type === 'circle').length;
+  const circleVessels = vessels.filter(v => v.type === 'circle').length;
   
   return {
     total: totalVessels,
     green: greenVessels,
     orange: orangeVessels,
-    // circle: circleVessels,
+    circle: circleVessels,
     active: Math.floor(totalVessels * 0.8),
     inactive: Math.floor(totalVessels * 0.2)
   };

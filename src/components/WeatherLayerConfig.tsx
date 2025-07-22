@@ -29,7 +29,7 @@ const DEFAULT_LAYER_CONFIGS: LayerConfigs = {
     lowPressureColor: '#800080'
   },
   swell: {
-    fillOpacity: 0.9,
+    fillOpacity: 0.3,
     fillOutlineColor: 'transparent',
     animationSpeed: 0.0008,
     animationEnabled: true,
@@ -38,22 +38,22 @@ const DEFAULT_LAYER_CONFIGS: LayerConfigs = {
     blurRadius: 2,
     edgeFeathering: 1.5,
     gradient: [
-        { value: '0m', color: '#072144', opacity: 0.3 },
-        { value: '0.5m', color: '#0011CC', opacity: 0.3 },
-        { value: '1m', color: '#016DD2', opacity: 0.5 },
-        { value: '1.5m', color: '#14A2FF', opacity: 0.55 },
-        { value: '2m', color: '#66D5FF', opacity: 0.6 },
-        { value: '2.5m', color: '#C3DEFF', opacity: 0.65 },
-        { value: '3m', color: '#56FFF7', opacity: 0.7 },
-        { value: '3.5m', color: '#03FFC2', opacity: 0.75 },
-        { value: '4m', color: '#1EFF7B', opacity: 0.8 },
-        { value: '4.5m', color: '#A0F214', opacity: 0.82 },
-        { value: '5m', color: '#A1FF00', opacity: 0.84 },
-        { value: '6m', color: '#D1FF03', opacity: 0.88 },
-        { value: '7m', color: '#FFC167', opacity: 0.9 },
-        { value: '8m', color: '#FF9257', opacity: 0.9 },
-        { value: '9m', color: '#FF4A01', opacity: 0.9 },
-        { value: '10m+', color: '#8F0A10', opacity: 0.9 }
+        { value: '0m', color: '#072144' },
+        { value: '0.5m', color: '#1926bd' },
+        { value: '1m', color: '#0c5eaa' },
+        { value: '1.5m', color: '#0d7bc2', },
+        { value: '2m', color: '#16b6b3' },
+        { value: '2.5m', color: '#15d5a5' },
+        { value: '3m', color: '#10b153' },
+        { value: '3.5m', color: '#82c510' },
+        { value: '4m', color: '#d1d112' },
+        { value: '4.5m', color: '#c5811e' },
+        { value: '5m', color: '#c35215'},
+        { value: '6m', color: '#B03f12' },
+        { value: '7m', color: '#e05219' },
+        { value: '8m', color: '#c6141c' },
+        { value: '9m', color: '#8f0a10' },
+        { value: '10m+', color: '#56001d' }
     ]
   },
   waves: {
@@ -185,7 +185,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       lowPressureColor: '#800080'
     },
     swell: {
-      fillOpacity: 0.9,
+      fillOpacity: 0.3,
       fillOutlineColor: 'transparent',
       animationSpeed: 0.0008,
       animationEnabled: true,
@@ -194,23 +194,23 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       blurRadius: 2,
       edgeFeathering: 1.5,
       gradient: [
-      { value: '0m', color: 'rgb(7, 33, 68)', opacity: 0.3 },
-      { value: '0.5m', color: 'rgb(0, 17, 204)', opacity: 0.3 },
-      { value: '1m', color: 'rgb(1, 109, 210)', opacity: 0.5 },
-      { value: '1.5m', color: 'rgb(20, 162, 255)', opacity: 0.55 },
-      { value: '2m', color: 'rgb(102, 213, 255)', opacity: 0.6 },
-      { value: '2.5m', color: 'rgb(195, 222, 255)', opacity: 0.65 },
-      { value: '3m', color: 'rgb(86, 255, 247)', opacity: 0.7 },
-      { value: '3.5m', color: 'rgb(3, 255, 194)', opacity: 0.75 },
-      { value: '4m', color: 'rgb(30, 255, 123)', opacity: 0.8 },
-      { value: '4.5m', color: 'rgb(160, 242, 20)', opacity: 0.82 },
-      { value: '5m', color: 'rgb(161, 255, 0)', opacity: 0.84 },
-      { value: '6m', color: 'rgb(209, 255, 3)', opacity: 0.88 },
-      { value: '7m', color: 'rgb(255, 193, 103)', opacity: 0.9 },
-      { value: '8m', color: 'rgb(255, 146, 87)', opacity: 0.9 },
-      { value: '9m', color: 'rgb(255, 74, 1)', opacity: 0.9 },
-      { value: '10m+', color: 'rgb(143, 10, 16)', opacity: 0.9 }
-    ]
+        { value: '0m', color: 'rgb(7, 33, 68)' },
+        { value: '0.5m', color: 'rgb(25, 38, 189)' },
+        { value: '1m', color: 'rgb(12, 94, 170)' },
+        { value: '1.5m', color: 'rgb(13, 123, 194)' },
+        { value: '2m', color: 'rgb(22, 182, 179)' },
+        { value: '2.5m', color: 'rgb(21, 213, 165)' },
+        { value: '3m', color: 'rgb(16, 177, 83)' },
+        { value: '3.5m', color: 'rgb(130, 197, 16)' },
+        { value: '4m', color: 'rgb(209, 209, 18)' },
+        { value: '4.5m', color: 'rgb(197, 129, 30)' },
+        { value: '5m', color: 'rgb(195, 82, 21)' },
+        { value: '6m', color: 'rgb(176, 63, 18)' },
+        { value: '7m', color: 'rgb(224, 82, 25)' },
+        { value: '8m', color: 'rgb(198, 20, 28)' },
+        { value: '9m', color: 'rgb(143, 10, 16)' },
+        { value: '10m+', color: 'rgb(86, 0, 29)' }
+      ]
 
     },
     waves: {
