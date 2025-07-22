@@ -3,23 +3,21 @@ import mapboxgl from 'mapbox-gl';
 export interface Vessel {
   id: string;
   name: string;
-  type: 'green' | 'orange' | 'circle';
+  type: 'green' | 'orange';
   position: [number, number];
 }
 
-export type VesselType = 'green' | 'orange' | 'circle';
+export type VesselType = 'green' | 'orange';
 
 // No longer need addVessel as a separate function for HTML markers
 // We will manage icons via Mapbox layers
 
 // Helper to get the correct image path
 const getVesselIconPath = (type: VesselType) => {
-  if (type === 'circle') {
-    return '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'; // Orange circle icon
-  } else if (type === 'green') {
-    return '/lovable-uploads/0f873953-504d-4dad-92ca-1beb7dcadb7e.png'; // New green vessel icon
+  if (type === 'green') {
+    return '/lovable-uploads/Variant12.png'; // New green vessel icon
   } else {
-    return '/lovable-uploads/014473a7-fb4d-4278-a424-5697503bb89a.png'; // New orange vessel icon
+    return '/lovable-uploads/Variant13.png'; // New orange vessel icon
   }
 };
 
@@ -46,90 +44,40 @@ const loadImageToMap = (map: mapboxgl.Map, id: string, url: string): Promise<voi
   });
 };
 
-export const createVesselMarkers = async ( // Made async to handle image loading
+export const createVesselMarkers = (
   map: mapboxgl.Map,
   vessels: Vessel[],
-  markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }> // This ref will now store layer IDs or simply be empty if we're not using individual markers
+  markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }>,
+  onVesselDragEnd: (vesselId: string, newPosition: [number, number]) => void
 ) => {
-  // Load vessel icons into the map's style
-  const vesselTypes = ['green', 'orange', 'circle'] as VesselType[];
-  const loadPromises = vesselTypes.map(type => {
-    const iconId = `vessel-${type}-icon`;
-    const iconUrl = getVesselIconPath(type);
-    return loadImageToMap(map, iconId, iconUrl);
-  });
+  // Cleanup existing markers before creating new ones
+  Object.values(markersRef.current).forEach(marker => marker.remove());
+  markersRef.current = {};
 
-  await Promise.all(loadPromises); // Wait for all images to load
+  vessels.forEach(vessel => {
+    const el = document.createElement('div');
+    el.className = 'vessel-marker';
+    el.style.backgroundImage = `url(${getVesselIconPath(vessel.type)})`;
+    el.style.width = '10px';
+    el.style.height = '30px';
+    el.style.backgroundSize = 'contain';
+    el.style.cursor = 'pointer';
 
-  // Define source and layer IDs
-  const sourceId = 'vessels-source';
-  const layerId = 'vessels-layer';
+    const marker = new mapboxgl.Marker({
+      element: el,
+      draggable: true
+    })
+    .setLngLat(vessel.position)
+    .addTo(map);
 
-  // --- CLEANUP EXISTING LAYERS AND SOURCES ---
-  if (map.getLayer(layerId)) {
-    map.removeLayer(layerId);
-  }
-  if (map.getSource(sourceId)) {
-    map.removeSource(sourceId);
-  }
-  // No need to cleanup markersRef if we're not using individual HTML markers
+    marker.on('dragend', () => {
+      const lngLat = marker.getLngLat();
+      const newPosition: [number, number] = [lngLat.lng, lngLat.lat];
+      onVesselDragEnd(vessel.id, newPosition);
+    });
 
-  // Prepare GeoJSON features from vessel data
-  const geojsonFeatures: GeoJSON.Feature[] = vessels.map(vessel => ({
-    type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: vessel.position,
-    },
-    properties: {
-      id: vessel.id,
-      name: vessel.name,
-      type: vessel.type,
-      icon: `vessel-${vessel.type}-icon`, // This will reference the loaded image ID
-    },
-  }));
-
-  const geojsonSource: GeoJSON.FeatureCollection = {
-    type: 'FeatureCollection',
-    features: geojsonFeatures,
-  };
-
-  // Add a GeoJSON source to the map
-  map.addSource(sourceId, {
-    type: 'geojson',
-    data: geojsonSource,
-  });
-
-  const layers = map.getStyle().layers;
-  const topLayer = layers.find(layer => layer.type === 'symbol' && layer.id.includes('label'));
-
-  map.addLayer({
-    id: layerId,
-    type: 'symbol',
-    source: sourceId,
-    layout: {
-      'icon-image': ['get', 'icon'],
-      'icon-size': 0.2,
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true,
-    },
-    paint: {}
-  }, 'vessel-layer');
-
-  // Add click event for the layer to show popups
-  map.on('click', layerId, (e) => {
-    if (!e.features || e.features.length === 0) return;
-
-    const feature = e.features[0];
-    const vessel = {
-      id: feature.properties?.id,
-      name: feature.properties?.name,
-      type: feature.properties?.type,
-      position: feature.geometry && 'coordinates' in feature.geometry ? (feature.geometry.coordinates as [number, number]) : [0, 0]
-    };
-
-    // Create popup content
-    const popupContent = `
+    // Add a popup to the marker
+    const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
       <div style="padding: 10px; font-family: Arial, sans-serif;">
         <h3 style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">${vessel.name}</h3>
         <p style="margin: 0; font-size: 12px; color: #666;">
@@ -137,57 +85,31 @@ export const createVesselMarkers = async ( // Made async to handle image loading
           Position: ${vessel.position[1].toFixed(3)}°N, ${vessel.position[0].toFixed(3)}°E
         </p>
       </div>
-    `;
+    `);
+    marker.setPopup(popup);
 
-    new mapboxgl.Popup({ offset: 25 })
-      .setLngLat(vessel.position)
-      .setHTML(popupContent)
-      .addTo(map);
+    markersRef.current[vessel.id] = marker;
   });
 
-  // Optional: Change the cursor to a pointer when hovering over the vessels layer
-  map.on('mouseenter', layerId, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', layerId, () => {
-    map.getCanvas().style.cursor = '';
-  });
-
-  console.log(`Created ${vessels.length} vessel markers on the map using a symbol layer for stable positioning and constant sizing.`);
+  console.log(`Created ${vessels.length} draggable vessel markers.`);
 };
 
 // --- CLEANUP ---
 export const cleanupVesselMarkers = (
-  map: mapboxgl.Map, // Now needs the map instance to remove layers/sources
+  map: mapboxgl.Map,
   markersRef: React.MutableRefObject<{ [key: string]: mapboxgl.Marker }>
 ) => {
-  const layerId = 'vessels-layer';
-  const sourceId = 'vessels-source';
-
-  // Remove the layer and source if they exist
-  if (map.getLayer(layerId)) {
-    map.removeLayer(layerId);
-  }
-  if (map.getSource(sourceId)) {
-    map.removeSource(sourceId);
-  }
-
-  // If you were previously storing mapboxgl.Marker instances in markersRef,
-  // this loop will still be useful for removing any lingering ones
-  Object.values(markersRef.current).forEach(marker => {
-    marker.remove();
-  });
+  // Remove markers
+  Object.values(markersRef.current).forEach(marker => marker.remove());
   markersRef.current = {};
-  
-  // Remove the styles as they are still useful for the hover effect and popup styling
-  const existingStyle = document.getElementById('vessel-marker-styles');
-  if (existingStyle) {
-    existingStyle.remove();
+
+  // Remove old layer and source if they somehow still exist from a previous version
+  if (map.getLayer('vessels-layer')) {
+    map.removeLayer('vessels-layer');
+  }
+  if (map.getSource('vessels-source')) {
+    map.removeSource('vessels-source');
   }
   
-  const existingPopupStyle = document.getElementById('vessel-popup-styles');
-  if (existingPopupStyle) {
-    existingPopupStyle.remove();
-  }
-  console.log('Cleaned up vessel layers and sources.');
+  console.log('Cleaned up vessel markers and any old layers/sources.');
 };

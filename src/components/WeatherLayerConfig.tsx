@@ -38,27 +38,22 @@ const DEFAULT_LAYER_CONFIGS: LayerConfigs = {
     blurRadius: 2,
     edgeFeathering: 1.5,
     gradient: [
-        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
-        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
-        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
-        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
-        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },
-        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 },
-        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },
-        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 },
-        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },
-        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 },
-        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },
-        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },
-        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },
-        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },
-        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },
-        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },
-        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },
-        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },
-        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },
-        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },
-        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
+        { value: '0m', color: '#072144', opacity: 0.3 },
+        { value: '0.5m', color: '#0011CC', opacity: 0.3 },
+        { value: '1m', color: '#016DD2', opacity: 0.5 },
+        { value: '1.5m', color: '#14A2FF', opacity: 0.55 },
+        { value: '2m', color: '#66D5FF', opacity: 0.6 },
+        { value: '2.5m', color: '#C3DEFF', opacity: 0.65 },
+        { value: '3m', color: '#56FFF7', opacity: 0.7 },
+        { value: '3.5m', color: '#03FFC2', opacity: 0.75 },
+        { value: '4m', color: '#1EFF7B', opacity: 0.8 },
+        { value: '4.5m', color: '#A0F214', opacity: 0.82 },
+        { value: '5m', color: '#A1FF00', opacity: 0.84 },
+        { value: '6m', color: '#D1FF03', opacity: 0.88 },
+        { value: '7m', color: '#FFC167', opacity: 0.9 },
+        { value: '8m', color: '#FF9257', opacity: 0.9 },
+        { value: '9m', color: '#FF4A01', opacity: 0.9 },
+        { value: '10m+', color: '#8F0A10', opacity: 0.9 }
     ]
   },
   waves: {
@@ -147,8 +142,6 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
 }) => {
   const [selectedWeatherType, setSelectedWeatherType] = useState(activeLayers[0] || 'wind');
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { toast } = useToast();
-  
   const handleReset = () => {
     const defaultConfig = DEFAULT_LAYER_CONFIGS[selectedWeatherType];
     if (defaultConfig) {
@@ -201,28 +194,24 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       blurRadius: 2,
       edgeFeathering: 1.5,
       gradient: [
-        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
-        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
-        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
-        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
-        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },
-        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 },
-        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },
-        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 },
-        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },
-        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 },
-        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },
-        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },
-        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },
-        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },
-        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },
-        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },
-        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },
-        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },
-        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },
-        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },
-        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
-      ]
+      { value: '0m', color: 'rgb(7, 33, 68)', opacity: 0.3 },
+      { value: '0.5m', color: 'rgb(0, 17, 204)', opacity: 0.3 },
+      { value: '1m', color: 'rgb(1, 109, 210)', opacity: 0.5 },
+      { value: '1.5m', color: 'rgb(20, 162, 255)', opacity: 0.55 },
+      { value: '2m', color: 'rgb(102, 213, 255)', opacity: 0.6 },
+      { value: '2.5m', color: 'rgb(195, 222, 255)', opacity: 0.65 },
+      { value: '3m', color: 'rgb(86, 255, 247)', opacity: 0.7 },
+      { value: '3.5m', color: 'rgb(3, 255, 194)', opacity: 0.75 },
+      { value: '4m', color: 'rgb(30, 255, 123)', opacity: 0.8 },
+      { value: '4.5m', color: 'rgb(160, 242, 20)', opacity: 0.82 },
+      { value: '5m', color: 'rgb(161, 255, 0)', opacity: 0.84 },
+      { value: '6m', color: 'rgb(209, 255, 3)', opacity: 0.88 },
+      { value: '7m', color: 'rgb(255, 193, 103)', opacity: 0.9 },
+      { value: '8m', color: 'rgb(255, 146, 87)', opacity: 0.9 },
+      { value: '9m', color: 'rgb(255, 74, 1)', opacity: 0.9 },
+      { value: '10m+', color: 'rgb(143, 10, 16)', opacity: 0.9 }
+    ]
+
     },
     waves: {
       fillOpacity: 0.8,
@@ -860,7 +849,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
+              <Label className="text-xs font-medium text-gray-700">Symbol Size <span className="text-gray-500">({config.textSize})</span></Label>
               <Slider
                 value={[config.textSize]}
                 onValueChange={([value]) => updateConfigValue('symbol', 'textSize', value)}
@@ -919,7 +908,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-gray-700">Symbol Size</Label>
+              <Label className="text-xs font-medium text-gray-700">Symbol Size <span className="text-gray-500">({config.textSize})</span></Label>
               <Slider
                 value={[config.textSize]}
                 onValueChange={([value]) => updateConfigValue('current', 'textSize', value)}
@@ -969,35 +958,38 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
     <div className={`fixed top-4 right-4 z-50 transition-transform duration-300 ${
       isCollapsed ? 'translate-x-[calc(100%-3rem)]' : 'translate-x-0'
     }`}>
-      <div className="absolute top-0 right-0 flex flex-col items-end space-y-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleReset}
-          className="h-8 px-3"
-        >
-          Reset
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-8 w-8 p-0"
-        >
-          {isCollapsed ? '◀' : '▶'}
-        </Button>
-        {onClose && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
-            ✕
-          </Button>
-        )}
-      </div>
-      <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg w-80 max-h-[80vh] overflow-hidden mt-12">
+      <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg w-80 max-h-[80vh] overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">Weather Layer Config</h3>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-8 px-3"
+            >
+              Reset
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-8 w-8 p-0"
+            >
+              {isCollapsed ? '◀' : '▶'}
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-8 w-8 p-0"
+              >
+                ✕
+              </Button>
+            )}
+          </div>
+        </div>
         
         {!isCollapsed && (
           <div className="p-4 max-h-[calc(80vh-4rem)] overflow-y-auto">

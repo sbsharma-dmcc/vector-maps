@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useToast } from '@/hooks/use-toast';
@@ -6,7 +6,7 @@ import MapTopControls from './MapTopControls';
 import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
-import { generateMockVessels } from '@/lib/vessel-data';
+import { generateMockVessels, Vessel } from '@/lib/vessel-data';
 
 import WeatherLayerConfig from './WeatherLayerConfig';
 
@@ -42,7 +42,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const activeWeatherLayers = activeOverlays.filter(layer => ['wind', 'swell', 'tropicalStorms', 'pressure', 'current', 'symbol', 'waves'].includes(layer));
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [mapVessels, setMapVessels] = useState<Record<string, unknown>[]>([]);
+  const [mapVessels, setMapVessels] = useState<Vessel[]>([]);
   
   // Load saved configurations from session storage
   useEffect(() => {
@@ -89,27 +89,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       blurRadius: 2,
       edgeFeathering: 1.5,
       gradient: [
-        { value: '0m', color: 'rgba(30, 50, 80, 0.3)', opacity: 0.3 },
-        { value: '0.5m', color: 'rgba(45, 85, 120, 0.4)', opacity: 0.4 },
-        { value: '1m', color: 'rgba(60, 120, 160, 0.5)', opacity: 0.5 },
-        { value: '1.5m', color: 'rgba(80, 150, 180, 0.55)', opacity: 0.55 },
-        { value: '2m', color: 'rgba(100, 180, 200, 0.6)', opacity: 0.6 },
-        { value: '2.5m', color: 'rgba(120, 200, 180, 0.65)', opacity: 0.65 },
-        { value: '3m', color: 'rgba(140, 210, 160, 0.7)', opacity: 0.7 },
-        { value: '3.5m', color: 'rgba(160, 220, 140, 0.75)', opacity: 0.75 },
-        { value: '4m', color: 'rgba(180, 230, 120, 0.8)', opacity: 0.8 },
-        { value: '4.5m', color: 'rgba(200, 235, 100, 0.82)', opacity: 0.82 },
-        { value: '5m', color: 'rgba(220, 220, 80, 0.84)', opacity: 0.84 },
-        { value: '5.5m', color: 'rgba(240, 200, 60, 0.86)', opacity: 0.86 },
-        { value: '6m', color: 'rgba(250, 180, 50, 0.88)', opacity: 0.88 },
-        { value: '6.5m', color: 'rgba(255, 160, 40, 0.9)', opacity: 0.9 },
-        { value: '7m', color: 'rgba(255, 140, 35, 0.9)', opacity: 0.9 },
-        { value: '7.5m', color: 'rgba(255, 120, 30, 0.9)', opacity: 0.9 },
-        { value: '8m', color: 'rgba(255, 100, 25, 0.9)', opacity: 0.9 },
-        { value: '8.5m', color: 'rgba(250, 80, 20, 0.9)', opacity: 0.9 },
-        { value: '9m', color: 'rgba(240, 60, 15, 0.9)', opacity: 0.9 },
-        { value: '9.5m', color: 'rgba(220, 40, 10, 0.9)', opacity: 0.9 },
-        { value: '10m+', color: 'rgba(200, 20, 5, 0.9)', opacity: 0.9 }
+        { value: '0m', color: '#072144', opacity: 0.3 },
+        { value: '0.5m', color: '#0011CC', opacity: 0.3 },
+        { value: '1m', color: '#016DD2', opacity: 0.5 },
+        { value: '1.5m', color: '#14A2FF', opacity: 0.55 },
+        { value: '2m', color: '#66D5FF', opacity: 0.6 },
+        { value: '2.5m', color: '#C3DEFF', opacity: 0.65 },
+        { value: '3m', color: '#56FFF7', opacity: 0.7 },
+        { value: '3.5m', color: '#03FFC2', opacity: 0.75 },
+        { value: '4m', color: '#1EFF7B', opacity: 0.8 },
+        { value: '4.5m', color: '#A0F214', opacity: 0.82 },
+        { value: '5m', color: '#A1FF00', opacity: 0.84 },
+        { value: '6m', color: '#D1FF03', opacity: 0.88 },
+        { value: '7m', color: '#FFC167', opacity: 0.9 },
+        { value: '8m', color: '#FF9257', opacity: 0.9 },
+        { value: '9m', color: '#FF4A01', opacity: 0.9 },
+        { value: '10m+', color: '#8F0A10', opacity: 0.9 }
       ]
     },
     waves: {
@@ -122,20 +117,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       blurRadius: 2,
       edgeFeathering: 1.2,
       gradient: [
-        { value: '0.0', color: 'rgba(0, 0, 178, 0.2)' },
-        { value: '0.5', color: 'rgba(0, 50, 255, 0.3)' },
-        { value: '1.0', color: 'rgba(0, 102, 255, 0.4)' },
-        { value: '1.5', color: 'rgba(51, 204, 255, 0.45)' },
-        { value: '2.0', color: 'rgba(102, 255, 255, 0.5)' },
-        { value: '2.5', color: 'rgba(0, 255, 204, 0.55)' },
-        { value: '3.0', color: 'rgba(0, 255, 102, 0.6)' },
-        { value: '3.5', color: 'rgba(153, 255, 0, 0.65)' },
-        { value: '4.0', color: 'rgba(255, 255, 0, 0.7)' },
-        { value: '4.5', color: 'rgba(255, 221, 0, 0.72)' },
-        { value: '5.0', color: 'rgba(255, 170, 0, 0.74)' },
-        { value: '6.0', color: 'rgba(255, 128, 0, 0.76)' },
-        { value: '7.0', color: 'rgba(255, 64, 0, 0.78)' },
-        { value: '8.0', color: 'rgba(255, 0, 0, 0.8)' },
+        { value: '0.0', color: '#0000b2' },
+        { value: '0.5', color: '#0032ff' },
+        { value: '1.0', color: '#0066ff' },
+        { value: '1.5', color: '#33ccff' },
+        { value: '2.0', color: '#66ffff' },
+        { value: '2.5', color: '#00ffcc' },
+        { value: '3.0', color: '#00ff66' },
+        { value: '3.5', color: '#99ff00' },
+        { value: '4.0', color: '#ffff00' },
+        { value: '4.5', color: '#ffdd00' },
+        { value: '5.0', color: '#ffaa00' },
+        { value: '6.0', color: '#ff8000' },
+        { value: '7.0', color: '#ff4000' },
+        { value: '8.0', color: '#ff0000' },
         { value: '9.0', color: 'rgba(255, 153, 153, 0.85)' },
         { value: '10.0', color: 'rgba(255, 204, 255, 0.88)' },
         { value: '11.0', color: 'rgba(255, 153, 255, 0.9)' },
@@ -157,7 +152,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       allowOverlap: true,
       rotationAlignment: 'map',
       symbolType: 'arrow',
-      customSymbol: '→'
+      customSymbol: '→',
+      showSizeValue: false
     },
     current: {
       textColor: '#f9f9ff',
@@ -169,7 +165,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       allowOverlap: true,
       rotationAlignment: 'map',
       symbolType: 'arrow',
-      customSymbol: '→'
+      customSymbol: '→',
+      showSizeValue: false
     }
 
 
@@ -181,17 +178,65 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const dtnOverlays = {
     symbol: { dtnLayerId: 'fcst-manta-wind-symbol-grid', tileSetId: 'dd44281e-db07-41a1-a329-bedc225bb575' },
     wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
-    swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'd3f83398-2e88-4c2b-a82f-c10db6891bb3' },
+    swell: { dtnLayerId: 'fcst-sea-wave-height-swell-waves-contours', tileSetId: 'ac650273-17fe-4a69-902f-7c1aeffc5e67' },
     pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-4mb-isolines', tileSetId: '340fb38d-bece-48b4-a23f-db51dc834992' },
     current: {dtnLayerId: 'fcst-manta-current-direction-grid', tileSetId: '670bca59-c4a0-491e-83bf-4423a3d84d6f'},
-    waves:{ dtnLayerId :'fcst-sea-wave-height-wind-waves-contours', tileSetId:'53d29013-6670-4bf7-9320-d27602d967ec'},
-    tropicalStorms: { dtnLayerId: 'sevwx-dtn-tropical-cyclones-plot', tileSetId: 'f785e1fe-1624-40a3-be75-ed14c2c4a53c' },
+    waves:{ dtnLayerId :'fcst-sea-wave-height-wind-waves-contours', tileSetId:'7f9421ef-35f6-45a2-81fd-39bbf8cb0822'},
+    tropicalStorms: { dtnLayerId: 'sevwx-dtn-tropical-cyclones-plot', tileSetId: '7601024c-f40c-44ec-8f69-c8a8c0dde980' },
     'pressure-gradient': { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-gradient', tileSetId: '3fca4d12-8e9a-4c15-9876-1a2b3c4d5e6f' }
+  };
+
+  // Define a config object for tropical storms
+  const tropicalStormConfig = {
+    border: {
+      cone: { color: '#FFFFFF', width: 4 },
+      history: { color: '#FFFFFF', width: 3 },
+      forecast: { color: '#FFFFFF', width: 1 }
+    },
+    lines: {
+      cone: { color: '#000000', width: 2 },
+      history: { color: '#000000', width: 1 },
+      forecast: { color: '#000000', dasharray: [7,5] }
+    },
+    points: {
+      color: '#BEBEBE',
+      strokeWidth: 2,
+      opacity: { default: 1, investigation: 0.6 },
+      strokeColor: { default: '#000000', investigation: '#FFFFFF' },
+      radiusZoomStops: [[0, 1.5], [6, 5]]
+    }
+  };
+
+  // Utility to add two related layers (border + main) for a given type
+  const addLinePair = (layerId: string, sourceId: string, sourceLayer: string, cfg: any, beforeId: string | undefined) => {
+    mapref.current!.addLayer({
+      id: `${layerId}-border`,
+      type: "line",
+      source: sourceId,
+      "source-layer": sourceLayer,
+      paint: {
+        "line-color": cfg.border.color,
+        "line-width": cfg.border.width
+      },
+      filter: cfg.filter
+    }, beforeId);
+
+    mapref.current!.addLayer({
+      id: layerId,
+      type: "line",
+      source: sourceId,
+      "source-layer": sourceLayer,
+      paint: {
+        "line-color": cfg.line.color,
+        "line-width": cfg.line.width,
+        ...(cfg.line.dasharray ? { "line-dasharray": cfg.line.dasharray } : {})
+      },
+      filter: cfg.filter
+    }, beforeId);
   };
 
   // Generate or load vessels when component mounts
   useEffect(() => {
-    // Generate or load vessels when component mounts
     const savedVessels = localStorage.getItem('mockVessels');
     if (savedVessels) {
       try {
@@ -227,10 +272,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     };
   }, []);
 
+  // Initialize map
   useEffect(() => {
-    if (mapref.current) return;
-
-    console.log("Initializing new map");
+    if (mapref.current) return; // initialize map only once
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current!,
@@ -242,34 +286,25 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     mapref.current = map;
 
-    map.addControl(
-      new mapboxgl.NavigationControl(),
-      'bottom-right'
-    );
+    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
     map.on('load', () => {
       setIsMapLoaded(true);
       console.log("Map fully loaded");
       
-      toast({
-        title: "Map Loaded",
-        description: "Map has been successfully initialized"
-      });
-
-      // Add a dummy layer for vessels to ensure they are on top
+      // Restore the dummy layer required by weather overlays
       if (!map.getLayer('vessel-layer')) {
         map.addLayer({
           id: 'vessel-layer',
           type: 'symbol',
-          source: {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: []
-            }
-          }
+          source: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
         });
       }
+      
+      toast({
+        title: "Map Loaded",
+        description: "Map has been successfully initialized"
+      });
     });
 
     map.on('error', (e) => {
@@ -283,7 +318,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       if (mapref.current) {
-        cleanupVesselMarkers(vesselMarkersRef.current, mapref.current);
         mapref.current.remove();
         mapref.current = null;
       }
@@ -291,13 +325,31 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     };
   }, [toast]);
 
-  // Add vessels to map when map is loaded and vessels are available
-  useEffect(() => {
-    if (!mapref.current || !isMapLoaded || mapVessels.length === 0) return;
+  const handleVesselDrag = useCallback((vesselId: string, newPosition: [number, number]) => {
+    setMapVessels(currentVessels =>
+      currentVessels.map(v =>
+        v.id === vesselId ? { ...v, position: newPosition } : v
+      )
+    );
+  }, []);
 
-    console.log("Adding vessels to map:", mapVessels.length);
-    createVesselMarkers(mapref.current, mapVessels, vesselMarkersRef);
-  }, [isMapLoaded, mapVessels]);
+  // Manage vessel markers
+  useEffect(() => {
+    if (!isMapLoaded || !mapref.current) return;
+
+    // This effect is now solely responsible for vessel markers.
+    // It runs when the map is loaded or when the vessel data changes.
+    
+    // Cleanup old markers first
+    cleanupVesselMarkers(mapref.current, vesselMarkersRef);
+
+    // Create new markers
+    if (mapVessels.length > 0) {
+      console.log("Adding draggable vessels to map:", mapVessels.length);
+      createVesselMarkers(mapref.current, mapVessels, vesselMarkersRef, handleVesselDrag);
+    }
+
+  }, [isMapLoaded, mapVessels, handleVesselDrag]);
 
   useEffect(() => {
     if (!activeLayers || !isMapLoaded) return;
@@ -518,16 +570,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       updateLayoutProperties(layerType, {
         'text-field': getSymbolByType(config.symbolType || 'arrow', config.customSymbol),
         'text-size': config.textSize || 16,
-        'text-color': config.textColor || '#ff0000',
-        'text-halo-color': config.haloColor || '#000000',
-        'text-halo-width': config.haloWidth || 1,
+        'text-rotation-alignment': config.rotationAlignment || 'map',
         'text-allow-overlap': config.allowOverlap || true,
         'symbol-spacing': config.symbolSpacing || 100,
-        'text-rotation-alignment': config.rotationAlignment || 'map'
       });
 
       updateLayerProperties(layerType, {
-        'text-opacity': config.textOpacity || 0.8
+        'text-color': config.textColor || '#ff0000',
+        'text-opacity': config.textOpacity || 0.8,
+        'text-halo-color': config.haloColor || '#000000',
+        'text-halo-width': config.haloWidth || 1,
       });
     } else if (layerType === 'current') {
       updateLayoutProperties(layerType, {
@@ -662,17 +714,23 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         const bottomLayers = ['swell', 'waves'];
         const isBottomLayer = bottomLayers.includes(overlay);
 
-        let beforeId: string | undefined = undefined;
+        let beforeId: string | undefined;
 
         if (isBottomLayer) {
-          // Find the first "top" layer and insert before it
-          const topLayer = activeOverlays.find(l => !bottomLayers.includes(l));
-          if (topLayer) {
-            beforeId = `dtn-layer-${topLayer}`;
+          // This is a bottom layer. It should go below other weather layers.
+          // Find the first non-bottom weather layer that is currently active.
+          const firstTopWeatherLayer = activeOverlays.find(l => !bottomLayers.includes(l));
+          
+          if (firstTopWeatherLayer) {
+            // If a top weather layer exists, add this new bottom layer before it.
+            beforeId = `dtn-layer-${firstTopWeatherLayer}`;
+          } else {
+            // If no top weather layers exist, just add it before the vessel layer.
+            beforeId = 'vessel-layer';
           }
         } else {
-          // For top layers, we don't need to do anything special,
-          // as they will be added on top by default.
+          // This is a "top" weather layer. It should always go just below the vessels.
+          beforeId = 'vessel-layer';
         }
 
         if (overlay === 'pressure') {
@@ -889,108 +947,63 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-ignore-placement": true,
               "symbol-spacing": symbolConfig.symbolSpacing
             },
-            paint: {
-              "text-color": symbolConfig.textColor,
-              "text-opacity": symbolConfig.textOpacity,
-              "text-halo-color": symbolConfig.haloColor,
-              "text-halo-width": symbolConfig.haloWidth
-            },
            }, beforeId);
         } else if (overlay === 'tropicalStorms') {
-          // Add tropical cyclone layers based on DTN API response
-          
-          // Add cone border layer
-          mapref.current.addLayer({
-            id: `${layerId}-cone-border`,
-            type: "line",
-            source: sourceId,
-            "source-layer": "tropical_cyclone_consensus_cones",
-            paint: {
-              "line-color": "#FFFFFF",
-              "line-width": 4
-            },
-            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          const source = sourceId;
+          const f = ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false];
+
+          addLinePair(`${layerId}-cone`, source, 'tropical_cyclone_consensus_cones', {
+            border: tropicalStormConfig.border.cone,
+            line: tropicalStormConfig.lines.cone,
+            filter: f
           }, beforeId);
 
-          // Add cone layer
-          mapref.current.addLayer({
-            id: `${layerId}-cone`,
-            type: "line", 
-            source: sourceId,
-            "source-layer": "tropical_cyclone_consensus_cones",
-            paint: {
-              "line-color": "#000000",
-              "line-width": 2
-            },
-            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          addLinePair(`${layerId}-history`, source, 'tropical_cyclone_consensus_history_track', {
+            border: tropicalStormConfig.border.history,
+            line: tropicalStormConfig.lines.history,
+            filter: f
           }, beforeId);
 
-          // Add history track border
-          mapref.current.addLayer({
-            id: `${layerId}-history-border`,
-            type: "line",
-            source: sourceId,
-            "source-layer": "tropical_cyclone_consensus_history_track", 
-            paint: {
-              "line-color": "#FFFFFF",
-              "line-width": 3
-            },
-            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+          addLinePair(`${layerId}-forecast`, source, 'tropical_cyclone_consensus_forecast_track', {
+            border: tropicalStormConfig.border.forecast,
+            line: tropicalStormConfig.lines.forecast,
+            filter: f
           }, beforeId);
 
-          // Add history track
-          mapref.current.addLayer({
-            id: `${layerId}-history`,
-            type: "line",
-            source: sourceId,
-            "source-layer": "tropical_cyclone_consensus_history_track",
-            paint: {
-              "line-color": "#000000"
-            },
-            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
-          }, beforeId);
-
-          // Add forecast track border
-          mapref.current.addLayer({
-            id: `${layerId}-forecast-border`,
-            type: "line",
-            source: sourceId,
-            "source-layer": "tropical_cyclone_consensus_forecast_track",
-            paint: {
-              "line-color": "#FFFFFF", 
-              "line-width": 1
-            },
-            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
-          }, beforeId);
-
-          // Add forecast track
-          mapref.current.addLayer({
-            id: `${layerId}-forecast`,
-            type: "line",
-            source: sourceId,
-            "source-layer": "tropical_cyclone_consensus_forecast_track",
-            paint: {
-              "line-color": "#000000",
-              "line-dasharray": [7, 5]
-            },
-            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
-          }, beforeId);
-
-          // Add storm points
+          // Points layer
           mapref.current.addLayer({
             id: `${layerId}-points`,
             type: "circle",
-            source: sourceId,
+            source: source,
             "source-layer": "tropical_cyclone_consensus_points",
             paint: {
-              "circle-stroke-width": 2,
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 1.5, 6, 5],
-              "circle-stroke-opacity": ["case", ["==", ["coalesce", ["get", "positionTypeStyle"], ["get", "positionType"]], 1], 0, 0.6],
-              "circle-stroke-color": ["case", ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false], "#000000", "#FFFFFF"],
-              "circle-opacity": ["case", ["==", ["coalesce", ["get", "positionTypeStyle"], ["get", "positionType"]], 1], 0, 1],
-              "circle-color": "#BEBEBE"
+              "circle-color": tropicalStormConfig.points.color,
+              "circle-stroke-width": tropicalStormConfig.points.strokeWidth,
+              "circle-radius": [
+                "interpolate", ["linear"], ["zoom"],
+                tropicalStormConfig.points.radiusZoomStops[0][0], tropicalStormConfig.points.radiusZoomStops[0][1],
+                tropicalStormConfig.points.radiusZoomStops[1][0], tropicalStormConfig.points.radiusZoomStops[1][1]
+              ],
+              "circle-stroke-opacity": [
+                "case",
+                ["==", ["coalesce", ["get", "positionTypeStyle"], ["get", "positionType"]], 1],
+                0,
+                tropicalStormConfig.points.opacity.investigation
+              ],
+              "circle-stroke-color": [
+                "case",
+                ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false],
+                tropicalStormConfig.points.strokeColor.default,
+                tropicalStormConfig.points.strokeColor.investigation
+              ],
+              "circle-opacity": [
+                "case",
+                ["==", ["coalesce", ["get", "positionTypeStyle"], ["get", "positionType"]], 1],
+                0,
+                tropicalStormConfig.points.opacity.default
+              ]
             },
-            filter: ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false]
+            filter: f
           }, beforeId);
         } else if (overlay === 'current') {
             const symbolConfig = layerConfigs.current;
@@ -1016,12 +1029,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "text-allow-overlap": symbolConfig.allowOverlap,
               "text-ignore-placement": true,
               "symbol-spacing": symbolConfig.symbolSpacing
-            },
-            paint: {
-              "text-color": symbolConfig.textColor,
-              "text-opacity": symbolConfig.textOpacity,
-              "text-halo-color": symbolConfig.haloColor,
-              "text-halo-width": symbolConfig.haloWidth
             },
           }, beforeId);
         }
