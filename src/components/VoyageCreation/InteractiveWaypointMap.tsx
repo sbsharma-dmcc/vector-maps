@@ -10,12 +10,16 @@ interface InteractiveWaypointMapProps {
   mapboxToken: string;
   waypoints: WaypointData[];
   onWaypointUpdate: (waypoints: WaypointData[]) => void;
+  onWaypointClick?: (waypoint: WaypointData) => void;
+  zoomToWaypoint?: WaypointData | null;
 }
 
 const InteractiveWaypointMap = ({ 
   mapboxToken, 
   waypoints, 
-  onWaypointUpdate 
+  onWaypointUpdate,
+  onWaypointClick,
+  zoomToWaypoint 
 }: InteractiveWaypointMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -122,7 +126,7 @@ const InteractiveWaypointMap = ({
       </div>
     `;
 
-    // Add event listeners to action buttons
+    // Add event listeners to action buttons and waypoint clicks
     markerDiv.addEventListener('click', (e) => {
       e.stopPropagation();
       const target = e.target as HTMLElement;
@@ -136,6 +140,11 @@ const InteractiveWaypointMap = ({
           handleToggleLock(waypointId);
         } else if (action === 'delete') {
           handleDeleteWaypoint(waypointId);
+        }
+      } else {
+        // Click on waypoint itself - trigger onWaypointClick
+        if (onWaypointClick) {
+          onWaypointClick(waypoint);
         }
       }
     });
@@ -211,6 +220,17 @@ const InteractiveWaypointMap = ({
     onWaypointUpdate(updatedWaypoints);
     toast.success(`Waypoint ${waypoint.waypointNumber} deleted`);
   };
+
+  // Effect to handle zoom to waypoint
+  useEffect(() => {
+    if (!map.current || !zoomToWaypoint) return;
+
+    map.current.flyTo({
+      center: [zoomToWaypoint.lon, zoomToWaypoint.lat],
+      zoom: 14,
+      duration: 1000
+    });
+  }, [zoomToWaypoint]);
 
   return (
     <div className="relative w-full h-full">

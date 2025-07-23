@@ -222,6 +222,16 @@ const VoyageConfigPanel = ({
         waypoints={waypoints}
       />
 
+      {/* View Waypoints Button */}
+      {waypoints.length > 0 && (
+        <div className="mx-4 mb-4">
+          <Button variant="outline" className="w-full" id="view-waypoints-trigger">
+            <MapPin className="h-4 w-4 mr-2" />
+            View All Uploaded Waypoints ({waypoints.length})
+          </Button>
+        </div>
+      )}
+
       {/* Weather Constraints Dialog */}
       <Dialog open={showWeatherConstraints} onOpenChange={setShowWeatherConstraints}>
         <DialogTrigger asChild>

@@ -6,15 +6,19 @@ interface VoyageMapInterfaceProps {
   mapboxToken: string;
   waypoints: WaypointData[];
   onWaypointsChange: (waypoints: WaypointData[]) => void;
+  onWaypointClick?: (waypoint: WaypointData) => void;
+  zoomToWaypoint?: WaypointData | null;
 }
 
-const VoyageMapInterface = ({ mapboxToken, waypoints, onWaypointsChange }: VoyageMapInterfaceProps) => {
+const VoyageMapInterface = ({ mapboxToken, waypoints, onWaypointsChange, onWaypointClick, zoomToWaypoint }: VoyageMapInterfaceProps) => {
   return (
     <div className="flex-1 relative">
       <InteractiveWaypointMap 
         mapboxToken={mapboxToken}
         waypoints={waypoints}
         onWaypointUpdate={onWaypointsChange}
+        onWaypointClick={onWaypointClick}
+        zoomToWaypoint={zoomToWaypoint}
       />
     </div>
   );
