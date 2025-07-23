@@ -142,11 +142,7 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
     setIsProcessing(true);
     
     try {
-      const jsonData = JSON.parse(jsonText);
-      const blob = new Blob([JSON.stringify(jsonData)], { type: 'application/json' });
-      const file = new File([blob], 'pasted_waypoints.json', { type: 'application/json' });
-      
-      const result = await FileProcessorFactory.processFile(file);
+      const result = await FileProcessorFactory.processJSONString(jsonText);
       
       setUploadState({
         isUploaded: true,
@@ -166,7 +162,7 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
         setShowTable(true);
       }
     } catch (error) {
-      toast.error('Invalid JSON format or processing failed');
+      toast.error(error instanceof Error ? error.message : 'JSON processing failed');
     } finally {
       setIsProcessing(false);
     }

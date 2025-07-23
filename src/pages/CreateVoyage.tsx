@@ -92,6 +92,7 @@ const CreateVoyage = () => {
       <VoyageMapInterface 
         mapboxToken={mapboxToken}
         waypoints={waypoints}
+        onWaypointsChange={handleWaypointsChange}
       />
 
     </div>
