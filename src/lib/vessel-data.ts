@@ -122,98 +122,98 @@ export const fourVessels: Vessel[] = [
     name: 'Green Cargo Ship',
     type: 'green',
     position: [-73.0, 39.5],
-    icon: '/lovable-uploads/Variant12.png'
+    icon: '/lovable-uploads/Variant12.svg'
   },
   {
     id: 'vessel-2',
     name: 'Orange Vessel',
     type: 'orange',
     position: [-157.5, 21.0],
-    icon: '/lovable-uploads/Variant13.png'
+    icon: '/lovable-uploads/Variant13.svg'
   },
   {
     id: 'vessel-3',
     name: 'Navigation Beacon',
     type: 'circle',
     position: [0.0, 47.0],
-    icon: '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'
+    icon: '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.svg'
   },
   {
     id: 'vessel-4',
     name: 'Container Ship',
     type: 'container',
     position: [104.5, 0.5],
-    icon: '/lovable-uploads/container.png'
+    icon: '/lovable-uploads/container.svg'
   },
   {
     id: 'vessel-5',
     name: 'Oil Tanker',
     type: 'oil',
-    position: [-74.0, 39.5],
-    icon: '/lovable-uploads/oil tanker.png'
+    position: [-122.5, 33.5], // Pacific Ocean (west of California)
+    icon: '/lovable-uploads/oil-tanker.svg'
   },
   {
     id: 'vessel-6',
     name: 'Chemical Tanker',
     type: 'chemical-tanker',
-    position: [-63.0, 39],
-    icon: '/lovable-uploads/chemical tanker.png'
+    position: [15.0, 60.0], // North Sea
+    icon: '/lovable-uploads/chemical-tanker.svg'
   },
   {
     id: 'vessel-7',
     name: 'Gas Carrier',
     type: 'gas-carrier',
     position: [120.0, 35.0],
-    icon: '/lovable-uploads/gas carrier.png'
+    icon: '/lovable-uploads/gas-carrier.svg'
   },
   {
     id: 'vessel-8',
     name: 'LNG Carrier',
     type: 'lng',
     position: [-45.0, 20.0],
-    icon: '/lovable-uploads/LNG.png'
+    icon: '/lovable-uploads/LNG.svg'
   },
   {
     id: 'vessel-9',
     name: 'Bulk Carrier',
     type: 'bulk-carrier',
     position: [80.0, 10.0],
-    icon: '/lovable-uploads/bulk carrier.png'
+    icon: '/lovable-uploads/bulk-carrier.svg'
   },
   {
     id: 'vessel-10',
     name: 'Passenger Ship',
     type: 'passenger',
     position: [-30.0, 55.0],
-    icon: '/lovable-uploads/passenger.png'
+    icon: '/lovable-uploads/passenger.svg'
   },
   {
     id: 'vessel-11',
     name: 'Barge',
     type: 'barge',
     position: [5.0, 52.0],
-    icon: '/lovable-uploads/barge.png'
+    icon: '/lovable-uploads/barge.svg'
   },
   {
     id: 'vessel-12',
     name: 'Cable Layer',
     type: 'cable-layer',
     position: [-40.0, 40.0],
-    icon: '/lovable-uploads/cable layer.png'
+    icon: '/lovable-uploads/cable-layer.svg'
   },
   {
     id: 'vessel-13',
     name: 'Refrigerated Cargo',
     type: 'refrigerated-cargo',
     position: [130.0, 30.0],
-    icon: '/lovable-uploads/refrigerated cargo.png'
+    icon: '/lovable-uploads/refrigerated-cargo.svg'
   },
   {
     id: 'vessel-14',
     name: 'RoRo Ferry',
     type: 'roll-on-roll-off',
     position: [25.0, 60.0],
-    icon: '/lovable-uploads/roll-on-roll-off.png'
+    icon: '/lovable-uploads/roll-on-roll-off.svg'
   }
 ];
 

@@ -327,20 +327,33 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     );
   }, []);
 
+  const markersCreatedOnceRef = useRef(false);
+
   // Manage vessel markers
   useEffect(() => {
-    if (!isMapLoaded || !mapref.current) return;
+    console.log('Vessel marker useEffect triggered.');
+    if (!isMapLoaded || !mapref.current) {
+      console.log('Map not loaded or mapref.current is null. Skipping vessel marker creation.');
+      return;
+    }
 
-    // This effect is now solely responsible for vessel markers.
-    // It runs when the map is loaded or when the vessel data changes.
-    
-    // Cleanup old markers first
+    if (markersCreatedOnceRef.current) {
+      console.log('Vessel markers already created once. Skipping.');
+      return;
+    }
+
+    console.log('Current mapVessels state:', mapVessels);
+
+    // Cleanup old markers first (this will only run once now)
     cleanupVesselMarkers(mapref.current, vesselMarkersRef);
 
     // Create new markers
     if (mapVessels.length > 0) {
       console.log("Adding draggable vessels to map:", mapVessels.length);
       createVesselMarkers(mapref.current, mapVessels, vesselMarkersRef, handleVesselDrag);
+      markersCreatedOnceRef.current = true; // Mark as created
+    } else {
+      console.log('No vessels in mapVessels array. Not creating markers.');
     }
 
   }, [isMapLoaded, mapVessels, handleVesselDrag]);

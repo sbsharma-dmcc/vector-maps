@@ -13,20 +13,20 @@ export type VesselType = 'green' | 'orange' | 'circle' | 'container' | 'oil' | '
 // Helper to get the correct image path based on vessel type
 const getVesselIconPath = (type: VesselType) => {
   const iconPaths: { [key in VesselType]: string } = {
-    'circle': '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png', // Orange circle icon
-    'green': '/lovable-uploads/Variant12.png', // Green vessel icon
-    'orange': '/lovable-uploads/Variant13.png', // Orange vessel icon
-    'container': '/lovable-uploads/container.png', // Teal container ship
-    'oil': '/lovable-uploads/oil tanker.png', // Orange oil tanker
-    'chemical-tanker': '/lovable-uploads/chemical tanker.png', // Red chemical tanker
-    'gas-carrier': '/lovable-uploads/gas carrier.png', // Light blue gas carrier
-    'lng': '/lovable-uploads/LNG.png', // Green LNG carrier
-    'bulk-carrier': '/lovable-uploads/bulk carrier.png', // Purple bulk carrier
-    'passenger': '/lovable-uploads/passenger.png', // Blue passenger ship
-    'barge': '/lovable-uploads/barge.png', // Brown barge
-    'cable-layer': '/lovable-uploads/cable layer.png', // Gray cable layer
-    'refrigerated-cargo': '/lovable-uploads/refrigerated cargo.png', // Light green reefer
-    'roll-on-roll-off': '/lovable-uploads/roll-on-roll-off.png' // Yellow RoRo ferry
+    'circle': '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.svg', // Orange circle icon
+    'green': '/lovable-uploads/Variant12.svg', // Green vessel icon
+    'orange': '/lovable-uploads/Variant13.svg', // Orange vessel icon
+    'container': '/lovable-uploads/container.svg', // Teal container ship
+    'oil': '/lovable-uploads/oil-tanker.svg', // Orange oil tanker
+    'chemical-tanker': '/lovable-uploads/chemical-tanker.svg', // Red chemical tanker
+    'gas-carrier': '/lovable-uploads/gas-carrier.svg', // Light blue gas carrier
+    'lng': '/lovable-uploads/LNG.svg', // Green LNG carrier
+    'bulk-carrier': '/lovable-uploads/bulk-carrier.svg', // Purple bulk carrier
+    'passenger': '/lovable-uploads/passenger.svg', // Blue passenger ship
+    'barge': '/lovable-uploads/barge.svg', // Brown barge
+    'cable-layer': '/lovable-uploads/cable-layer.svg', // Gray cable layer
+    'refrigerated-cargo': '/lovable-uploads/refrigerated-cargo.svg', // Light green reefer
+    'roll-on-roll-off': '/lovable-uploads/roll-on-roll-off.svg' // Yellow RoRo ferry
   };
 
   return iconPaths[type] || iconPaths.green; // Fallback to green if type not found
@@ -160,5 +160,5 @@ export const cleanupVesselMarkers = (
     map.removeSource('vessels-source');
   }
   
-  console.log('Cleaned up vessel markers and any old layers/sources.');
+  console.log('Finished cleaning up vessel markers and any old layers/sources.');
 };
