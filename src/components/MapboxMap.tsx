@@ -6,6 +6,7 @@ import MapTopControls from './MapTopControls';
 import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
+import { addRoutesToMap, updateRouteVisibility } from '@/utils/routeManager';
 import { fourVessels, Vessel } from '@/lib/vessel-data';
 
 import WeatherLayerConfig from './WeatherLayerConfig';
@@ -22,6 +23,13 @@ interface MapboxMapProps {
   activeLayers?: Record<string, boolean>;
   activeBaseLayer?: string;
   isGlobeViewEnabled?: boolean;
+  waypoints?: Array<{
+    coordinates: [number, number];
+    name: string;
+    isLocked: boolean;
+    weatherWarning?: string | null;
+  }>;
+  onVesselClick?: (vessel: any) => void;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -33,7 +41,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   activeRouteType = 'base',
   activeLayers = {},
   activeBaseLayer = 'default',
-  isGlobeViewEnabled = false
+  isGlobeViewEnabled = false,
+  waypoints = [],
+  onVesselClick
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
@@ -283,6 +293,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           source: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
         });
       }
+
+      // Add routes if provided
+      if (showRoutes && baseRoute.length > 0 && weatherRoute.length > 0) {
+        addRoutesToMap(map, baseRoute, weatherRoute, waypoints);
+      }
       
       toast({
         title: "Map Loaded",
@@ -348,15 +363,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     cleanupVesselMarkers(mapref.current, vesselMarkersRef);
 
     // Create new markers
-    if (mapVessels.length > 0) {
-      console.log("Adding draggable vessels to map:", mapVessels.length);
-      createVesselMarkers(mapref.current, mapVessels, vesselMarkersRef, handleVesselDrag);
+    const allVessels = [...mapVessels, ...(vessels as any[])];
+    if (allVessels.length > 0) {
+      console.log("Adding draggable vessels to map:", allVessels.length);
+      // For now, use the existing vessel markers without click handling
+      createVesselMarkers(mapref.current, allVessels, vesselMarkersRef, handleVesselDrag);
       markersCreatedOnceRef.current = true; // Mark as created
     } else {
       console.log('No vessels in mapVessels array. Not creating markers.');
     }
 
-  }, [isMapLoaded, mapVessels, handleVesselDrag]);
+  }, [isMapLoaded, mapVessels, vessels, handleVesselDrag, onVesselClick]);
 
   useEffect(() => {
     if (!activeLayers || !isMapLoaded) return;
@@ -369,6 +386,38 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       }
     });
   }, [activeLayers, isMapLoaded]);
+
+  // Handle route updates
+  useEffect(() => {
+    if (!isMapLoaded || !mapref.current || !showRoutes) return;
+
+    if (baseRoute.length > 0 && weatherRoute.length > 0) {
+      // Remove existing routes if they exist
+      const existingSources = ['base-route', 'weather-route'];
+      const existingLayers = ['base-route-line', 'weather-route-line'];
+      
+      existingLayers.forEach(layerId => {
+        if (mapref.current?.getLayer(layerId)) {
+          mapref.current.removeLayer(layerId);
+        }
+      });
+      
+      existingSources.forEach(sourceId => {
+        if (mapref.current?.getSource(sourceId)) {
+          mapref.current.removeSource(sourceId);
+        }
+      });
+
+      // Add updated routes
+      addRoutesToMap(mapref.current, baseRoute, weatherRoute, waypoints);
+    }
+  }, [showRoutes, baseRoute, weatherRoute, waypoints, isMapLoaded]);
+
+  // Handle route visibility updates
+  useEffect(() => {
+    if (!isMapLoaded || !mapref.current) return;
+    updateRouteVisibility(mapref.current, activeRouteType);
+  }, [activeRouteType, isMapLoaded]);
 
   const fetchDTNSourceLayer = async (layerId: string) => {
     try {

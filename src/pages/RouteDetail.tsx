@@ -30,6 +30,8 @@ import MapLayersPanel from '../components/MapLayersPanel';
 import RT001MapInterface from '../components/RT001MapInterface';
 import CompleteVoyageDialog from '../components/CompleteVoyageDialog';
 import VoyageCompletedDialog from '../components/VoyageCompletedDialog';
+import VesselInfoDialog from '../components/VesselInfoDialog';
+import RouteDetailsDialog from '../components/RouteDetailsDialog';
 import RouteHeader from '../components/RouteHeader';
 import RouteTabs from '../components/RouteTabs';
 import RouteStats from '../components/RouteStats';
@@ -73,6 +75,11 @@ const RouteDetail = () => {
   const [isCompletedConfirmationOpen, setIsCompletedConfirmationOpen] = useState(false); // Confirmation dialog
   const [voyageStatus, setVoyageStatus] = useState<'active' | 'completed'>('active'); // Current voyage status
   
+  // VESSEL AND ROUTE DIALOG STATE
+  const [isVesselDialogOpen, setIsVesselDialogOpen] = useState(false);
+  const [isRouteDetailsOpen, setIsRouteDetailsOpen] = useState(false);
+  const [selectedVessel, setSelectedVessel] = useState<any>(null);
+  
   // UTILITIES
   const { toast } = useToast();                                   // Toast notification system
   
@@ -89,26 +96,30 @@ const RouteDetail = () => {
     }
   }, [id]);
 
-  // ROUTE COORDINATE DEFINITIONS
-  // Base route: Direct/planned path between start and end points
-  const baseRouteCoordinates: [number, number][] = [
-    [121.08295, 29.52432], // Start point - matches header coordinates
-    [124.08295, 32.52432], // Waypoint 1
-    [127.08295, 35.52432], // Waypoint 2
-    [130.08295, 38.52432], // Waypoint 3
-    [133.08295, 42.52432], // Waypoint 4
-    [135.08295, 45.52432], // End point
+  // ROUTE COORDINATE DEFINITIONS WITH WAYPOINT DATA
+  // Base route waypoints with additional metadata
+  const baseRouteWaypoints = [
+    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port", isLocked: false, weatherWarning: null },
+    { coordinates: [124.08295, 32.52432] as [number, number], name: "Waypoint 1", isLocked: false, weatherWarning: "High winds expected" },
+    { coordinates: [127.08295, 35.52432] as [number, number], name: "Waypoint 2", isLocked: true, weatherWarning: null },
+    { coordinates: [130.08295, 38.52432] as [number, number], name: "Waypoint 3", isLocked: false, weatherWarning: "Storm warning" },
+    { coordinates: [133.08295, 42.52432] as [number, number], name: "Waypoint 4", isLocked: true, weatherWarning: null },
+    { coordinates: [135.08295, 45.52432] as [number, number], name: "Destination Port", isLocked: false, weatherWarning: null }
   ];
 
-  // Weather-optimized route: Adjusted path considering weather conditions
-  const weatherRouteCoordinates: [number, number][] = [
-    [121.08295, 29.52432], // Same start point as base route
-    [125.08295, 33.52432], // Weather-adjusted waypoint 1
-    [128.08295, 37.52432], // Weather-adjusted waypoint 2
-    [131.08295, 40.52432], // Weather-adjusted waypoint 3
-    [133.08295, 43.52432], // Weather-adjusted waypoint 4
-    [135.08295, 45.52432], // Same end point as base route
+  // Weather-optimized route waypoints
+  const weatherRouteWaypoints = [
+    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port", isLocked: false, weatherWarning: null },
+    { coordinates: [125.08295, 33.52432] as [number, number], name: "Weather WP 1", isLocked: false, weatherWarning: "Favorable winds" },
+    { coordinates: [128.08295, 37.52432] as [number, number], name: "Weather WP 2", isLocked: false, weatherWarning: null },
+    { coordinates: [131.08295, 40.52432] as [number, number], name: "Weather WP 3", isLocked: true, weatherWarning: "Calm seas" },
+    { coordinates: [133.08295, 43.52432] as [number, number], name: "Weather WP 4", isLocked: false, weatherWarning: null },
+    { coordinates: [135.08295, 45.52432] as [number, number], name: "Destination Port", isLocked: false, weatherWarning: null }
   ];
+
+  // Extract coordinates for backwards compatibility
+  const baseRouteCoordinates: [number, number][] = baseRouteWaypoints.map(wp => wp.coordinates as [number, number]);
+  const weatherRouteCoordinates: [number, number][] = weatherRouteWaypoints.map(wp => wp.coordinates as [number, number]);
 
   // VESSEL POSITION INITIALIZATION
   // Set initial vessel position when tab changes or on first load
@@ -279,6 +290,57 @@ const RouteDetail = () => {
     });
   };
 
+  // VESSEL INTERACTION HANDLERS
+  const handleVesselClick = (vessel: any) => {
+    setSelectedVessel({
+      ...vessel,
+      position: vesselPosition || baseRouteCoordinates[0],
+      course: "045°",
+      speed: "12.5 knots",
+      lastUpdate: new Date().toISOString()
+    });
+    setIsVesselDialogOpen(true);
+  };
+
+  const handleMoreDetails = () => {
+    setIsRouteDetailsOpen(true);
+  };
+
+  const handleDownloadRTZ = () => {
+    // Generate RTZ file content
+    const rtzContent = generateRTZFile();
+    const blob = new Blob([rtzContent], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${route?.name || 'route'}.rtz`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "RTZ File Downloaded",
+      description: "Route file ready for import to other systems"
+    });
+  };
+
+  const generateRTZFile = () => {
+    const activeWaypoints = activeTab === 'base' ? baseRouteWaypoints : weatherRouteWaypoints;
+    
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<route version="1.1" xmlns="http://www.cirm.org/RTZ/1/1">
+  <routeInfo routeName="${route?.name || 'Route'}" />
+  <waypoints>
+    ${activeWaypoints.map((wp, index) => `
+    <waypoint id="${index + 1}" name="${wp.name}">
+      <position lat="${wp.coordinates[1]}" lon="${wp.coordinates[0]}" />
+      ${wp.isLocked ? '<leg portsideXTD="0.1" starboardXTD="0.1" />' : ''}
+    </waypoint>`).join('')}
+  </waypoints>
+</route>`;
+  };
+
   // LOADING STATE
   if (!route) {
     return (
@@ -294,8 +356,12 @@ const RouteDetail = () => {
     id: route.vesselId,
     name: route.name,
     type: 'green' as const,                               // Vessel marker color
-    position: vesselPosition || baseRouteCoordinates[0]   // Current or initial position
+    position: vesselPosition || baseRouteCoordinates[0],   // Current or initial position
+    onClick: handleVesselClick
   };
+
+  // Get active waypoints with metadata
+  const activeWaypoints = activeTab === 'base' ? baseRouteWaypoints : weatherRouteWaypoints;
 
   // SPECIAL ROUTE HANDLING
   // Check if this is the RT-001 route which has a custom interface
@@ -375,6 +441,8 @@ const RouteDetail = () => {
               activeLayers={activeLayers}                 // Weather overlay states
               activeBaseLayer={activeBaseLayer}           // Base map style
               isGlobeViewEnabled={isGlobeViewEnabled}
+              waypoints={activeWaypoints}                 // Waypoints with metadata
+              onVesselClick={handleVesselClick}           // Vessel click handler
             />
             
             {/* INTERACTIVE TIMELINE - Overlay for voyage animation control */}
@@ -401,6 +469,24 @@ const RouteDetail = () => {
         isOpen={isCompletedConfirmationOpen}
         onClose={() => setIsCompletedConfirmationOpen(false)}
         routeName={route?.name || ''}
+      />
+
+      {/* Vessel information dialog */}
+      <VesselInfoDialog
+        isOpen={isVesselDialogOpen}
+        onClose={() => setIsVesselDialogOpen(false)}
+        vessel={selectedVessel}
+        onMoreDetails={handleMoreDetails}
+      />
+
+      {/* Route details dialog */}
+      <RouteDetailsDialog
+        isOpen={isRouteDetailsOpen}
+        onClose={() => setIsRouteDetailsOpen(false)}
+        route={route}
+        activeTab={activeTab}
+        waypoints={activeWaypoints}
+        onDownloadRTZ={handleDownloadRTZ}
       />
     </div>
   );

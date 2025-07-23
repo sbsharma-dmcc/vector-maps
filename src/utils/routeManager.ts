@@ -4,7 +4,13 @@ import mapboxgl from 'mapbox-gl';
 export const addRoutesToMap = (
   map: mapboxgl.Map,
   baseRoute: [number, number][],
-  weatherRoute: [number, number][]
+  weatherRoute: [number, number][],
+  waypoints: Array<{
+    coordinates: [number, number];
+    name: string;
+    isLocked: boolean;
+    weatherWarning?: string | null;
+  }> = []
 ) => {
   // Add base route source and layer
   map.addSource('base-route', {
@@ -29,8 +35,7 @@ export const addRoutesToMap = (
     },
     paint: {
       'line-color': '#000',
-      'line-width': 3,
-      'line-dasharray': [1, 0]
+      'line-width': 3
     }
   });
   
@@ -57,8 +62,7 @@ export const addRoutesToMap = (
     },
     paint: {
       'line-color': '#4ade80',
-      'line-width': 3,
-      'line-dasharray': [1, 0]
+      'line-width': 3
     }
   });
   
@@ -95,6 +99,69 @@ export const addRoutesToMap = (
   
   map.fitBounds(bounds, {
     padding: 50
+  });
+
+  // Add waypoint markers and weather warnings
+  waypoints.forEach((waypoint, index) => {
+    // Create waypoint marker
+    const waypointEl = document.createElement('div');
+    waypointEl.className = 'waypoint-marker';
+    waypointEl.style.width = '24px';
+    waypointEl.style.height = '24px';
+    waypointEl.style.borderRadius = '50%';
+    waypointEl.style.border = '2px solid white';
+    waypointEl.style.backgroundColor = waypoint.isLocked ? '#f59e0b' : '#3b82f6';
+    waypointEl.style.color = 'white';
+    waypointEl.style.display = 'flex';
+    waypointEl.style.alignItems = 'center';
+    waypointEl.style.justifyContent = 'center';
+    waypointEl.style.fontSize = '10px';
+    waypointEl.style.fontWeight = 'bold';
+    waypointEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+    waypointEl.textContent = (index + 1).toString();
+
+    const waypointMarker = new mapboxgl.Marker(waypointEl)
+      .setLngLat(waypoint.coordinates)
+      .addTo(map);
+
+    // Add popup with waypoint information
+    const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
+      <div style="padding: 4px;">
+        <strong>${waypoint.name}</strong><br>
+        ${waypoint.coordinates[1].toFixed(6)}, ${waypoint.coordinates[0].toFixed(6)}<br>
+        ${waypoint.isLocked ? '<span style="color: #f59e0b;">🔒 Locked</span>' : '<span style="color: #3b82f6;">🔓 Unlocked</span>'}
+      </div>
+    `);
+    
+    waypointMarker.setPopup(popup);
+
+    // Add weather warning overlay if present
+    if (waypoint.weatherWarning) {
+      const warningEl = document.createElement('div');
+      warningEl.className = 'weather-warning';
+      warningEl.style.position = 'absolute';
+      warningEl.style.top = '-40px';
+      warningEl.style.left = '50%';
+      warningEl.style.transform = 'translateX(-50%)';
+      warningEl.style.backgroundColor = '#fbbf24';
+      warningEl.style.color = '#92400e';
+      warningEl.style.padding = '4px 8px';
+      warningEl.style.borderRadius = '4px';
+      warningEl.style.fontSize = '11px';
+      warningEl.style.fontWeight = 'bold';
+      warningEl.style.whiteSpace = 'nowrap';
+      warningEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      warningEl.style.border = '1px solid #f59e0b';
+      warningEl.textContent = `⚠️ ${waypoint.weatherWarning}`;
+      
+      // Create warning marker
+      const warningMarker = new mapboxgl.Marker({
+        element: warningEl,
+        anchor: 'bottom'
+      })
+        .setLngLat([waypoint.coordinates[0], waypoint.coordinates[1] + 0.01]) // Slightly offset
+        .addTo(map);
+    }
   });
 };
 
