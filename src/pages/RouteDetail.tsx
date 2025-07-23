@@ -458,60 +458,49 @@ const RouteDetail = () => {
         />
         
         {/* CONDITIONAL MAP INTERFACE RENDERING */}
-        {/* Special interface for RT-001 route, standard interface for others */}
-        {isRT001 ? (
-          // Custom RT-001 map interface with specialized features
-          <RT001MapInterface
-            activeTab={activeTab}
-            onDayClick={animateVessel}
-            onLayersToggle={() => setLayersPanelOpen(!layersPanelOpen)}
-            activeLayers={activeLayers}
+        {/* STANDARD MAP INTERFACE FOR ALL ROUTES */}
+        <>
+          {/* LAYER TOGGLE BUTTON - Fixed position control */}
+          <div className="absolute bottom-20 left-4 z-10">
+            <Button 
+              onClick={() => setLayersPanelOpen(!layersPanelOpen)}
+              className="bg-white hover:bg-gray-50 text-gray-800 shadow-lg border border-gray-200 w-12 h-12 p-0"
+              size="icon"
+            >
+              <Layers className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          {/* MAIN MAP COMPONENT - Displays routes, vessels, and layers */}
+          <MapboxMap 
+            vessels={[routeVessel]}                     // Vessel to display on map
+            showRoutes={true}                           // Enable route visualization
+            baseRoute={baseRouteCoordinates}            // Base route coordinates
+            weatherRoute={weatherRouteCoordinates}      // Weather-optimized route coordinates
+            activeRouteType={activeTab}                 // Which route to highlight
+            activeLayers={activeLayers}                 // Weather overlay states
+            activeBaseLayer={activeBaseLayer}           // Base map style
+            isGlobeViewEnabled={isGlobeViewEnabled}
+            waypoints={activeWaypoints}                 // Waypoints with metadata
+            onVesselClick={handleVesselClick}           // Vessel click handler
+            onMapClick={handleMapClick}                 // Map click handler for context menu
           />
-        ) : (
-          // Standard map interface for all other routes
-          <>
-            {/* LAYER TOGGLE BUTTON - Fixed position control */}
-            <div className="absolute bottom-20 left-4 z-10">
-              <Button 
-                onClick={() => setLayersPanelOpen(!layersPanelOpen)}
-                className="bg-white hover:bg-gray-50 text-gray-800 shadow-lg border border-gray-200 w-12 h-12 p-0"
-                size="icon"
-              >
-                <Layers className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            {/* MAIN MAP COMPONENT - Displays routes, vessels, and layers */}
-            <MapboxMap 
-              vessels={[routeVessel]}                     // Vessel to display on map
-              showRoutes={true}                           // Enable route visualization
-              baseRoute={baseRouteCoordinates}            // Base route coordinates
-              weatherRoute={weatherRouteCoordinates}      // Weather-optimized route coordinates
-              activeRouteType={activeTab}                 // Which route to highlight
-              activeLayers={activeLayers}                 // Weather overlay states
-              activeBaseLayer={activeBaseLayer}           // Base map style
-              isGlobeViewEnabled={isGlobeViewEnabled}
-              waypoints={activeWaypoints}                 // Waypoints with metadata
-              onVesselClick={handleVesselClick}           // Vessel click handler
-              onMapClick={handleMapClick}                 // Map click handler for context menu
-            />
-            
-            {/* NEW TIMELINE BAR - Bottom overlay for voyage timeline */}
-            <TimelineBar 
-              onDayClick={animateVessel}                  // Animation trigger callback
-              isAnimating={isAnimating}                   // Animation status for UI feedback
-            />
-            
-            {/* MAP CLICK CONTEXT MENU */}
-            <MapClickContextMenu
-              position={contextMenu.position}
-              coordinates={contextMenu.coordinates}
-              onAddWaypoint={handleAddWaypoint}
-              onClose={handleCloseContextMenu}
-              isVisible={contextMenu.isVisible}
-            />
-          </>
-        )}
+          
+          {/* NEW TIMELINE BAR - Bottom overlay for voyage timeline */}
+          <TimelineBar 
+            onDayClick={animateVessel}                  // Animation trigger callback
+            isAnimating={isAnimating}                   // Animation status for UI feedback
+          />
+          
+          {/* MAP CLICK CONTEXT MENU */}
+          <MapClickContextMenu
+            position={contextMenu.position}
+            coordinates={contextMenu.coordinates}
+            onAddWaypoint={handleAddWaypoint}
+            onClose={handleCloseContextMenu}
+            isVisible={contextMenu.isVisible}
+          />
+        </>
         
         {/* FLOATING WARNINGS PANEL */}
         {routeWarnings.length > 0 && showWarningsPanel && (

@@ -4,11 +4,20 @@ import { init, track, setUserId, identify } from '@amplitude/analytics-browser';
 const AMPLITUDE_API_KEY = '86a69223d8d1c74f106bb392555b6a0';
 
 export const initAnalytics = () => {
-  init(AMPLITUDE_API_KEY, undefined, {
-    serverZone: 'EU',
-    autocapture: true,
-    fetchRemoteConfig: true,
-  });
+  try {
+    // Only initialize if API key is valid (not the placeholder)
+    if (AMPLITUDE_API_KEY && AMPLITUDE_API_KEY !== '86a69223d8d1c74f106bb392555b6a0') {
+      init(AMPLITUDE_API_KEY, undefined, {
+        serverZone: 'EU',
+        autocapture: true,
+        fetchRemoteConfig: true,
+      });
+    } else {
+      console.log('Analytics disabled: Invalid or placeholder API key');
+    }
+  } catch (error) {
+    console.log('Analytics initialization failed:', error);
+  }
 };
 
 // User Authentication & Sessions
@@ -26,7 +35,11 @@ export const trackUserLoggedOut = (userId: string) => {
 };
 
 export const trackSessionStarted = (device: string, appVersion: string) => {
-  track('Session_Started', { device, app_version: appVersion });
+  try {
+    track('Session_Started', { device, app_version: appVersion });
+  } catch (error) {
+    console.log('Analytics tracking failed:', error);
+  }
 };
 
 export const trackSessionInclude = (errorCode?: string, screen?: string, screenName?: string) => {
