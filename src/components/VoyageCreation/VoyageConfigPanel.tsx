@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Ship, Settings, Clock } from 'lucide-react';
 import MIRUploadModule from './MIRUploadModule';
+import GenerateVoyageButton from './GenerateVoyageButton';
 import { WaypointData } from '@/types/voyage';
 
 interface VoyageConfigPanelProps {
@@ -17,9 +18,18 @@ interface VoyageConfigPanelProps {
   setVesselName: (name: string) => void;
   waypoints: WaypointData[];
   onWaypointsChange: (waypoints: WaypointData[]) => void;
+  onGenerateVoyage: () => void;
 }
 
-const VoyageConfigPanel = ({ voyageName, setVoyageName, vesselName, setVesselName, waypoints, onWaypointsChange }: VoyageConfigPanelProps) => {
+const VoyageConfigPanel = ({ 
+  voyageName, 
+  setVoyageName, 
+  vesselName, 
+  setVesselName, 
+  waypoints, 
+  onWaypointsChange, 
+  onGenerateVoyage 
+}: VoyageConfigPanelProps) => {
   const [optimizationType, setOptimizationType] = useState('fixed-arrival');
   const [departureDate, setDepartureDate] = useState('2025-01-05 16:21 UTC');
   const [fromPort, setFromPort] = useState('Colombo Port');
@@ -345,6 +355,14 @@ const VoyageConfigPanel = ({ voyageName, setVoyageName, vesselName, setVesselNam
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Generate Voyage Button */}
+      <GenerateVoyageButton
+        waypoints={waypoints}
+        voyageName={voyageName}
+        vesselName={vesselName}
+        onGenerate={onGenerateVoyage}
+      />
     </div>
   );
 };

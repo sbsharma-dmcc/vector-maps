@@ -86,6 +86,7 @@ const CreateVoyage = () => {
         setVesselName={setVesselName}
         waypoints={waypoints}
         onWaypointsChange={setWaypoints}
+        onGenerateVoyage={handleCreateVoyage}
       />
       
       {/* Right Panel - Map Interface */}

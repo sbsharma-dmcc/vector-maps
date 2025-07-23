@@ -3,10 +3,14 @@ import { ValidationEngine } from './fileValidation';
 
 // Utility to convert DMS to decimal degrees
 const dmsToDecimal = (dmsString: string): number => {
+  console.log('Converting DMS string:', dmsString);
+  
   // Handle formats like "22° 37′ 31″ N" or "69° 6′ 13″ E"
   try {
     const cleanDms = dmsString.replace(/[°′″]/g, ' ').trim();
     const parts = cleanDms.split(/\s+/).filter(p => p);
+    
+    console.log('DMS parts:', parts);
     
     if (parts.length < 4) {
       throw new Error(`Invalid DMS format: ${dmsString} - Expected format: "22° 37′ 31″ N"`);
@@ -16,6 +20,8 @@ const dmsToDecimal = (dmsString: string): number => {
     const minutes = parseInt(parts[1]);
     const seconds = parseInt(parts[2]);
     const direction = parts[3].toUpperCase();
+    
+    console.log(`Parsed: ${degrees}° ${minutes}′ ${seconds}″ ${direction}`);
     
     if (isNaN(degrees) || isNaN(minutes) || isNaN(seconds)) {
       throw new Error(`Invalid numeric values in DMS: ${dmsString}`);
@@ -27,8 +33,11 @@ const dmsToDecimal = (dmsString: string): number => {
       decimal = -decimal;
     }
     
+    console.log(`Converted to decimal: ${decimal}`);
+    
     return decimal;
   } catch (error) {
+    console.error('DMS conversion error:', error);
     throw new Error(`DMS conversion failed for "${dmsString}": ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
@@ -299,12 +308,70 @@ export class FileProcessorFactory {
   // Direct JSON processing method
   static async processJSONString(jsonString: string): Promise<FileUploadResult> {
     try {
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const file = new File([blob], 'pasted_data.json', { type: 'application/json' });
+      console.log('Processing JSON string:', jsonString);
       
-      return await this.processFile(file);
+      const data = JSON.parse(jsonString);
+      console.log('Parsed JSON data:', data);
+      
+      if (!Array.isArray(data)) {
+        throw new Error('JSON must be an array of waypoint objects');
+      }
+
+      const waypoints: WaypointData[] = data.map((item: any, index: number) => {
+        console.log(`Processing waypoint ${index + 1}:`, item);
+        
+        if (!item.latitude || !item.longitude) {
+          throw new Error(`Missing latitude or longitude in waypoint ${index + 1}`);
+        }
+
+        let lat: number;
+        let lon: number;
+
+        try {
+          // Check if already decimal
+          if (typeof item.latitude === 'number' && typeof item.longitude === 'number') {
+            lat = item.latitude;
+            lon = item.longitude;
+          } else {
+            // Convert DMS to decimal degrees
+            lat = dmsToDecimal(item.latitude.toString());
+            lon = dmsToDecimal(item.longitude.toString());
+          }
+          
+          console.log(`Converted coordinates for WP${index + 1}: lat=${lat}, lon=${lon}`);
+        } catch (conversionError) {
+          console.error(`Error converting coordinates for waypoint ${index + 1}:`, conversionError);
+          throw new Error(`Invalid coordinate format in waypoint ${index + 1}: ${conversionError instanceof Error ? conversionError.message : 'Unknown error'}`);
+        }
+
+        return {
+          id: `wp-${Date.now()}-${index}`,
+          lat,
+          lon,
+          waypointNumber: index + 1,
+          isLocked: true,
+          isPassed: false,
+          createdFrom: 'upload' as const,
+          timestamp: new Date().toISOString(),
+          name: item.name || `WP${index + 1}`,
+          eta: item.eta || ''
+        };
+      });
+
+      console.log('Generated waypoints:', waypoints);
+
+      // Validate waypoints
+      const validationResult = ValidationEngine.validate(waypoints);
+
+      return {
+        waypoints,
+        validationResult,
+        fileName: 'waypoints.json',
+        fileType: 'csv'
+      };
     } catch (error) {
-      throw new Error(`JSON processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('JSON processing error:', error);
+      throw new Error(`Invalid JSON format or processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   
