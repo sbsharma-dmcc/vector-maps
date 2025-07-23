@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { 
@@ -19,7 +19,7 @@ const Routes = () => {
   const [routes, setRoutes] = useState<RouteType[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<RouteType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('all');
+  
 
   useEffect(() => {
     // Generate mock vessel and route data
@@ -32,8 +32,8 @@ const Routes = () => {
   }, []);
 
   useEffect(() => {
-    // Apply filters when search term or tab changes
-    let filtered = routes;
+    // Apply filters when search term changes - only show in-progress routes
+    let filtered = routes.filter(route => route.status === 'in-progress');
     
     // Apply search filter
     if (searchTerm) {
@@ -46,13 +46,8 @@ const Routes = () => {
       );
     }
     
-    // Apply status filter
-    if (activeTab !== 'all') {
-      filtered = filtered.filter(route => route.status === activeTab);
-    }
-    
     setFilteredRoutes(filtered);
-  }, [searchTerm, activeTab, routes]);
+  }, [searchTerm, routes]);
   
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
@@ -107,106 +102,173 @@ const Routes = () => {
           </CardContent>
         </Card>
         
-        <Card className="md:w-1/3">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Route Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-                <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardContent>
-        </Card>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium">Route ID</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Route Name</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Vessel</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Departure</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Arrival</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRoutes.length > 0 ? (
-                filteredRoutes.map(route => (
-                  <tr 
-                    key={route.id} 
-                    className="border-t hover:bg-muted/30 cursor-pointer"
-                    onClick={() => handleViewDetails(route.id)}
-                  >
-                    <td className="px-4 py-3 text-sm">{route.id}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex items-center">
-                        <Route className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {route.name}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex items-center">
-                        <span className={`h-3 w-3 rounded-full bg-vessel-${getVesselType(route.vesselId)} mr-2`}></span>
-                        {getVesselName(route.vesselId)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {formatDate(route.departureDate)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{route.startPort}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {formatDate(route.arrivalDate)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{route.endPort}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        route.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                        route.status === 'in-progress' ? 'bg-amber-100 text-amber-800' :
-                        route.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {route.status === 'in-progress' ? 'In Progress' : 
-                         route.status.charAt(0).toUpperCase() + route.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewDetails(route.id);
-                        }}
-                      >
-                        View Details
-                      </Button>
+      {/* In Progress Routes Table */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-3">In Progress Routes</h2>
+        <div className="border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Route ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Route Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Vessel</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Departure</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Arrival</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRoutes.length > 0 ? (
+                  filteredRoutes.map(route => (
+                    <tr 
+                      key={route.id} 
+                      className="border-t hover:bg-muted/30 cursor-pointer"
+                      onClick={() => handleViewDetails(route.id)}
+                    >
+                      <td className="px-4 py-3 text-sm">{route.id}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <Route className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {route.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <span className={`h-3 w-3 rounded-full bg-vessel-${getVesselType(route.vesselId)} mr-2`}></span>
+                          {getVesselName(route.vesselId)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {formatDate(route.departureDate)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{route.startPort}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {formatDate(route.arrivalDate)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{route.endPort}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">
+                          In Progress
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(route.id);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                      No in-progress routes found
                     </td>
                   </tr>
-                ))
-              ) : (
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Completed Routes Table */}
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Completed Routes</h2>
+        <div className="border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                    No routes found matching your search criteria
-                  </td>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Route ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Route Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Vessel</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Departure</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Arrival</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {routes.filter(route => route.status === 'completed').length > 0 ? (
+                  routes.filter(route => route.status === 'completed').map(route => (
+                    <tr 
+                      key={route.id} 
+                      className="border-t hover:bg-muted/30 cursor-pointer"
+                      onClick={() => handleViewDetails(route.id)}
+                    >
+                      <td className="px-4 py-3 text-sm">{route.id}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <Route className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {route.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <span className={`h-3 w-3 rounded-full bg-vessel-${getVesselType(route.vesselId)} mr-2`}></span>
+                          {getVesselName(route.vesselId)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {formatDate(route.departureDate)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{route.startPort}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {formatDate(route.arrivalDate)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{route.endPort}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                          Completed
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(route.id);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                      No completed routes found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
