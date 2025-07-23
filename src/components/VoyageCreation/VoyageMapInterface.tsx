@@ -18,10 +18,10 @@ const VoyageMapInterface = ({ mapboxToken, waypoints = [] }: VoyageMapInterfaceP
   const [showVesselPopup, setShowVesselPopup] = useState(false);
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    if (!mapContainer.current) return;
 
     // Initialize map with the same style as dashboard
-    mapboxgl.accessToken = mapboxToken;
+    mapboxgl.accessToken = "pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q";
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -81,7 +81,7 @@ const VoyageMapInterface = ({ mapboxToken, waypoints = [] }: VoyageMapInterfaceP
     return () => {
       map.current?.remove();
     };
-  }, [mapboxToken, waypoints]);
+  }, [waypoints]);
 
   const createVesselMarkerElement = () => {
     const el = document.createElement('div');
@@ -106,18 +106,6 @@ const VoyageMapInterface = ({ mapboxToken, waypoints = [] }: VoyageMapInterfaceP
     return el;
   };
 
-  if (!mapboxToken) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-muted/30">
-        <Card className="p-6 text-center">
-          <div className="text-lg font-medium mb-2">Loading interactive map...</div>
-          <div className="text-sm text-muted-foreground">
-            Enter your Mapbox token to view the map visualization
-          </div>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 relative">

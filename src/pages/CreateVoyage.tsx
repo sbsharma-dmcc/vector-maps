@@ -12,7 +12,7 @@ import { sampleVoyageJSON } from '@/components/VoyageCreation/VoyageJSON';
 const CreateVoyage = () => {
   const navigate = useNavigate();
   const [waypoints, setWaypoints] = useState<WaypointData[]>([]);
-  const [mapboxToken, setMapboxToken] = useState('');
+  const [mapboxToken] = useState('pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q');
   const [voyageName, setVoyageName] = useState('');
   const [vesselName, setVesselName] = useState('');
   const [mirEnabled, setMirEnabled] = useState(true);
@@ -92,27 +92,6 @@ const CreateVoyage = () => {
         waypoints={waypoints}
       />
 
-      {/* Mapbox Token Input Dialog (if no token) */}
-      {!mapboxToken && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-background border border-border rounded-lg p-4 shadow-lg max-w-md">
-            <Label htmlFor="mapbox-token" className="text-sm font-medium">
-              Mapbox Token Required
-            </Label>
-            <Input
-              id="mapbox-token"
-              type="password"
-              placeholder="Enter your Mapbox public token"
-              value={mapboxToken}
-              onChange={(e) => setMapboxToken(e.target.value)}
-              className="mt-2"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Get your token from <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">mapbox.com</a>
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
