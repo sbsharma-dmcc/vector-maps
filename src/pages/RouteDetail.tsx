@@ -117,22 +117,20 @@ const RouteDetail = () => {
   // ROUTE COORDINATE DEFINITIONS WITH WAYPOINT DATA
   // Base route waypoints with additional metadata
   const baseRouteWaypoints = [
-    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port", isLocked: false, weatherWarning: null },
-    { coordinates: [124.08295, 32.52432] as [number, number], name: "Waypoint 1", isLocked: false, weatherWarning: "High winds expected" },
-    { coordinates: [127.08295, 35.52432] as [number, number], name: "Waypoint 2", isLocked: true, weatherWarning: null },
-    { coordinates: [130.08295, 38.52432] as [number, number], name: "Waypoint 3", isLocked: false, weatherWarning: "Storm warning" },
-    { coordinates: [133.08295, 42.52432] as [number, number], name: "Waypoint 4", isLocked: true, weatherWarning: null },
-    { coordinates: [135.08295, 45.52432] as [number, number], name: "Destination Port", isLocked: false, weatherWarning: null }
+    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port - Shanghai", isLocked: false, weatherWarning: null },
+    { coordinates: [125.08295, 32.52432] as [number, number], name: "Transit Point 1", isLocked: false, weatherWarning: "High winds expected" },
+    { coordinates: [128.08295, 35.52432] as [number, number], name: "Navigation Checkpoint", isLocked: true, weatherWarning: null },
+    { coordinates: [135.08295, 40.52432] as [number, number], name: "Final Approach", isLocked: false, weatherWarning: "Storm warning" },
+    { coordinates: [138.08295, 42.52432] as [number, number], name: "Destination Port - Tokyo", isLocked: false, weatherWarning: null }
   ];
 
   // Weather-optimized route waypoints
   const weatherRouteWaypoints = [
-    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port", isLocked: false, weatherWarning: null },
-    { coordinates: [125.08295, 33.52432] as [number, number], name: "Weather WP 1", isLocked: false, weatherWarning: "Favorable winds" },
-    { coordinates: [128.08295, 37.52432] as [number, number], name: "Weather WP 2", isLocked: false, weatherWarning: null },
-    { coordinates: [131.08295, 40.52432] as [number, number], name: "Weather WP 3", isLocked: true, weatherWarning: "Calm seas" },
-    { coordinates: [133.08295, 43.52432] as [number, number], name: "Weather WP 4", isLocked: false, weatherWarning: null },
-    { coordinates: [135.08295, 45.52432] as [number, number], name: "Destination Port", isLocked: false, weatherWarning: null }
+    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port - Shanghai", isLocked: false, weatherWarning: null },
+    { coordinates: [126.08295, 33.52432] as [number, number], name: "Weather Route 1", isLocked: false, weatherWarning: null },
+    { coordinates: [130.08295, 37.52432] as [number, number], name: "Weather Route 2", isLocked: false, weatherWarning: null },
+    { coordinates: [136.08295, 41.52432] as [number, number], name: "Weather Route 3", isLocked: true, weatherWarning: null },
+    { coordinates: [138.08295, 42.52432] as [number, number], name: "Destination Port - Tokyo", isLocked: false, weatherWarning: null }
   ];
 
   // Extract coordinates for backwards compatibility
