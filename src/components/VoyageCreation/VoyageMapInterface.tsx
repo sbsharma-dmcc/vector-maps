@@ -20,16 +20,17 @@ const VoyageMapInterface = ({ mapboxToken, waypoints = [] }: VoyageMapInterfaceP
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
 
-    // Initialize map with ocean-focused style
+    // Initialize map with the same style as dashboard
     mapboxgl.accessToken = mapboxToken;
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/satellite-v9',
+      style: 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7', // Same as dashboard
       center: [70, 10], // Indian Ocean
       zoom: 4,
       pitch: 0,
-      bearing: 0
+      bearing: 0,
+      attributionControl: false
     });
 
     // Add navigation controls
