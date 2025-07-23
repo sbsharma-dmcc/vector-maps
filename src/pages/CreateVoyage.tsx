@@ -43,28 +43,55 @@ const CreateVoyage = () => {
       return;
     }
 
-    // Generate voyage configuration
-    const voyageConfig = {
-      ...sampleVoyageJSON,
-      voyageName,
-      vessel: {
-        ...sampleVoyageJSON.vessel,
-        name: vesselName
-      },
-      masterIntendedRoute: {
-        enabled: mirEnabled,
-        waypoints: waypoints,
-        uploadedFile: waypoints.length > 0 ? {
-          name: `${voyageName.replace(/\s+/g, '_')}_waypoints.json`,
-          type: 'json' as const,
-          uploadedAt: new Date().toISOString()
-        } : undefined
-      }
-    };
+    if (waypoints.length === 0) {
+      toast.error('Please upload waypoints before generating voyage');
+      return;
+    }
 
-    console.log('Generated Voyage Configuration:', JSON.stringify(voyageConfig, null, 2));
-    toast.success('Voyage created successfully!');
-    navigate('/routes');
+    try {
+      // Generate voyage configuration
+      const voyageConfig = {
+        ...sampleVoyageJSON,
+        id: `voyage_${Date.now()}`,
+        voyageName,
+        vessel: {
+          ...sampleVoyageJSON.vessel,
+          name: vesselName
+        },
+        masterIntendedRoute: {
+          enabled: mirEnabled,
+          waypoints: waypoints,
+          uploadedFile: waypoints.length > 0 ? {
+            name: `${voyageName.replace(/\s+/g, '_')}_waypoints.json`,
+            type: 'json' as const,
+            uploadedAt: new Date().toISOString()
+          } : undefined
+        },
+        createdAt: new Date().toISOString(),
+        status: 'active',
+        progress: {
+          currentWaypoint: 0,
+          totalWaypoints: waypoints.length,
+          estimatedArrival: waypoints[waypoints.length - 1]?.eta || null
+        }
+      };
+
+      // Store in localStorage (in a real app, this would be sent to a backend)
+      const existingVoyages = JSON.parse(localStorage.getItem('voyages') || '[]');
+      existingVoyages.push(voyageConfig);
+      localStorage.setItem('voyages', JSON.stringify(existingVoyages));
+
+      console.log('Generated Voyage Configuration:', JSON.stringify(voyageConfig, null, 2));
+      toast.success(`Voyage "${voyageName}" created successfully with ${waypoints.length} waypoints!`);
+      
+      // Reset form after successful creation
+      setTimeout(() => {
+        navigate('/routes');
+      }, 1500);
+    } catch (error) {
+      console.error('Error creating voyage:', error);
+      toast.error('Failed to create voyage. Please try again.');
+    }
   };
 
   const downloadSampleJSON = () => {

@@ -49,10 +49,10 @@ const VoyageConfigPanel = ({
       <div className="bg-primary text-primary-foreground p-4">
         <div className="flex items-center gap-2 mb-2">
           <Ship className="h-5 w-5" />
-          <span className="font-medium">Ocean Sovereign</span>
+          <span className="font-medium">{vesselName || 'Ocean Sovereign'}</span>
           <Badge variant="secondary" className="text-xs">VOYAGE</Badge>
         </div>
-        <div className="text-sm opacity-90">Somalia ► Mumbai</div>
+        <div className="text-sm opacity-90">{voyageName || 'Somalia ► Mumbai'}</div>
       </div>
 
       {/* Voyage Details Card */}
@@ -64,6 +64,26 @@ const VoyageConfigPanel = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div>
+            <Label className="text-sm">Voyage Name *</Label>
+            <Input 
+              value={voyageName}
+              onChange={(e) => setVoyageName(e.target.value)}
+              placeholder="Enter voyage name"
+              className="text-sm"
+            />
+          </div>
+          
+          <div>
+            <Label className="text-sm">Vessel Name *</Label>
+            <Input 
+              value={vesselName}
+              onChange={(e) => setVesselName(e.target.value)}
+              placeholder="Enter vessel name"
+              className="text-sm"
+            />
+          </div>
+          
           <div>
             <Label className="text-sm">From *</Label>
             <div className="flex items-center gap-2 mt-1">

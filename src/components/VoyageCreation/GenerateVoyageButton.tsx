@@ -16,7 +16,7 @@ const GenerateVoyageButton = ({
   vesselName, 
   onGenerate 
 }: GenerateVoyageButtonProps) => {
-  const isDisabled = !voyageName || !vesselName || waypoints.length === 0;
+  const isDisabled = !voyageName.trim() || !vesselName.trim();
 
   return (
     <div className="sticky bottom-0 bg-background border-t border-border p-4">
@@ -31,10 +31,12 @@ const GenerateVoyageButton = ({
       </Button>
       {isDisabled && (
         <div className="text-xs text-muted-foreground mt-2 text-center">
-          {!voyageName || !vesselName 
-            ? 'Please fill in voyage and vessel names' 
-            : 'Please upload waypoints to generate voyage'
-          }
+          Please fill in voyage and vessel names
+        </div>
+      )}
+      {!isDisabled && waypoints.length === 0 && (
+        <div className="text-xs text-yellow-600 mt-2 text-center">
+          No waypoints uploaded. Voyage will be created with basic configuration.
         </div>
       )}
     </div>
