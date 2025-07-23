@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { WaypointData } from '@/types/voyage';
-import { Button } from '@/components/ui/button';
-import { Lock, Unlock, Trash2, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface InteractiveWaypointMapProps {
@@ -23,7 +22,6 @@ const InteractiveWaypointMap = ({
 }: InteractiveWaypointMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [selectedWaypoint, setSelectedWaypoint] = useState<string | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
 
   useEffect(() => {
@@ -155,43 +153,134 @@ const InteractiveWaypointMap = ({
   const addRouteVisualization = () => {
     if (!map.current) return;
 
-    const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
+    // Remove existing route layers
+    ['route', 'route-locked', 'route-unlocked', 'route-transition'].forEach(layerId => {
+      if (map.current!.getLayer(layerId)) {
+        map.current!.removeLayer(layerId);
+      }
+    });
+    
+    ['route', 'route-locked', 'route-unlocked', 'route-transition'].forEach(sourceId => {
+      if (map.current!.getSource(sourceId)) {
+        map.current!.removeSource(sourceId);
+      }
+    });
 
-    // Remove existing route layer if it exists
-    if (map.current.getLayer('route')) {
-      map.current.removeLayer('route');
-    }
-    if (map.current.getSource('route')) {
-      map.current.removeSource('route');
+    // Create different route segments based on waypoint lock status
+    const segments = {
+      locked: [] as number[][],
+      unlocked: [] as number[][],
+      transition: [] as number[][]
+    };
+
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const current = waypoints[i];
+      const next = waypoints[i + 1];
+      
+      const segment = [
+        [current.lon, current.lat],
+        [next.lon, next.lat]
+      ];
+
+      if (current.isLocked && next.isLocked) {
+        segments.locked.push(...segment);
+      } else if (!current.isLocked && !next.isLocked) {
+        segments.unlocked.push(...segment);
+      } else {
+        segments.transition.push(...segment);
+      }
     }
 
-    // Add route source and layer
-    map.current.addSource('route', {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates
+    // Add locked route segments (solid red)
+    if (segments.locked.length > 0) {
+      map.current.addSource('route-locked', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: segments.locked
+          }
         }
-      }
-    });
+      });
 
-    map.current.addLayer({
-      id: 'route',
-      type: 'line',
-      source: 'route',
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      },
-      paint: {
-        'line-color': '#3b82f6',
-        'line-width': 3,
-        'line-opacity': 0.8
-      }
-    });
+      map.current.addLayer({
+        id: 'route-locked',
+        type: 'line',
+        source: 'route-locked',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#dc2626',
+          'line-width': 3,
+          'line-opacity': 0.8
+        }
+      });
+    }
+
+    // Add unlocked route segments (solid blue)
+    if (segments.unlocked.length > 0) {
+      map.current.addSource('route-unlocked', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: segments.unlocked
+          }
+        }
+      });
+
+      map.current.addLayer({
+        id: 'route-unlocked',
+        type: 'line',
+        source: 'route-unlocked',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#2563eb',
+          'line-width': 3,
+          'line-opacity': 0.8
+        }
+      });
+    }
+
+    // Add transition route segments (dashed yellow)
+    if (segments.transition.length > 0) {
+      map.current.addSource('route-transition', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: segments.transition
+          }
+        }
+      });
+
+      map.current.addLayer({
+        id: 'route-transition',
+        type: 'line',
+        source: 'route-transition',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#eab308',
+          'line-width': 3,
+          'line-opacity': 0.8,
+          'line-dasharray': [2, 2]
+        }
+      });
+    }
   };
 
   const handleToggleLock = (waypointId: string) => {
@@ -215,7 +304,7 @@ const InteractiveWaypointMap = ({
 
     const updatedWaypoints = waypoints
       .filter(wp => wp.id !== waypointId)
-      .map((wp, index) => ({ ...wp, waypointNumber: index + 1 })); // Renumber waypoints
+      .map((wp, index) => ({ ...wp, waypointNumber: index + 1 }));
     
     onWaypointUpdate(updatedWaypoints);
     toast.success(`Waypoint ${waypoint.waypointNumber} deleted`);
@@ -259,6 +348,10 @@ const InteractiveWaypointMap = ({
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
               <span>Unlocked waypoints</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-1 bg-yellow-500 border-t-2 border-dashed border-yellow-500"></div>
+              <span>Transition segments</span>
             </div>
             <div className="text-muted-foreground mt-2">
               Click waypoint markers to lock/unlock or delete
