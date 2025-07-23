@@ -326,12 +326,12 @@ const InteractiveWaypointMap = ({
       <div ref={mapContainer} className="absolute inset-0 rounded-lg" />
       
       {waypoints.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg">
-          <div className="text-center p-8">
-            <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">No waypoints uploaded</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Upload MIR data to visualize waypoints on the map
+        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 max-w-xs">
+          <div className="text-center">
+            <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm font-medium text-muted-foreground">No waypoints uploaded</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Upload MIR data to visualize waypoints
             </p>
           </div>
         </div>
