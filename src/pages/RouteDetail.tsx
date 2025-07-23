@@ -45,8 +45,9 @@ import { useToast } from '@/hooks/use-toast';
 const RouteDetail = () => {
   console.log('RouteDetail component rendering');
   const navigate = useNavigate();
-  // ROUTE IDENTIFICATION - Get route ID from URL parameters
+  // ROUTE IDENTIFICATION - Get route ID from URL parameters or default to RT-006
   const { id } = useParams<{ id: string }>();
+  const routeId = id || 'RT-006'; // Default to RT-006
   
   // ROUTE DATA STATE
   const [route, setRoute] = useState<Route | null>(null);          // Current route information
@@ -107,16 +108,32 @@ const RouteDetail = () => {
     // For now, we'll generate mock data and find the route by ID
     const mockVessels = generateMockVessels();
     const mockRoutes = generateMockRoutes(mockVessels);
-    const foundRoute = mockRoutes.find(route => route.id === id);
+    const foundRoute = mockRoutes.find(route => route.id === routeId);
     
     if (foundRoute) {
       setRoute(foundRoute);
+    } else {
+      // Create a default RT-006 route if not found
+      setRoute({
+        id: routeId,
+        name: `Route ${routeId}`,
+        vesselId: 'vessel-1',
+        startPort: 'Port Entry Point',
+        endPort: 'Terminal Berth',
+        departureDate: new Date().toISOString(),
+        arrivalDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        status: 'in-progress' as const,
+        distance: 2450,
+        estimatedTime: '24d 20hr 20min',
+        coordinates: baseRouteWaypoints.map(wp => wp.coordinates as [number, number]),
+        vessels: ['vessel-1']
+      });
     }
-  }, [id]);
+  }, [routeId]);
 
   // ROUTE COORDINATE DEFINITIONS WITH WAYPOINT DATA
-  // Base route waypoints with additional metadata - Updated for RT-006 with provided coordinates
-  const baseRouteWaypoints = id === 'RT-006' ? [
+  // RT-006 waypoints as default for all routes (your provided coordinates)
+  const baseRouteWaypoints = [
     { coordinates: [69.103611, 22.625278] as [number, number], name: "Port Entry Point", isLocked: false, weatherWarning: null },
     { coordinates: [69.166944, 22.630833] as [number, number], name: "Channel Marker 1", isLocked: false, weatherWarning: "Moderate winds" },
     { coordinates: [69.280000, 22.581667] as [number, number], name: "Navigation Point 1", isLocked: true, weatherWarning: null },
@@ -129,17 +146,10 @@ const RouteDetail = () => {
     { coordinates: [69.855833, 22.663889] as [number, number], name: "Outer Anchorage", isLocked: true, weatherWarning: null },
     { coordinates: [69.869444, 22.628611] as [number, number], name: "Port Approach", isLocked: false, weatherWarning: null },
     { coordinates: [69.835833, 22.581389] as [number, number], name: "Terminal Berth", isLocked: false, weatherWarning: null }
-  ] : [
-    // Default waypoints for other routes
-    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port - Shanghai", isLocked: false, weatherWarning: null },
-    { coordinates: [125.08295, 32.52432] as [number, number], name: "Transit Point 1", isLocked: false, weatherWarning: "High winds expected" },
-    { coordinates: [128.08295, 35.52432] as [number, number], name: "Navigation Checkpoint", isLocked: true, weatherWarning: null },
-    { coordinates: [135.08295, 40.52432] as [number, number], name: "Final Approach", isLocked: false, weatherWarning: "Storm warning" },
-    { coordinates: [138.08295, 42.52432] as [number, number], name: "Destination Port - Tokyo", isLocked: false, weatherWarning: null }
   ];
 
-  // Weather-optimized route waypoints
-  const weatherRouteWaypoints = id === 'RT-006' ? [
+  // Weather-optimized route waypoints (RT-006 as default)
+  const weatherRouteWaypoints = [
     { coordinates: [69.103611, 22.625278] as [number, number], name: "Port Entry Point", isLocked: false, weatherWarning: null },
     { coordinates: [69.180000, 22.640000] as [number, number], name: "Weather Route 1", isLocked: false, weatherWarning: null },
     { coordinates: [69.290000, 22.590000] as [number, number], name: "Weather Route 2", isLocked: false, weatherWarning: null },
@@ -152,13 +162,6 @@ const RouteDetail = () => {
     { coordinates: [69.870000, 22.675000] as [number, number], name: "Weather Route 9", isLocked: true, weatherWarning: null },
     { coordinates: [69.880000, 22.635000] as [number, number], name: "Weather Route 10", isLocked: false, weatherWarning: null },
     { coordinates: [69.835833, 22.581389] as [number, number], name: "Terminal Berth", isLocked: false, weatherWarning: null }
-  ] : [
-    // Default weather route for other routes
-    { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port - Shanghai", isLocked: false, weatherWarning: null },
-    { coordinates: [126.08295, 33.52432] as [number, number], name: "Weather Route 1", isLocked: false, weatherWarning: null },
-    { coordinates: [130.08295, 37.52432] as [number, number], name: "Weather Route 2", isLocked: false, weatherWarning: null },
-    { coordinates: [136.08295, 41.52432] as [number, number], name: "Weather Route 3", isLocked: true, weatherWarning: null },
-    { coordinates: [138.08295, 42.52432] as [number, number], name: "Destination Port - Tokyo", isLocked: false, weatherWarning: null }
   ];
 
   // Extract coordinates for backwards compatibility
@@ -285,7 +288,7 @@ const RouteDetail = () => {
   const handleModifyVoyage = () => {
     console.log('handleModifyVoyage called, navigating to modify page');
     // Navigate to modify voyage page
-    navigate(`/routes/${id}/modify`);
+    navigate(`/routes/${routeId}/modify`);
   };
 
   const handleVoyageCompletion = (comments: string) => {
@@ -397,7 +400,7 @@ const RouteDetail = () => {
   const handleAddWaypoint = () => {
     console.log('Adding waypoint at:', contextMenu.coordinates);
     // Navigate to modify voyage page with the selected coordinates
-    navigate(`/routes/${id}/modify`, { 
+    navigate(`/routes/${routeId}/modify`, { 
       state: { newWaypointCoordinates: contextMenu.coordinates } 
     });
     setContextMenu({ ...contextMenu, isVisible: false });
@@ -442,8 +445,8 @@ const RouteDetail = () => {
     }));
 
   // SPECIAL ROUTE HANDLING
-  // Check if this is the RT-001 route which has a custom interface
-  const isRT001 = id === 'RT-001';
+  // Check if this is the RT-001 route which has a custom interface (disabled - all routes use standard interface now)
+  const isRT001 = false; // routeId === 'RT-001';
 
   // MAIN COMPONENT RENDER
   return (
@@ -453,7 +456,7 @@ const RouteDetail = () => {
         {/* Route header with navigation and actions */}
         <RouteHeader 
           route={route}
-          routeId={id!}
+          routeId={routeId}
           voyageStatus={voyageStatus}
           onModifyVoyage={handleModifyVoyage}
           onCompleteVoyage={handleCompleteVoyage}
