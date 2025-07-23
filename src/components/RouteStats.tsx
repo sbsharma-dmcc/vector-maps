@@ -11,11 +11,49 @@
  * with color coding to indicate improvements (green) or increases (red).
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import RouteDetailsDialog from './RouteDetailsDialog';
 
 const RouteStats: React.FC = () => {
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Mock route data for the dialog
+  const mockRoute = {
+    id: 'RT-005',
+    name: 'Route to Hamburg'
+  };
+
+  // Mock waypoints data
+  const mockWaypoints = [
+    {
+      name: 'Start Port',
+      coordinates: [-74.006, 40.7128],
+      isLocked: false,
+      weatherWarning: null,
+      eta: '2025-07-23T11:50:00Z'
+    },
+    {
+      name: 'Waypoint 1',
+      coordinates: [-70.2568, 43.6532],
+      isLocked: true,
+      weatherWarning: 'High winds expected',
+      eta: '2025-07-24T08:30:00Z'
+    },
+    {
+      name: 'Hamburg Port',
+      coordinates: [9.9937, 53.5511],
+      isLocked: false,
+      weatherWarning: null,
+      eta: '2025-07-25T08:49:00Z'
+    }
+  ];
+
+  const handleDownloadRTZ = () => {
+    console.log('Downloading RTZ file...');
+  };
+
   return (
     <div className="p-4">
       {/* DATE/TIME CARDS - Departure and arrival information */}
@@ -102,6 +140,7 @@ const RouteStats: React.FC = () => {
         <Button 
           variant="ghost" 
           className="w-full justify-between bg-white hover:bg-gray-50 py-6"
+          onClick={() => setIsDetailsOpen(true)}
         >
           <div className="flex items-center">
             <div className="font-medium">More Details</div>
@@ -110,6 +149,16 @@ const RouteStats: React.FC = () => {
           <ChevronRight className="h-5 w-5" />    {/* Right arrow indicator */}
         </Button>
       </div>
+
+      {/* Route Details Dialog */}
+      <RouteDetailsDialog
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        route={mockRoute}
+        activeTab="weather"
+        waypoints={mockWaypoints}
+        onDownloadRTZ={handleDownloadRTZ}
+      />
     </div>
   );
 };
