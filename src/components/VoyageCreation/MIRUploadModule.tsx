@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { Upload, FileText, AlertTriangle, CheckCircle, Download, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileProcessorFactory } from '@/utils/fileProcessors';
@@ -27,6 +29,7 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [showTable, setShowTable] = useState(false);
+  const [jsonText, setJsonText] = useState('');
 
   const handleMIRToggle = useCallback((enabled: boolean) => {
     setMirEnabled(enabled);
@@ -130,6 +133,45 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
     toast.success('Modified waypoints downloaded');
   }, [uploadState.waypoints, uploadState.fileName]);
 
+  const handleJsonUpload = useCallback(async () => {
+    if (!jsonText.trim()) {
+      toast.error('Please enter JSON data');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      const jsonData = JSON.parse(jsonText);
+      const blob = new Blob([JSON.stringify(jsonData)], { type: 'application/json' });
+      const file = new File([blob], 'pasted_waypoints.json', { type: 'application/json' });
+      
+      const result = await FileProcessorFactory.processFile(file);
+      
+      setUploadState({
+        isUploaded: true,
+        fileName: 'Pasted JSON Data',
+        waypoints: result.waypoints,
+        validationErrors: [...result.validationResult.errors, ...result.validationResult.warnings],
+        isEditing: false
+      });
+
+      if (result.validationResult.isValid) {
+        onWaypointsChange(result.waypoints);
+        toast.success(`Successfully processed ${result.waypoints.length} waypoints from JSON`);
+        setShowTable(true);
+        setJsonText('');
+      } else {
+        toast.error(`Validation failed: ${result.validationResult.errors.length} errors found`);
+        setShowTable(true);
+      }
+    } catch (error) {
+      toast.error('Invalid JSON format or processing failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [jsonText, onWaypointsChange]);
+
   if (!mirEnabled) {
     return (
       <Card className="m-4 border-none shadow-none">
@@ -165,39 +207,88 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
         </CardHeader>
         <CardContent className="space-y-4">
           {!uploadState.isUploaded ? (
-            <>
-              <div>
-                <Label className="text-sm font-medium">Upload Route File</Label>
-                <div className="mt-2">
-                  <Input
-                    type="file"
-                    accept=".csv,.rtz,.xml"
-                    onChange={handleFileUpload}
-                    disabled={isProcessing}
-                    className="cursor-pointer"
-                  />
-                  <div className="text-xs text-muted-foreground mt-1">
-                    📌 Uploaded waypoints will be locked by default.
+            <Tabs defaultValue="upload" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="upload">Upload File</TabsTrigger>
+                <TabsTrigger value="json">Paste JSON</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="upload" className="space-y-4">
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center space-y-4">
+                  <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground">
+                      Drag and drop your RTZ or CSV file here, or
+                    </p>
+                    <Input
+                      type="file"
+                      accept=".csv,.rtz,.xml"
+                      onChange={handleFileUpload}
+                      disabled={isProcessing}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <Button 
+                      variant="outline" 
+                      asChild
+                      disabled={isProcessing}
+                    >
+                      <label htmlFor="file-upload" className="cursor-pointer">
+                        Browse Files
+                      </label>
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Supports .rtz and .csv formats
                   </div>
                 </div>
-              </div>
+                
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Uploaded waypoints will be locked by default.
+                  </AlertDescription>
+                </Alert>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={downloadSampleCSV}
+                  className="w-full"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Sample CSV
+                </Button>
+              </TabsContent>
               
-              <div className="text-xs text-muted-foreground">
-                Supported formats: .RTZ, .CSV
-                <br />
-                CSV format: Waypoint, Latitude, Longitude, Name, ETA
-              </div>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={downloadSampleCSV}
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Sample CSV
-              </Button>
-            </>
+              <TabsContent value="json" className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Paste JSON Data</Label>
+                  <Textarea
+                    placeholder="Paste your waypoint JSON data here..."
+                    value={jsonText}
+                    onChange={(e) => setJsonText(e.target.value)}
+                    className="min-h-[200px] font-mono text-sm"
+                    disabled={isProcessing}
+                  />
+                </div>
+                
+                <Button 
+                  onClick={handleJsonUpload}
+                  disabled={isProcessing || !jsonText.trim()}
+                  className="w-full"
+                >
+                  Process JSON Data
+                </Button>
+                
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    JSON waypoints will be locked by default.
+                  </AlertDescription>
+                </Alert>
+              </TabsContent>
+            </Tabs>
           ) : (
             <>
               <div className="flex items-center justify-between">
