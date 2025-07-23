@@ -10,6 +10,7 @@ import Maps from "./pages/Maps";
 import SharedMap from "./pages/SharedMap";
 import RoutesPage from "./pages/Routes";
 import RouteDetail from "./pages/RouteDetail";
+import CreateVoyage from "./pages/CreateVoyage";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
@@ -38,6 +39,7 @@ const App = () => {
               <Route path="/maps" element={<Maps />} />
               <Route path="/routes" element={<RoutesPage />} />
               <Route path="/routes/:id" element={<RouteDetail />} />
+              <Route path="/create-voyage" element={<CreateVoyage />} />
               <Route path="/history" element={<History />} />
             </Route>
             <Route path="/maps/shared" element={<SharedMap />} />

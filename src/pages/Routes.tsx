@@ -23,7 +23,7 @@ const Routes = () => {
 
   useEffect(() => {
     // Generate mock vessel and route data
-    const mockVessels = generateMockVessels(25);
+    const mockVessels = generateMockVessels();
     const mockRoutes = generateMockRoutes(mockVessels);
     
     setVessels(mockVessels);
