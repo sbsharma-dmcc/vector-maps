@@ -57,7 +57,7 @@ const RouteDetailsDialog = ({ isOpen, onClose, route, activeTab, waypoints, onDo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -206,30 +206,79 @@ const RouteDetailsDialog = ({ isOpen, onClose, route, activeTab, waypoints, onDo
             />
           )}
 
-          {/* Weather Information */}
+          {/* Weather Chart Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Weather Forecast</CardTitle>
+              <CardTitle className="text-lg">Weather</CardTitle>
               <p className="text-sm text-muted-foreground">For next nine days</p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Wind</div>
-                  <div className="font-semibold">15-25 kts</div>
+              <div className="mb-4">
+                <div className="flex gap-4 text-center text-sm border-b">
+                  <div className="px-4 py-2 bg-blue-100 text-blue-800 font-medium rounded-t">Wind</div>
+                  <div className="px-4 py-2 text-gray-600">Wave</div>
+                  <div className="px-4 py-2 text-gray-600">Swell</div>
+                  <div className="px-4 py-2 text-gray-600">Current</div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Wave</div>
-                  <div className="font-semibold">2-4 m</div>
+                
+                {/* Wind Chart */}
+                <div className="p-4 bg-blue-50">
+                  <div className="h-32 bg-gradient-to-r from-blue-200 to-blue-300 rounded relative">
+                    <div className="absolute bottom-0 left-0 w-full h-20 bg-blue-400 rounded-b"></div>
+                    <div className="absolute top-4 left-4 text-xs text-blue-800">16</div>
+                    <div className="absolute top-8 left-4 text-xs text-blue-800">12</div>
+                    <div className="absolute top-12 left-4 text-xs text-blue-800">8</div>
+                    <div className="absolute top-16 left-4 text-xs text-blue-800">4</div>
+                    <div className="absolute bottom-0 left-4 text-xs text-blue-800">0</div>
+                    <div className="absolute bottom-2 left-8 text-xs text-blue-800">Jul 23</div>
+                    <div className="absolute bottom-2 right-8 text-xs text-blue-800">Jul 24</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Swell</div>
-                  <div className="font-semibold">1-2 m</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Current</div>
-                  <div className="font-semibold">0.5-1.2 kts</div>
-                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Waypoints Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                <span>Waypoints</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  Showing Only 10 Waypoints <button className="text-blue-600 hover:underline ml-2">See all</button>
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b text-left text-sm text-gray-600">
+                      <th className="pb-2">Waypoints</th>
+                      <th className="pb-2">ETA (UTC)</th>
+                      <th className="pb-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {waypoints.slice(0, 10).map((waypoint, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="py-3 flex items-center gap-2">
+                          <span className="font-medium">{index + 1}</span>
+                          {waypoint.isLocked && (
+                            <Lock className="w-4 h-4 text-orange-500" />
+                          )}
+                        </td>
+                        <td className="py-3 text-sm text-gray-600">
+                          {waypoint.eta || '2025-07-23T06:30:00Z'}
+                        </td>
+                        <td className="py-3">
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <span className="text-lg">⋮</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
@@ -243,9 +292,6 @@ const RouteDetailsDialog = ({ isOpen, onClose, route, activeTab, waypoints, onDo
             >
               <Download className="w-4 h-4" />
               Download RTZ File
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              Close
             </Button>
           </div>
         </div>

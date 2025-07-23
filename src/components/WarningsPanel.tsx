@@ -40,7 +40,7 @@ const WarningsPanel = ({ warnings, position = 'floating', onClose, className = '
   };
 
   const baseClasses = position === 'floating' 
-    ? "absolute top-4 right-4 z-50 w-80 shadow-lg" 
+    ? "absolute top-4 right-4 z-50 w-80 shadow-lg animate-pulse" 
     : "w-full";
 
   return (

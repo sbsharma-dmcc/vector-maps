@@ -23,8 +23,8 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { Layers } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Layers, Edit } from 'lucide-react';
 import MapboxMap from '../components/MapboxMap';
 import MapLayersPanel from '../components/MapLayersPanel';
 import RT001MapInterface from '../components/RT001MapInterface';
@@ -33,15 +33,17 @@ import VoyageCompletedDialog from '../components/VoyageCompletedDialog';
 import VesselInfoDialog from '../components/VesselInfoDialog';
 import RouteDetailsDialog from '../components/RouteDetailsDialog';
 import WarningsPanel from '../components/WarningsPanel';
+import TimelineBar from '../components/TimelineBar';
+import MapClickContextMenu from '../components/MapClickContextMenu';
 import RouteHeader from '../components/RouteHeader';
 import RouteTabs from '../components/RouteTabs';
 import RouteStats from '../components/RouteStats';
-import RouteTimeline from '../components/RouteTimeline';
 import { Button } from '@/components/ui/button';
 import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-data';
 import { useToast } from '@/hooks/use-toast';
 
 const RouteDetail = () => {
+  const navigate = useNavigate();
   // ROUTE IDENTIFICATION - Get route ID from URL parameters
   const { id } = useParams<{ id: string }>();
   
@@ -83,6 +85,17 @@ const RouteDetail = () => {
   
   // WARNINGS STATE
   const [showWarningsPanel, setShowWarningsPanel] = useState(true);
+  
+  // MAP CLICK STATE
+  const [contextMenu, setContextMenu] = useState<{
+    isVisible: boolean;
+    position: { x: number; y: number };
+    coordinates: [number, number];
+  }>({
+    isVisible: false,
+    position: { x: 0, y: 0 },
+    coordinates: [0, 0]
+  });
   
   // UTILITIES
   const { toast } = useToast();                                   // Toast notification system
@@ -345,6 +358,27 @@ const RouteDetail = () => {
 </route>`;
   };
 
+  // MAP CLICK HANDLERS
+  const handleMapClick = (coordinates: [number, number], event: any) => {
+    setContextMenu({
+      isVisible: true,
+      position: { x: event.originalEvent.clientX, y: event.originalEvent.clientY },
+      coordinates
+    });
+  };
+
+  const handleAddWaypoint = () => {
+    // Navigate to modify voyage page with the selected coordinates
+    navigate(`/routes/${id}/modify`, { 
+      state: { newWaypointCoordinates: contextMenu.coordinates } 
+    });
+    setContextMenu({ ...contextMenu, isVisible: false });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu({ ...contextMenu, isVisible: false });
+  };
+
   // LOADING STATE
   if (!route) {
     return (
@@ -459,12 +493,22 @@ const RouteDetail = () => {
               isGlobeViewEnabled={isGlobeViewEnabled}
               waypoints={activeWaypoints}                 // Waypoints with metadata
               onVesselClick={handleVesselClick}           // Vessel click handler
+              onMapClick={handleMapClick}                 // Map click handler for context menu
             />
             
-            {/* INTERACTIVE TIMELINE - Overlay for voyage animation control */}
-            <RouteTimeline 
+            {/* NEW TIMELINE BAR - Bottom overlay for voyage timeline */}
+            <TimelineBar 
               onDayClick={animateVessel}                  // Animation trigger callback
               isAnimating={isAnimating}                   // Animation status for UI feedback
+            />
+            
+            {/* MAP CLICK CONTEXT MENU */}
+            <MapClickContextMenu
+              position={contextMenu.position}
+              coordinates={contextMenu.coordinates}
+              onAddWaypoint={handleAddWaypoint}
+              onClose={handleCloseContextMenu}
+              isVisible={contextMenu.isVisible}
             />
           </>
         )}

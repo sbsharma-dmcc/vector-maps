@@ -30,6 +30,7 @@ interface MapboxMapProps {
     weatherWarning?: string | null;
   }>;
   onVesselClick?: (vessel: any) => void;
+  onMapClick?: (coordinates: [number, number], event: any) => void;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -43,7 +44,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   activeBaseLayer = 'default',
   isGlobeViewEnabled = false,
   waypoints = [],
-  onVesselClick
+  onVesselClick,
+  onMapClick
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
@@ -303,6 +305,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         title: "Map Loaded",
         description: "Map has been successfully initialized"
       });
+      
+      // Add map click handler
+      if (onMapClick) {
+        map.on('click', (e) => {
+          onMapClick([e.lngLat.lng, e.lngLat.lat], e);
+        });
+      }
     });
 
     map.on('error', (e) => {
