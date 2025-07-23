@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import MIRUploadModule from '@/components/VoyageCreation/MIRUploadModule';
-import MapVisualizationModule from '@/components/VoyageCreation/MapVisualizationModule';
+import VoyageConfigPanel from '@/components/VoyageCreation/VoyageConfigPanel';
+import VoyageMapInterface from '@/components/VoyageCreation/VoyageMapInterface';
 import { WaypointData } from '@/components/VoyageCreation/VoyageDataTable';
 import { sampleVoyageJSON } from '@/components/VoyageCreation/VoyageJSON';
 
@@ -77,84 +77,42 @@ const CreateVoyage = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Create New Voyage</h1>
-        <p className="text-muted-foreground">
-          Set up your comprehensive voyage route and configuration system
-        </p>
-      </div>
+    <div className="flex h-screen bg-background">
+      {/* Left Panel - Configuration */}
+      <VoyageConfigPanel 
+        voyageName={voyageName}
+        setVoyageName={setVoyageName}
+        vesselName={vesselName}
+        setVesselName={setVesselName}
+      />
+      
+      {/* Right Panel - Map Interface */}
+      <VoyageMapInterface 
+        mapboxToken={mapboxToken}
+        waypoints={waypoints}
+      />
 
-      {/* Basic Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="space-y-2">
-          <Label htmlFor="voyage-name">Voyage Name</Label>
-          <Input
-            id="voyage-name"
-            placeholder="e.g., Singapore to Rotterdam"
-            value={voyageName}
-            onChange={(e) => setVoyageName(e.target.value)}
-          />
+      {/* Mapbox Token Input Dialog (if no token) */}
+      {!mapboxToken && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-background border border-border rounded-lg p-4 shadow-lg max-w-md">
+            <Label htmlFor="mapbox-token" className="text-sm font-medium">
+              Mapbox Token Required
+            </Label>
+            <Input
+              id="mapbox-token"
+              type="password"
+              placeholder="Enter your Mapbox public token"
+              value={mapboxToken}
+              onChange={(e) => setMapboxToken(e.target.value)}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Get your token from <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">mapbox.com</a>
+            </p>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="vessel-name">Vessel Name</Label>
-          <Input
-            id="vessel-name"
-            placeholder="e.g., MV Ocean Pioneer"
-            value={vesselName}
-            onChange={(e) => setVesselName(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Mapbox Token Input */}
-      <div className="mb-6 space-y-2">
-        <Label htmlFor="mapbox-token">Mapbox Token (for map visualization)</Label>
-        <Input
-          id="mapbox-token"
-          type="password"
-          placeholder="Enter your Mapbox public token"
-          value={mapboxToken}
-          onChange={(e) => setMapboxToken(e.target.value)}
-        />
-        <p className="text-sm text-muted-foreground">
-          Get your token from <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">mapbox.com</a>
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - MIR Upload */}
-        <div className="space-y-6">
-          <MIRUploadModule
-            onWaypointsChange={handleWaypointsChange}
-            onMIRToggle={handleMIRToggle}
-          />
-        </div>
-
-        {/* Right Column - Map Visualization */}
-        <div className="space-y-6">
-          <MapVisualizationModule
-            waypoints={waypoints}
-            onWaypointsChange={handleWaypointsChange}
-            mapboxToken={mapboxToken}
-          />
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 justify-between mt-8">
-        <Button variant="outline" onClick={downloadSampleJSON}>
-          Download Sample JSON
-        </Button>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => navigate('/routes')}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreateVoyage}>
-            Create Voyage
-          </Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
