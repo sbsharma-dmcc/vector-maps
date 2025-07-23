@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lock, Unlock, Trash2 } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
-import { WaypointData } from './VoyageDataTable';
+import { WaypointData } from '@/types/voyage';
 import { toast } from 'sonner';
 
 interface MapVisualizationModuleProps {
@@ -56,7 +56,7 @@ const MapVisualizationModule: React.FC<MapVisualizationModuleProps> = ({
     }
 
     // Add route line
-    const coordinates = waypoints.map(wp => [wp.longitude, wp.latitude]);
+    const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
     
     map.current.addSource('route', {
       type: 'geojson',
@@ -122,7 +122,7 @@ const MapVisualizationModule: React.FC<MapVisualizationModuleProps> = ({
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         ">
           ${markerText}
-          ${waypoint.locked ? `
+          ${waypoint.isLocked ? `
             <div style="
               position: absolute;
               top: -4px;
@@ -145,21 +145,21 @@ const MapVisualizationModule: React.FC<MapVisualizationModuleProps> = ({
       `;
 
       const marker = new mapboxgl.Marker(el)
-        .setLngLat([waypoint.longitude, waypoint.latitude])
+        .setLngLat([waypoint.lon, waypoint.lat])
         .addTo(map.current!);
 
       // Add click handler
       el.addEventListener('click', () => {
         const popup = new mapboxgl.Popup({ offset: 25 })
-          .setLngLat([waypoint.longitude, waypoint.latitude])
+          .setLngLat([waypoint.lon, waypoint.lat])
           .setHTML(`
             <div style="padding: 8px;">
               <div><strong>Waypoint ${waypoint.waypointNumber}</strong></div>
-              <div>Lat: ${waypoint.latitude.toFixed(4)}</div>
-              <div>Lng: ${waypoint.longitude.toFixed(4)}</div>
+              <div>Lat: ${waypoint.lat.toFixed(4)}</div>
+              <div>Lng: ${waypoint.lon.toFixed(4)}</div>
               <div style="margin-top: 8px; display: flex; gap: 4px;">
                 <button id="toggle-lock-${waypoint.id}" style="
-                  background: ${waypoint.locked ? '#ef4444' : '#22c55e'};
+                  background: ${waypoint.isLocked ? '#ef4444' : '#22c55e'};
                   color: white;
                   border: none;
                   padding: 4px 8px;
@@ -167,7 +167,7 @@ const MapVisualizationModule: React.FC<MapVisualizationModuleProps> = ({
                   cursor: pointer;
                   font-size: 12px;
                 ">
-                  ${waypoint.locked ? 'Unlock' : 'Lock'}
+                  ${waypoint.isLocked ? 'Unlock' : 'Lock'}
                 </button>
                 <button id="delete-${waypoint.id}" style="
                   background: #dc2626;
@@ -217,7 +217,7 @@ const MapVisualizationModule: React.FC<MapVisualizationModuleProps> = ({
 
   const toggleWaypointLock = (id: string) => {
     const updatedWaypoints = waypoints.map(wp =>
-      wp.id === id ? { ...wp, locked: !wp.locked } : wp
+      wp.id === id ? { ...wp, isLocked: !wp.isLocked } : wp
     );
     onWaypointsChange(updatedWaypoints);
     toast.success('Waypoint lock status updated');

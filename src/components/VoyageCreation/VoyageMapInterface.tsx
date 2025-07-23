@@ -5,10 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Ship, Info, X } from 'lucide-react';
+import { WaypointData } from '@/types/voyage';
 
 interface VoyageMapInterfaceProps {
   mapboxToken?: string;
-  waypoints?: any[];
+  waypoints?: WaypointData[];
 }
 
 const VoyageMapInterface = ({ mapboxToken, waypoints = [] }: VoyageMapInterfaceProps) => {
@@ -47,7 +48,7 @@ const VoyageMapInterface = ({ mapboxToken, waypoints = [] }: VoyageMapInterfaceP
     // Add route line if waypoints exist
     if (waypoints.length > 0) {
       map.current.on('load', () => {
-        const coordinates = waypoints.map(wp => [wp.longitude, wp.latitude]);
+        const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
         
         map.current?.addSource('route', {
           type: 'geojson',

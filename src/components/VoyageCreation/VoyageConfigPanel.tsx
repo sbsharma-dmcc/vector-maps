@@ -7,15 +7,19 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Ship, Settings, Clock } from 'lucide-react';
+import MIRUploadModule from './MIRUploadModule';
+import { WaypointData } from '@/types/voyage';
 
 interface VoyageConfigPanelProps {
   voyageName: string;
   setVoyageName: (name: string) => void;
   vesselName: string;
   setVesselName: (name: string) => void;
+  waypoints: WaypointData[];
+  onWaypointsChange: (waypoints: WaypointData[]) => void;
 }
 
-const VoyageConfigPanel = ({ voyageName, setVoyageName, vesselName, setVesselName }: VoyageConfigPanelProps) => {
+const VoyageConfigPanel = ({ voyageName, setVoyageName, vesselName, setVesselName, waypoints, onWaypointsChange }: VoyageConfigPanelProps) => {
   const [optimizationType, setOptimizationType] = useState('fixed-arrival');
   const [departureDate, setDepartureDate] = useState('2025-01-05 16:21 UTC');
   const [fromPort, setFromPort] = useState('Colombo Port');
@@ -201,6 +205,12 @@ const VoyageConfigPanel = ({ voyageName, setVoyageName, vesselName, setVesselNam
           </div>
         </CardContent>
       </Card>
+
+      {/* MIR Upload Module */}
+      <MIRUploadModule 
+        onWaypointsChange={onWaypointsChange}
+        waypoints={waypoints}
+      />
 
       {/* Weather Constraints Dialog */}
       <Dialog open={showWeatherConstraints} onOpenChange={setShowWeatherConstraints}>

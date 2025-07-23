@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import VoyageConfigPanel from '@/components/VoyageCreation/VoyageConfigPanel';
 import VoyageMapInterface from '@/components/VoyageCreation/VoyageMapInterface';
-import { WaypointData } from '@/components/VoyageCreation/VoyageDataTable';
+import { WaypointData } from '@/types/voyage';
 import { sampleVoyageJSON } from '@/components/VoyageCreation/VoyageJSON';
 
 const CreateVoyage = () => {
@@ -84,6 +84,8 @@ const CreateVoyage = () => {
         setVoyageName={setVoyageName}
         vesselName={vesselName}
         setVesselName={setVesselName}
+        waypoints={waypoints}
+        onWaypointsChange={setWaypoints}
       />
       
       {/* Right Panel - Map Interface */}
