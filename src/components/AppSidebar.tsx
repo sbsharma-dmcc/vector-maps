@@ -1,5 +1,5 @@
 
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Route, History, Ship, Search, Plus, Settings, CloudRain, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -31,6 +31,7 @@ const navigationItems = [
 
 const AppSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
   const [isDTNDialogOpen, setIsDTNDialogOpen] = useState(false);
   const [isWeatherDialogOpen, setIsWeatherDialogOpen] = useState(false);
@@ -114,7 +115,12 @@ const AppSidebar = () => {
       </SidebarContent>
 
       <div className="mt-auto p-2 mb-4">
-        <Button className="w-full bg-blue-600 hover:bg-blue-700" size="icon">
+        <Button 
+          className="w-full bg-blue-600 hover:bg-blue-700" 
+          size="icon"
+          onClick={() => navigate('/create-voyage')}
+          title="Create New Voyage"
+        >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
