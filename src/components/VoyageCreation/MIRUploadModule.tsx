@@ -142,7 +142,9 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
     setIsProcessing(true);
     
     try {
+      console.log('Processing JSON:', jsonText);
       const result = await FileProcessorFactory.processJSONString(jsonText);
+      console.log('Processing result:', result);
       
       setUploadState({
         isUploaded: true,
@@ -162,6 +164,7 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
         setShowTable(true);
       }
     } catch (error) {
+      console.error('JSON processing error:', error);
       toast.error(error instanceof Error ? error.message : 'JSON processing failed');
     } finally {
       setIsProcessing(false);
