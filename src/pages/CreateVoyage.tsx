@@ -19,6 +19,7 @@ const CreateVoyage = () => {
   const [mirEnabled, setMirEnabled] = useState(true);
   
   const [selectedWaypoint, setSelectedWaypoint] = useState<WaypointData | null>(null);
+  const [isPanelMinimized, setIsPanelMinimized] = useState(false);
 
   const handleWaypointsChange = (newWaypoints: WaypointData[]) => {
     setWaypoints(newWaypoints);
@@ -81,6 +82,7 @@ const CreateVoyage = () => {
 
   const handleWaypointClick = (waypoint: WaypointData) => {
     setSelectedWaypoint(waypoint);
+    setIsPanelMinimized(false); // Open the panel when waypoint is clicked
   };
 
   const handleUpdateWaypoint = (waypointId: string, updates: Partial<WaypointData>) => {
@@ -150,6 +152,9 @@ const CreateVoyage = () => {
           onToggleLock={handleToggleLock}
           onDeleteWaypoint={handleDeleteWaypoint}
           onUpdateWaypoint={handleUpdateWaypoint}
+          selectedWaypointId={selectedWaypoint?.id}
+          isMinimized={isPanelMinimized}
+          onToggleMinimized={() => setIsPanelMinimized(!isPanelMinimized)}
         />
       </div>
     </div>

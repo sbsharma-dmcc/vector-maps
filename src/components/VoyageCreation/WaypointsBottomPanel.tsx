@@ -12,6 +12,9 @@ interface WaypointsBottomPanelProps {
   onToggleLock: (waypointId: string) => void;
   onDeleteWaypoint: (waypointId: string) => void;
   onUpdateWaypoint: (waypointId: string, updates: Partial<WaypointData>) => void;
+  selectedWaypointId?: string;
+  isMinimized?: boolean;
+  onToggleMinimized?: () => void;
 }
 
 const WaypointsBottomPanel = ({
@@ -19,9 +22,11 @@ const WaypointsBottomPanel = ({
   onWaypointClick,
   onToggleLock,
   onDeleteWaypoint,
-  onUpdateWaypoint
+  onUpdateWaypoint,
+  selectedWaypointId,
+  isMinimized = false,
+  onToggleMinimized
 }: WaypointsBottomPanelProps) => {
-  const [isMinimized, setIsMinimized] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<WaypointData>>({});
 
@@ -64,7 +69,7 @@ const WaypointsBottomPanel = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setIsMinimized(!isMinimized)}
+          onClick={onToggleMinimized}
           className="h-8 w-8 p-0"
         >
           {isMinimized ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -89,8 +94,10 @@ const WaypointsBottomPanel = ({
             <TableBody>
               {waypoints.map((waypoint) => (
                 <TableRow 
-                  key={waypoint.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  key={waypoint.id} 
+                  className={`cursor-pointer hover:bg-muted/50 ${
+                    selectedWaypointId === waypoint.id ? 'bg-primary/10 border-l-4 border-l-primary' : ''
+                  }`}
                   onClick={() => editingId !== waypoint.id && onWaypointClick(waypoint)}
                 >
                   <TableCell>
