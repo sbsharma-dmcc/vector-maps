@@ -2,7 +2,7 @@ import { Vessel } from '@/utils/vesselMarkers';
 import * as turf from '@turf/turf'; // Import turf.js
 
 export type { Vessel } from '@/utils/vesselMarkers';
-export type VesselType = 'green' | 'orange' | 'circle';
+export type VesselType = 'green' | 'orange' | 'circle' | 'container' | 'oil' | 'chemical-tanker' | 'gas-carrier' | 'lng' | 'bulk-carrier' | 'passenger' | 'barge' | 'cable-layer' | 'refrigerated-cargo' | 'roll-on-roll-off';
 
 export interface VesselEvent {
   id: string;
@@ -29,7 +29,7 @@ export interface Route {
 }
 
 export const vessels: Vessel[] = [
-  // Green vessels – updated to be in open oceans
+  // Ensure at least one of each type appears
   {
     id: 'vessel-1',
     name: 'Green Cargo Ship Alpha',
@@ -38,27 +38,182 @@ export const vessels: Vessel[] = [
   },
   {
     id: 'vessel-2',
-    name: 'Green Cargo Ship Beta',
-    type: 'green',
+    name: 'Orange Vessel Beta',
+    type: 'orange',
     position: [-157.5, 21.0] // North Pacific (south of Hawaii)
   },
   {
     id: 'vessel-3',
-    name: 'Green Cargo Ship Gamma',
-    type: 'green',
+    name: 'Navigation Beacon Gamma',
+    type: 'circle',
     position: [0.0, 47.0] // North Atlantic (mid-ocean west of France)
   },
   {
     id: 'vessel-4',
-    name: 'Green Cargo Ship Delta',
-    type: 'green',
+    name: 'Container Ship Delta',
+    type: 'container',
     position: [104.5, 0.5] // South China Sea
   },
   {
     id: 'vessel-5',
-    name: 'Green Cargo Ship Epsilon',
-    type: 'green',
+    name: 'Oil Tanker Epsilon',
+    type: 'oil',
     position: [-122.5, 33.5] // Pacific Ocean (west of California)
+  },
+  {
+    id: 'vessel-6',
+    name: 'Chemical Tanker Zeta',
+    type: 'chemical-tanker',
+    position: [15.0, 60.0] // North Sea
+  },
+  {
+    id: 'vessel-7',
+    name: 'Gas Carrier Eta',
+    type: 'gas-carrier',
+    position: [120.0, 35.0] // East China Sea
+  },
+  {
+    id: 'vessel-8',
+    name: 'LNG Carrier Theta',
+    type: 'lng',
+    position: [-45.0, 20.0] // Mid Atlantic
+  },
+  {
+    id: 'vessel-9',
+    name: 'Bulk Carrier Iota',
+    type: 'bulk-carrier',
+    position: [80.0, 10.0] // Indian Ocean
+  },
+  {
+    id: 'vessel-10',
+    name: 'Passenger Ship Kappa',
+    type: 'passenger',
+    position: [-30.0, 55.0] // North Atlantic
+  },
+  {
+    id: 'vessel-11',
+    name: 'Barge Lambda',
+    type: 'barge',
+    position: [5.0, 52.0] // North Sea
+  },
+  {
+    id: 'vessel-12',
+    name: 'Cable Layer Mu',
+    type: 'cable-layer',
+    position: [-40.0, 40.0] // Mid Atlantic
+  },
+  {
+    id: 'vessel-13',
+    name: 'Refrigerated Cargo Nu',
+    type: 'refrigerated-cargo',
+    position: [130.0, 30.0] // Western Pacific
+  },
+  {
+    id: 'vessel-14',
+    name: 'RoRo Ferry Xi',
+    type: 'roll-on-roll-off',
+    position: [25.0, 60.0] // Baltic Sea
+  }
+];
+
+export const fourVessels: Vessel[] = [
+  {
+    id: 'vessel-1',
+    name: 'Green Cargo Ship',
+    type: 'green',
+    position: [-73.0, 39.5],
+    icon: '/lovable-uploads/Variant12.png'
+  },
+  {
+    id: 'vessel-2',
+    name: 'Orange Vessel',
+    type: 'orange',
+    position: [-157.5, 21.0],
+    icon: '/lovable-uploads/Variant13.png'
+  },
+  {
+    id: 'vessel-3',
+    name: 'Navigation Beacon',
+    type: 'circle',
+    position: [0.0, 47.0],
+    icon: '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'
+  },
+  {
+    id: 'vessel-4',
+    name: 'Container Ship',
+    type: 'container',
+    position: [104.5, 0.5],
+    icon: '/lovable-uploads/container.png'
+  },
+  {
+    id: 'vessel-5',
+    name: 'Oil Tanker',
+    type: 'oil',
+    position: [-74.0, 39.5],
+    icon: '/lovable-uploads/oil tanker.png'
+  },
+  {
+    id: 'vessel-6',
+    name: 'Chemical Tanker',
+    type: 'chemical-tanker',
+    position: [-63.0, 39],
+    icon: '/lovable-uploads/chemical tanker.png'
+  },
+  {
+    id: 'vessel-7',
+    name: 'Gas Carrier',
+    type: 'gas-carrier',
+    position: [120.0, 35.0],
+    icon: '/lovable-uploads/gas carrier.png'
+  },
+  {
+    id: 'vessel-8',
+    name: 'LNG Carrier',
+    type: 'lng',
+    position: [-45.0, 20.0],
+    icon: '/lovable-uploads/LNG.png'
+  },
+  {
+    id: 'vessel-9',
+    name: 'Bulk Carrier',
+    type: 'bulk-carrier',
+    position: [80.0, 10.0],
+    icon: '/lovable-uploads/bulk carrier.png'
+  },
+  {
+    id: 'vessel-10',
+    name: 'Passenger Ship',
+    type: 'passenger',
+    position: [-30.0, 55.0],
+    icon: '/lovable-uploads/passenger.png'
+  },
+  {
+    id: 'vessel-11',
+    name: 'Barge',
+    type: 'barge',
+    position: [5.0, 52.0],
+    icon: '/lovable-uploads/barge.png'
+  },
+  {
+    id: 'vessel-12',
+    name: 'Cable Layer',
+    type: 'cable-layer',
+    position: [-40.0, 40.0],
+    icon: '/lovable-uploads/cable layer.png'
+  },
+  {
+    id: 'vessel-13',
+    name: 'Refrigerated Cargo',
+    type: 'refrigerated-cargo',
+    position: [130.0, 30.0],
+    icon: '/lovable-uploads/refrigerated cargo.png'
+  },
+  {
+    id: 'vessel-14',
+    name: 'RoRo Ferry',
+    type: 'roll-on-roll-off',
+    position: [25.0, 60.0],
+    icon: '/lovable-uploads/roll-on-roll-off.png'
   }
 ];
 
@@ -70,104 +225,109 @@ const hardcodedLandPolygons = turf.multiPolygon([
   [[[0, 30], [180, 30], [180, 70], [0, 70], [0, 30]]]
 ]);
 
+
 // Enhanced function to generate more realistic ocean positions
-export const generateMockVessels = (count: number = 5): Vessel[] => {
+
+export const generateMockVessels = (): Vessel[] => {
   const oceanRegions = [
-    // North Atlantic
-    { minLng: -80, maxLng: 20, minLat: 30, maxLat: 70 },
-    // South Atlantic  
-    { minLng: -60, maxLng: 20, minLat: -60, maxLat: 30 },
-    // North Pacific (note: this region spans the antimeridian, handled below)
-    { minLng: 120, maxLng: -120, minLat: 20, maxLat: 60 },
-    // South Pacific (note: this region spans the antimeridian, handled below)
-    { minLng: 120, maxLng: -70, minLat: -60, maxLat: 20 },
-    // Indian Ocean
-    { minLng: 20, maxLng: 120, minLat: -60, maxLat: 30 },
-    // Arctic Ocean (more constrained latitudes to stay watery)
-    { minLng: -180, maxLng: 180, minLat: 70, maxLat: 85 },
-    // Southern Ocean (more constrained latitudes to stay watery)
-    { minLng: -180, maxLng: 180, minLat: -80, maxLat: -55 }
+    { minLng: -80, maxLng: 20, minLat: 30, maxLat: 70 },     // North Atlantic
+    { minLng: -60, maxLng: 20, minLat: -60, maxLat: 30 },    // South Atlantic  
+    { minLng: 120, maxLng: -120, minLat: 20, maxLat: 60 },   // North Pacific
+    { minLng: 120, maxLng: -70, minLat: -60, maxLat: 20 },   // South Pacific
+    { minLng: 20, maxLng: 120, minLat: -60, maxLat: 30 },    // Indian Ocean
+    { minLng: -180, maxLng: 180, minLat: 70, maxLat: 85 },   // Arctic Ocean
+    { minLng: -180, maxLng: 180, minLat: -80, maxLat: -55 }  // Southern Ocean
   ];
 
-  const vesselTypes: VesselType[] = ['green', 'orange', 'circle'];
+  const vesselTypes: VesselType[] = [
+    'green', 'orange', 'circle', 'container', 'oil', 'chemical-tanker',
+    'gas-carrier', 'lng', 'bulk-carrier', 'passenger', 'barge', 'cable-layer',
+    'refrigerated-cargo', 'roll-on-roll-off'
+  ];
+
   const vesselNames = {
-    green: ['Cargo Master', 'Ocean Freight', 'Sea Carrier', 'Marine Express', 'Blue Wave'],
-    orange: ['Trade Wind', 'Pacific Star', 'Atlantic Pioneer', 'Global Trader', 'Ocean Explorer'],
-    circle: ['Navigation Beacon', 'Weather Buoy', 'Safety Marker', 'Ocean Monitor', 'Sea Guard']
+    green: ['Cargo Master', 'Ocean Freight', 'Sea Carrier'],
+    orange: ['Trade Wind', 'Pacific Star', 'Atlantic Pioneer'],
+    circle: ['Navigation Beacon', 'Weather Buoy', 'Ocean Monitor'],
+    container: ['Container Express', 'Box Carrier'],
+    oil: ['Black Gold', 'Crude Carrier'],
+    'chemical-tanker': ['Chemical Express', 'Hazmat Carrier'],
+    'gas-carrier': ['Gas Express', 'LPG Carrier'],
+    lng: ['LNG Express', 'Liquefied Star'],
+    'bulk-carrier': ['Bulk Express', 'Dry Cargo'],
+    passenger: ['Ocean Liner', 'Cruise Star'],
+    barge: ['River Barge', 'Coastal Carrier'],
+    'cable-layer': ['Cable Master', 'Fiber Express'],
+    'refrigerated-cargo': ['Cold Carrier', 'Reefer Express'],
+    'roll-on-roll-off': ['RoRo Express', 'Ferry Carrier']
   };
 
   const generatedVessels: Vessel[] = [];
-  let attempts = 0;
-  const maxAttemptsPerVessel = 100; // Prevent infinite loops
+  const maxAttempts = 100;
 
-  for (let i = 0; i < count; i++) {
-    let position: [number, number] | null = null;
-    let isValidPosition = false;
-    attempts = 0;
+  vesselTypes.forEach((type, index) => {
+    let found = false;
+    let attempt = 0;
 
-    while (!isValidPosition && attempts < maxAttemptsPerVessel) {
+    while (!found && attempt < maxAttempts) {
       const region = oceanRegions[Math.floor(Math.random() * oceanRegions.length)];
-      
       let longitude = Math.random() * (region.maxLng - region.minLng) + region.minLng;
-      
-      // Handle Pacific Ocean longitude wrap-around for random generation
-      if (region.minLng > region.maxLng) { // e.g., 120 to -120 implies spanning the 180/-180 meridian
-        const range1 = 180 - region.minLng; // Distance from minLng to 180
-        const range2 = region.maxLng - (-180); // Distance from -180 to maxLng
+
+      // Handle 180° antimeridian crossing
+      if (region.minLng > region.maxLng) {
+        const range1 = 180 - region.minLng;
+        const range2 = region.maxLng + 180;
         const totalRange = range1 + range2;
-        const randomPointInTotalRange = Math.random() * totalRange;
-
-        if (randomPointInTotalRange < range1) {
-          longitude = region.minLng + randomPointInTotalRange;
-        } else {
-          longitude = -180 + (randomPointInTotalRange - range1);
-        }
+        const offset = Math.random() * totalRange;
+        longitude = offset < range1 ? region.minLng + offset : -180 + (offset - range1);
       }
-      
+
       const latitude = Math.random() * (region.maxLat - region.minLat) + region.minLat;
-      position = [longitude, latitude];
+      const position: [number, number] = [longitude, latitude];
 
-      // --- Point-in-Polygon Check ---
       const point = turf.point(position);
-      // If the point is NOT in any land polygon, it's in the ocean.
-      // `booleanPointInPolygon` returns true if inside. We want it to be false.
-      isValidPosition = !turf.booleanPointInPolygon(point, hardcodedLandPolygons);
+      const isOcean = !turf.booleanPointInPolygon(point, hardcodedLandPolygons);
 
-      attempts++;
+      if (isOcean) {
+        const names = vesselNames[type];
+        const name = `${names[Math.floor(Math.random() * names.length)]} ${index + 1}`;
+        generatedVessels.push({ id: `vessel-${index + 1}`, name, type, position });
+        found = true;
+      }
+
+      attempt++;
     }
 
-    if (isValidPosition && position) {
-      const type = vesselTypes[Math.floor(Math.random() * vesselTypes.length)];
-      const nameOptions = vesselNames[type];
-      
-      generatedVessels.push({
-        id: `generated-vessel-${i + 1}`,
-        name: `${nameOptions[Math.floor(Math.random() * nameOptions.length)]} ${i + 1}`,
-        type,
-        position: position
-      });
-    } else {
-      console.warn(`Could not find an ocean position for vessel ${i + 1} after ${maxAttemptsPerVessel} attempts.`);
+    if (!found) {
+      console.warn(`⚠️ Could not place vessel of type "${type}" after ${maxAttempts} attempts.`);
     }
-  }
+  });
 
   return generatedVessels;
 };
 
+
+
 export const getVesselStats = () => {
   const totalVessels = vessels.length;
-  const greenVessels = vessels.filter(v => v.type === 'green').length;
-  const orangeVessels = vessels.filter(v => v.type === 'orange').length;
-  const circleVessels = vessels.filter(v => v.type === 'circle').length;
-  
-  return {
+  const stats: { [key: string]: number } = {
     total: totalVessels,
-    green: greenVessels,
-    orange: orangeVessels,
-    circle: circleVessels,
     active: Math.floor(totalVessels * 0.8),
     inactive: Math.floor(totalVessels * 0.2)
   };
+
+  // Count each vessel type
+  const vesselTypes: VesselType[] = [
+    'green', 'orange', 'circle', 'container', 'oil', 'chemical-tanker',
+    'gas-carrier', 'lng', 'bulk-carrier', 'passenger', 'barge', 'cable-layer',
+    'refrigerated-cargo', 'roll-on-roll-off'
+  ];
+
+  vesselTypes.forEach(type => {
+    stats[type] = vessels.filter(v => v.type === type).length;
+  });
+
+  return stats;
 };
 
 export const generateMockHistory = (vessels: Vessel[], count: number = 10): VesselEvent[] => {
@@ -197,7 +357,7 @@ export const generateMockRoutes = (vessels: Vessel[]): Route[] => {
   const statuses: Route['status'][] = ['scheduled', 'in-progress', 'completed', 'cancelled'];
   const ports = ['Tokyo Bay', 'Yokohama Port', 'Osaka Bay', 'Kobe Port', 'Nagoya Port', 'Chiba Port'];
   
-  return vessels.slice(0, 10).map((vessel, index) => {
+  return vessels.slice(0, 25).map((vessel, index) => {
     const startPort = ports[Math.floor(Math.random() * ports.length)];
     let endPort = ports[Math.floor(Math.random() * ports.length)];
     while (endPort === startPort) {

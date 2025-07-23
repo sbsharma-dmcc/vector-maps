@@ -11,8 +11,9 @@
  */
 
 import React, { useState } from 'react';
-import { X, Wind, Compass, Gauge, Type, Waves, Droplets, Map } from 'lucide-react';
+import { X, Wind, Compass, Gauge, Type, Waves, Droplets, Map, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Maps from '@/pages/Maps';
 
 // Props interface for layer panel control
 interface MapLayersPanelProps {
@@ -21,6 +22,8 @@ interface MapLayersPanelProps {
   onLayerToggle: (layerType: string, enabled: boolean) => void; // Layer toggle callback
   activeLayer: string;                                    // Currently active base layer
   onBaseLayerChange: (layer: string) => void;             // Base layer change callback
+  isGlobeViewEnabled: boolean;                            // Globe view state
+  onGlobeViewToggle: (enabled: boolean) => void;          // Globe view toggle callback
 }
 
 const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
@@ -28,7 +31,9 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
   onClose,
   onLayerToggle,
   activeLayer,
-  onBaseLayerChange
+  onBaseLayerChange,
+  isGlobeViewEnabled,
+  onGlobeViewToggle
 }) => {
   const [enabledLayers, setEnabledLayers] = useState<Record<string, boolean>>({
     wind: false,
@@ -74,7 +79,9 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
     { id: 'tropicalStorms', name: 'Tropical Storms', icon: () => <span className="text-xl">🌀</span> },
     { id: 'current', name: 'Current', icon: Compass },
     { id: 'symbol', name: 'Symbol', icon: Type },
-    { id: 'pressure', name: 'Pressure', icon: Gauge }
+    { id: 'pressure', name: 'Pressure', icon: Gauge },
+    // { id: 'nautical', name: 'Nautical Charts', icon: MapPin},
+    // { id: 'rasterWind', name: 'Raster Wind', icon: Wind}
   ];
 
   const baseLayers = [
@@ -155,8 +162,8 @@ const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
         <input
           type="checkbox"
           id="globe-view"
-          checked={globeView}
-          onChange={(e) => setGlobeView(e.target.checked)}
+          checked={isGlobeViewEnabled}
+          onChange={(e) => onGlobeViewToggle(e.target.checked)}
           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
         />
         <label htmlFor="globe-view" className="ml-2 text-sm font-medium">

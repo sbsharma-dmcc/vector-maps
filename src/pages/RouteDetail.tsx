@@ -60,8 +60,13 @@ const RouteDetail = () => {
     pressure: false,    // Atmospheric pressure overlay
     storm: false,       // Storm tracking overlay
     current: false,     // Ocean current overlay
-    wind: false         // Wind pattern overlay
+    wind: false,         // Wind pattern overlay
+    nautical: false,
+    rasterWind: false
   });
+  
+  // GLOBE VIEW STATE
+  const [isGlobeViewEnabled, setIsGlobeViewEnabled] = useState(false);
   
   // VOYAGE COMPLETION WORKFLOW STATE
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);           // Complete voyage dialog
@@ -75,7 +80,7 @@ const RouteDetail = () => {
   useEffect(() => {
     // TODO: In a real app, we would fetch the specific route from an API
     // For now, we'll generate mock data and find the route by ID
-    const mockVessels = generateMockVessels(15);
+    const mockVessels = generateMockVessels(25);
     const mockRoutes = generateMockRoutes(mockVessels);
     const foundRoute = mockRoutes.find(route => route.id === id);
     
@@ -332,6 +337,8 @@ const RouteDetail = () => {
           onLayerToggle={handleLayerToggle}
           activeLayer={activeBaseLayer}
           onBaseLayerChange={handleBaseLayerChange}
+          isGlobeViewEnabled={isGlobeViewEnabled}
+          onGlobeViewToggle={setIsGlobeViewEnabled}
         />
         
         {/* CONDITIONAL MAP INTERFACE RENDERING */}
@@ -367,6 +374,7 @@ const RouteDetail = () => {
               activeRouteType={activeTab}                 // Which route to highlight
               activeLayers={activeLayers}                 // Weather overlay states
               activeBaseLayer={activeBaseLayer}           // Base map style
+              isGlobeViewEnabled={isGlobeViewEnabled}
             />
             
             {/* INTERACTIVE TIMELINE - Overlay for voyage animation control */}

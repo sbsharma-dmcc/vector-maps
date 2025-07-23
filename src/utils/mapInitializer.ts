@@ -26,7 +26,7 @@ export const initializeMap = (
   // MAP CONFIGURATION - Calculate center and zoom based on route data
   const mapOptions: mapboxgl.MapboxOptions = {
     container,
-    style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66', // Custom marine style
+    style: 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7', // Custom marine style
     center: showRoutes && baseRoute.length > 0 
       ? [(baseRoute[0][0] + baseRoute[baseRoute.length - 1][0]) / 2,    // Center between start and end
          (baseRoute[0][1] + baseRoute[baseRoute.length - 1][1]) / 2] 
@@ -50,6 +50,20 @@ export const initializeMap = (
   // LAYER INITIALIZATION - Add depth contours when map finishes loading
   map.on('load', () => {
     addBathymetryContours(map);         // Add underwater terrain visualization
+    map.addSource('openseamap', {
+      type: 'raster',
+      tiles: [
+        'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256
+    });
+
+    map.addLayer({
+      id: 'openseamap-layer',
+      type: 'raster',
+      source: 'openseamap',
+      paint: {}
+    });
   });
 
   return map;

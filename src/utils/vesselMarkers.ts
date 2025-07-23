@@ -3,24 +3,55 @@ import mapboxgl from 'mapbox-gl';
 export interface Vessel {
   id: string;
   name: string;
-  type: 'green' | 'orange' | 'circle';
+  type: 'green' | 'orange' | 'circle' | 'container' | 'oil' | 'chemical-tanker' | 'gas-carrier' | 'lng' | 'bulk-carrier' | 'passenger' | 'barge' | 'cable-layer' | 'refrigerated-cargo' | 'roll-on-roll-off';
   position: [number, number];
+  icon?: string; // Path to the vessel icon image
 }
 
-export type VesselType = 'green' | 'orange' | 'circle';
+export type VesselType = 'green' | 'orange' | 'circle' | 'container' | 'oil' | 'chemical-tanker' | 'gas-carrier' | 'lng' | 'bulk-carrier' | 'passenger' | 'barge' | 'cable-layer' | 'refrigerated-cargo' | 'roll-on-roll-off';
 
-// No longer need addVessel as a separate function for HTML markers
-// We will manage icons via Mapbox layers
-
-// Helper to get the correct image path
+// Helper to get the correct image path based on vessel type
 const getVesselIconPath = (type: VesselType) => {
-  if (type === 'circle') {
-    return '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png'; // Orange circle icon
-  } else if (type === 'green') {
-    return '/lovable-uploads/Variant12.png'; // New green vessel icon
-  } else {
-    return '/lovable-uploads/Variant13.png'; // New orange vessel icon
-  }
+  const iconPaths: { [key in VesselType]: string } = {
+    'circle': '/lovable-uploads/d4b87a52-a63f-4c54-9499-15bd05ef9037.png', // Orange circle icon
+    'green': '/lovable-uploads/Variant12.png', // Green vessel icon
+    'orange': '/lovable-uploads/Variant13.png', // Orange vessel icon
+    'container': '/lovable-uploads/container.png', // Teal container ship
+    'oil': '/lovable-uploads/oil tanker.png', // Orange oil tanker
+    'chemical-tanker': '/lovable-uploads/chemical tanker.png', // Red chemical tanker
+    'gas-carrier': '/lovable-uploads/gas carrier.png', // Light blue gas carrier
+    'lng': '/lovable-uploads/LNG.png', // Green LNG carrier
+    'bulk-carrier': '/lovable-uploads/bulk carrier.png', // Purple bulk carrier
+    'passenger': '/lovable-uploads/passenger.png', // Blue passenger ship
+    'barge': '/lovable-uploads/barge.png', // Brown barge
+    'cable-layer': '/lovable-uploads/cable layer.png', // Gray cable layer
+    'refrigerated-cargo': '/lovable-uploads/refrigerated cargo.png', // Light green reefer
+    'roll-on-roll-off': '/lovable-uploads/roll-on-roll-off.png' // Yellow RoRo ferry
+  };
+
+  return iconPaths[type] || iconPaths.green; // Fallback to green if type not found
+};
+
+// Function to get display name for vessel type
+const getVesselTypeName = (type: VesselType): string => {
+  const typeNames: { [key in VesselType]: string } = {
+    'green': 'Green Vessel',
+    'orange': 'Orange Vessel',
+    'circle': 'Navigation Beacon',
+    'container': 'Container Ship',
+    'oil': 'Oil Tanker',
+    'chemical-tanker': 'Chemical Tanker',
+    'gas-carrier': 'Gas Carrier',
+    'lng': 'LNG Carrier',
+    'bulk-carrier': 'Bulk Carrier',
+    'passenger': 'Passenger Ship',
+    'barge': 'Barge',
+    'cable-layer': 'Cable Layer',
+    'refrigerated-cargo': 'Refrigerated Cargo',
+    'roll-on-roll-off': 'RoRo Ferry'
+  };
+
+  return typeNames[type] || 'Unknown Vessel';
 };
 
 // Function to load image into Mapbox map
@@ -60,9 +91,20 @@ export const createVesselMarkers = (
     const el = document.createElement('div');
     el.className = 'vessel-marker';
     el.style.backgroundImage = `url(${getVesselIconPath(vessel.type)})`;
-    el.style.width = '10px';
-    el.style.height = '30px';
+    
+    // Adjust size based on vessel type
+    if (vessel.type === 'circle') {
+      el.style.width = '20px';
+      el.style.height = '20px';
+      el.style.borderRadius = '50%';
+    } else {
+      el.style.width = '12px';
+      el.style.height = '32px';
+    }
+    
     el.style.backgroundSize = 'contain';
+    el.style.backgroundRepeat = 'no-repeat';
+    el.style.backgroundPosition = 'center';
     el.style.cursor = 'pointer';
 
     const marker = new mapboxgl.Marker({
@@ -78,14 +120,19 @@ export const createVesselMarkers = (
       onVesselDragEnd(vessel.id, newPosition);
     });
 
-    // Add a popup to the marker
+    // Add a popup to the marker with enhanced information
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
-      <div style="padding: 10px; font-family: Arial, sans-serif;">
-        <h3 style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">${vessel.name}</h3>
-        <p style="margin: 0; font-size: 12px; color: #666;">
-          Type: ${vessel.type.charAt(0).toUpperCase() + vessel.type.slice(1)} Vessel<br>
-          Position: ${vessel.position[1].toFixed(3)}°N, ${vessel.position[0].toFixed(3)}°E
-        </p>
+      <div style="padding: 12px; font-family: Arial, sans-serif; min-width: 200px;">
+        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: #333;">${vessel.name}</h3>
+        <div style="margin-bottom: 6px;">
+          <strong style="color: #666;">Type:</strong> ${getVesselTypeName(vessel.type)}
+        </div>
+        <div style="margin-bottom: 6px;">
+          <strong style="color: #666;">Position:</strong> ${vessel.position[1].toFixed(4)}°N, ${vessel.position[0].toFixed(4)}°E
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 8px;">
+          Vessel ID: ${vessel.id}
+        </div>
       </div>
     `);
     marker.setPopup(popup);
@@ -93,7 +140,7 @@ export const createVesselMarkers = (
     markersRef.current[vessel.id] = marker;
   });
 
-  console.log(`Created ${vessels.length} draggable vessel markers.`);
+  console.log(`Created ${vessels.length} draggable vessel markers with ${new Set(vessels.map(v => v.type)).size} different types.`);
 };
 
 // --- CLEANUP ---

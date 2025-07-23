@@ -22,7 +22,7 @@ const History = () => {
 
   useEffect(() => {
     // Generate mock vessel and history data
-    const mockVessels = generateMockVessels(15);
+    const mockVessels = generateMockVessels(25);
     const mockEvents = generateMockHistory(mockVessels, 50);
     
     setVessels(mockVessels);

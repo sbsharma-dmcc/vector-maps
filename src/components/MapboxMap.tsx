@@ -6,7 +6,7 @@ import MapTopControls from './MapTopControls';
 import DirectTokenInput from './DirectTokenInput';
 import { getDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
-import { generateMockVessels, Vessel } from '@/lib/vessel-data';
+import { fourVessels, Vessel } from '@/lib/vessel-data';
 
 import WeatherLayerConfig from './WeatherLayerConfig';
 
@@ -21,6 +21,7 @@ interface MapboxMapProps {
   activeRouteType?: 'base' | 'weather';
   activeLayers?: Record<string, boolean>;
   activeBaseLayer?: string;
+  isGlobeViewEnabled?: boolean;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -31,7 +32,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   weatherRoute = [],
   activeRouteType = 'base',
   activeLayers = {},
-  activeBaseLayer = 'default'
+  activeBaseLayer = 'default',
+  isGlobeViewEnabled = false
 }) => {
   const mapContainerRef = useRef(null);
   const mapref = useRef<mapboxgl.Map | null>(null);
@@ -108,36 +110,31 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       ]
     },
     waves: {
-      fillOpacity: 0.8,
+      fillOpacity: 0.3,
       fillOutlineColor: 'transparent',
       animationSpeed: 0.0006,
       animationEnabled: false,
       fillAntialias: true,
       smoothing: true,
       blurRadius: 2,
-      edgeFeathering: 1.2,
+      edgeFeathering: 1.5,
       gradient: [
-        { value: '0.0', color: '#0000b2' },
-        { value: '0.5', color: '#0032ff' },
-        { value: '1.0', color: '#0066ff' },
-        { value: '1.5', color: '#33ccff' },
-        { value: '2.0', color: '#66ffff' },
-        { value: '2.5', color: '#00ffcc' },
-        { value: '3.0', color: '#00ff66' },
-        { value: '3.5', color: '#99ff00' },
-        { value: '4.0', color: '#ffff00' },
-        { value: '4.5', color: '#ffdd00' },
-        { value: '5.0', color: '#ffaa00' },
-        { value: '6.0', color: '#ff8000' },
-        { value: '7.0', color: '#ff4000' },
-        { value: '8.0', color: '#ff0000' },
-        { value: '9.0', color: 'rgba(255, 153, 153, 0.85)' },
-        { value: '10.0', color: 'rgba(255, 204, 255, 0.88)' },
-        { value: '11.0', color: 'rgba(255, 153, 255, 0.9)' },
-        { value: '12.0', color: 'rgba(255, 0, 255, 0.92)' },
-        { value: '13.0', color: 'rgba(204, 0, 204, 0.94)' },
-        { value: '14.0', color: 'rgba(153, 0, 204, 0.96)' },
-        { value: '15.0', color: 'rgba(170, 170, 170, 1)' }
+        { value: '0m', color: '#072144' },
+        { value: '0.5m', color: '#1926bd' },
+        { value: '1m', color: '#0c5eaa' },
+        { value: '1.5m', color: '#0d7bc2', },
+        { value: '2m', color: '#16b6b3' },
+        { value: '2.5m', color: '#15d5a5' },
+        { value: '3m', color: '#10b153' },
+        { value: '3.5m', color: '#82c510' },
+        { value: '4m', color: '#d1d112' },
+        { value: '4.5m', color: '#c5811e' },
+        { value: '5m', color: '#c35215'},
+        { value: '6m', color: '#B03f12' },
+        { value: '7m', color: '#e05219' },
+        { value: '8m', color: '#c6141c' },
+        { value: '9m', color: '#8f0a10' },
+        { value: '10m+', color: '#56001d' }
       ]
 
     },
@@ -235,23 +232,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     }, beforeId);
   };
 
-  // Generate or load vessels when component mounts
+  // Load vessels from the predefined list
   useEffect(() => {
-    const savedVessels = localStorage.getItem('mockVessels');
-    if (savedVessels) {
-      try {
-        setMapVessels(JSON.parse(savedVessels));
-      } catch (e) {
-        console.error("Error parsing saved vessels, generating new ones.", e);
-        const newMockVessels = generateMockVessels(5);
-        setMapVessels(newMockVessels);
-        localStorage.setItem('mockVessels', JSON.stringify(newMockVessels));
-      }
-    } else {
-      const newMockVessels = generateMockVessels(5);
-      setMapVessels(newMockVessels);
-      localStorage.setItem('mockVessels', JSON.stringify(newMockVessels));
-    }
+    setMapVessels(fourVessels);
   }, []);
 
   // Listen for configuration updates from sidebar
@@ -278,7 +261,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current!,
-      style: 'mapbox://styles/geoserve/cmb8z5ztq00rw01qxauh6gv66',
+      style: 'mapbox://styles/geoserve/cmbf0vz6e006g01sdcdl40oi7',
       center: [0, 20],
       zoom: 2,
       attributionControl: false
@@ -324,6 +307,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       setIsMapLoaded(false);
     };
   }, [toast]);
+
+  // Handle globe view toggle
+  useEffect(() => {
+    if (!mapref.current) return;
+
+    if (isGlobeViewEnabled) {
+      mapref.current.setProjection('globe');
+    } else {
+      mapref.current.setProjection('mercator');
+    }
+  }, [isGlobeViewEnabled]);
 
   const handleVesselDrag = useCallback((vesselId: string, newPosition: [number, number]) => {
     setMapVessels(currentVessels =>
@@ -687,6 +681,40 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       return;
     }
 
+    if (overlay === 'nautical') {
+      const sourceId = 'openseamap-source';
+      const layerId = 'openseamap-layer';
+
+      if (!mapref.current.getSource(sourceId)) {
+        mapref.current.addSource(sourceId, {
+          type: 'raster',
+          tiles: [
+            'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
+          ],
+          tileSize: 256
+        });
+      }
+
+      if (!mapref.current.getLayer(layerId)) {
+        const layers = mapref.current.getStyle().layers;
+        const firstSymbolId = layers.find(l => l.type === 'symbol')?.id;
+
+        mapref.current.addLayer({
+          id: layerId,
+          type: 'raster',
+          source: sourceId,
+          paint: {},
+        }, firstSymbolId);
+      }
+
+      setActiveOverlays(prev => [...prev, overlay]);
+      return;
+    }
+
+    
+
+    
+
     const { dtnLayerId, tileSetId } = dtnOverlays[overlay];
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
@@ -948,6 +976,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               "symbol-spacing": symbolConfig.symbolSpacing
             },
           }, beforeId);
+        } else if (overlay === 'nautical'){
+          console.log('Nautical charts');
+
         } else if (overlay === 'tropicalStorms') {
           const source = sourceId;
           const f = ["==", ["coalesce", ["get", "isUnderInvestigationStyle"], ["get", "isUnderInvestigation"]], false];
@@ -1060,6 +1091,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const removeOverlay = (overlay: string) => {
     if (!mapref.current || !mapref.current.isStyleLoaded()) return;
+
+    if (overlay === 'nautical') {
+      const sourceId = 'openseamap-source';
+      const layerId = 'openseamap-layer';
+
+      if (mapref.current.getLayer(layerId)) {
+        mapref.current.removeLayer(layerId);
+      }
+      if (mapref.current.getSource(sourceId)) {
+        mapref.current.removeSource(sourceId);
+      }
+
+      setActiveOverlays(prev => prev.filter(item => item !== overlay));
+      return;
+    }
 
     const sourceId = `dtn-source-${overlay}`;
     const layerId = `dtn-layer-${overlay}`;
