@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import VoyageConfigPanel from '@/components/VoyageCreation/VoyageConfigPanel';
 import VoyageMapInterface from '@/components/VoyageCreation/VoyageMapInterface';
-import WaypointsDrawer from '@/components/VoyageCreation/WaypointsDrawer';
+import WaypointsBottomPanel from '@/components/VoyageCreation/WaypointsBottomPanel';
 import { WaypointData } from '@/types/voyage';
 import { sampleVoyageJSON } from '@/components/VoyageCreation/VoyageJSON';
 
@@ -17,7 +17,7 @@ const CreateVoyage = () => {
   const [voyageName, setVoyageName] = useState('');
   const [vesselName, setVesselName] = useState('');
   const [mirEnabled, setMirEnabled] = useState(true);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  
   const [selectedWaypoint, setSelectedWaypoint] = useState<WaypointData | null>(null);
 
   const handleWaypointsChange = (newWaypoints: WaypointData[]) => {
@@ -81,7 +81,14 @@ const CreateVoyage = () => {
 
   const handleWaypointClick = (waypoint: WaypointData) => {
     setSelectedWaypoint(waypoint);
-    setDrawerOpen(true);
+  };
+
+  const handleUpdateWaypoint = (waypointId: string, updates: Partial<WaypointData>) => {
+    const updatedWaypoints = waypoints.map(wp => 
+      wp.id === waypointId ? { ...wp, ...updates } : wp
+    );
+    setWaypoints(updatedWaypoints);
+    toast.success('Waypoint updated');
   };
 
   const handleToggleLock = (waypointId: string) => {
@@ -110,17 +117,6 @@ const CreateVoyage = () => {
     toast.success(`Waypoint ${waypoint.waypointNumber} deleted`);
   };
 
-  // Handle clicking the view waypoints button
-  useEffect(() => {
-    const triggerButton = document.getElementById('view-waypoints-trigger');
-    if (triggerButton) {
-      const handleClick = () => {
-        setDrawerOpen(true);
-      };
-      triggerButton.addEventListener('click', handleClick);
-      return () => triggerButton.removeEventListener('click', handleClick);
-    }
-  }, [waypoints.length]);
 
   return (
     <div className="flex h-screen bg-background">
@@ -136,23 +132,24 @@ const CreateVoyage = () => {
       />
       
       {/* Right Panel - Map Interface */}
-      <VoyageMapInterface 
-        mapboxToken={mapboxToken}
-        waypoints={waypoints}
-        onWaypointsChange={handleWaypointsChange}
-        onWaypointClick={handleWaypointClick}
-        zoomToWaypoint={selectedWaypoint}
-      />
-
-      {/* Floating Waypoints Drawer */}
-      <WaypointsDrawer
-        waypoints={waypoints}
-        onWaypointClick={(waypoint) => setSelectedWaypoint(waypoint)}
-        onToggleLock={handleToggleLock}
-        onDeleteWaypoint={handleDeleteWaypoint}
-        isOpen={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      />
+      <div className="flex-1 relative">
+        <VoyageMapInterface 
+          mapboxToken={mapboxToken}
+          waypoints={waypoints}
+          onWaypointsChange={handleWaypointsChange}
+          onWaypointClick={handleWaypointClick}
+          zoomToWaypoint={selectedWaypoint}
+        />
+        
+        {/* Bottom Waypoints Panel */}
+        <WaypointsBottomPanel
+          waypoints={waypoints}
+          onWaypointClick={handleWaypointClick}
+          onToggleLock={handleToggleLock}
+          onDeleteWaypoint={handleDeleteWaypoint}
+          onUpdateWaypoint={handleUpdateWaypoint}
+        />
+      </div>
     </div>
   );
 };
