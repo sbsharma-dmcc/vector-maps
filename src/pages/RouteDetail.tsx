@@ -385,7 +385,8 @@ const RouteDetail = () => {
 
   // MAP CLICK HANDLERS
   const handleMapClick = (coordinates: [number, number], event: any) => {
-    console.log('handleMapClick called with coordinates:', coordinates);
+    console.log('Right-click detected at coordinates:', coordinates);
+    console.log('Event details:', event);
     setContextMenu({
       isVisible: true,
       position: { x: event.originalEvent.clientX, y: event.originalEvent.clientY },
@@ -394,6 +395,7 @@ const RouteDetail = () => {
   };
 
   const handleAddWaypoint = () => {
+    console.log('Adding waypoint at:', contextMenu.coordinates);
     // Navigate to modify voyage page with the selected coordinates
     navigate(`/routes/${id}/modify`, { 
       state: { newWaypointCoordinates: contextMenu.coordinates } 
