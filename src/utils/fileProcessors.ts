@@ -4,23 +4,33 @@ import { ValidationEngine } from './fileValidation';
 // Utility to convert DMS to decimal degrees
 const dmsToDecimal = (dmsString: string): number => {
   // Handle formats like "22° 37′ 31″ N" or "69° 6′ 13″ E"
-  const cleanDms = dmsString.replace(/[°′″]/g, ' ').trim();
-  const parts = cleanDms.split(/\s+/);
-  
-  if (parts.length < 4) throw new Error(`Invalid DMS format: ${dmsString}`);
-  
-  const degrees = parseInt(parts[0]);
-  const minutes = parseInt(parts[1]);
-  const seconds = parseInt(parts[2]);
-  const direction = parts[3].toUpperCase();
-  
-  let decimal = degrees + minutes / 60 + seconds / 3600;
-  
-  if (direction === 'S' || direction === 'W') {
-    decimal = -decimal;
+  try {
+    const cleanDms = dmsString.replace(/[°′″]/g, ' ').trim();
+    const parts = cleanDms.split(/\s+/).filter(p => p);
+    
+    if (parts.length < 4) {
+      throw new Error(`Invalid DMS format: ${dmsString} - Expected format: "22° 37′ 31″ N"`);
+    }
+    
+    const degrees = parseInt(parts[0]);
+    const minutes = parseInt(parts[1]);
+    const seconds = parseInt(parts[2]);
+    const direction = parts[3].toUpperCase();
+    
+    if (isNaN(degrees) || isNaN(minutes) || isNaN(seconds)) {
+      throw new Error(`Invalid numeric values in DMS: ${dmsString}`);
+    }
+    
+    let decimal = degrees + minutes / 60 + seconds / 3600;
+    
+    if (direction === 'S' || direction === 'W') {
+      decimal = -decimal;
+    }
+    
+    return decimal;
+  } catch (error) {
+    throw new Error(`DMS conversion failed for "${dmsString}": ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-  
-  return decimal;
 };
 
 // JSON processor for direct JSON input
