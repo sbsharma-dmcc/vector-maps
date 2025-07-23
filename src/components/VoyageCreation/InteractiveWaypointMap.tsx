@@ -53,36 +53,51 @@ const InteractiveWaypointMap = ({
   useEffect(() => {
     if (!map.current) return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current.clear();
+    // Wait for map to be loaded before adding markers and routes
+    const addWaypointsAndRoutes = () => {
+      if (!map.current || !map.current.isStyleLoaded()) return;
 
-    // Add new markers for each waypoint
-    waypoints.forEach((waypoint, index) => {
-      const markerElement = createWaypointMarker(waypoint, index);
-      
-      const marker = new mapboxgl.Marker(markerElement)
-        .setLngLat([waypoint.lon, waypoint.lat])
-        .addTo(map.current!);
+      // Clear existing markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current.clear();
 
-      markersRef.current.set(waypoint.id, marker);
-    });
+      // Add new markers for each waypoint
+      waypoints.forEach((waypoint, index) => {
+        const markerElement = createWaypointMarker(waypoint, index);
+        
+        const marker = new mapboxgl.Marker(markerElement)
+          .setLngLat([waypoint.lon, waypoint.lat])
+          .addTo(map.current!);
 
-    // Fit map to show all waypoints
-    if (waypoints.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      waypoints.forEach(wp => bounds.extend([wp.lon, wp.lat]));
-      
-      map.current.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 12
+        markersRef.current.set(waypoint.id, marker);
       });
+
+      // Fit map to show all waypoints
+      if (waypoints.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds();
+        waypoints.forEach(wp => bounds.extend([wp.lon, wp.lat]));
+        
+        map.current.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 12
+        });
+      }
+
+      // Add route line if multiple waypoints
+      if (waypoints.length > 1) {
+        addRouteVisualization();
+      }
+    };
+
+    if (map.current.isStyleLoaded()) {
+      addWaypointsAndRoutes();
+    } else {
+      map.current.on('style.load', addWaypointsAndRoutes);
     }
 
-    // Add route line if multiple waypoints
-    if (waypoints.length > 1) {
-      addRouteVisualization();
-    }
+    return () => {
+      map.current?.off('style.load', addWaypointsAndRoutes);
+    };
   }, [waypoints]);
 
   const createWaypointMarker = (waypoint: WaypointData, index: number) => {
