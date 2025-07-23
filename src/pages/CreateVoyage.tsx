@@ -132,14 +132,16 @@ const CreateVoyage = () => {
       />
       
       {/* Right Panel - Map Interface */}
-      <div className="flex-1 relative">
-        <VoyageMapInterface 
-          mapboxToken={mapboxToken}
-          waypoints={waypoints}
-          onWaypointsChange={handleWaypointsChange}
-          onWaypointClick={handleWaypointClick}
-          zoomToWaypoint={selectedWaypoint}
-        />
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1">
+          <VoyageMapInterface 
+            mapboxToken={mapboxToken}
+            waypoints={waypoints}
+            onWaypointsChange={handleWaypointsChange}
+            onWaypointClick={handleWaypointClick}
+            zoomToWaypoint={selectedWaypoint}
+          />
+        </div>
         
         {/* Bottom Waypoints Panel */}
         <WaypointsBottomPanel

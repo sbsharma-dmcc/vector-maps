@@ -53,7 +53,7 @@ const WaypointsBottomPanel = ({
   if (waypoints.length === 0) return null;
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 bg-background border-t border-border transition-all duration-300 ${
+    <div className={`bg-background border-t border-border transition-all duration-300 ${
       isMinimized ? 'h-12' : 'h-80'
     }`}>
       {/* Header */}
