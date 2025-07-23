@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const DEFAULT_LAYER_CONFIGS: LayerConfigs = {
   wind: {
@@ -153,10 +153,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       });
       window.dispatchEvent(configEvent);
 
-      toast({
-        title: `${selectedWeatherType.charAt(0).toUpperCase() + selectedWeatherType.slice(1)} Layer Reset`,
-        description: `The ${selectedWeatherType} layer has been reset to its default settings.`
-      });
+      toast.success(`${selectedWeatherType.charAt(0).toUpperCase() + selectedWeatherType.slice(1)} layer reset to default settings`);
     }
   };
   
@@ -320,7 +317,8 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
 
   const updateSwellGradientItem = (index: number, field: 'value' | 'color', newValue: string) => {
     setLayerConfigs(prev => {
-      const newGradient = prev.swell.gradient.map((item: any, i: number) => 
+      const gradient = prev.swell.gradient as any[];
+      const newGradient = gradient.map((item: any, i: number) => 
         i === index ? { ...item, [field]: newValue } : item
       );
       const newConfig = { ...prev.swell, gradient: newGradient };
@@ -340,7 +338,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       ...prev,
       swell: {
         ...prev.swell,
-        gradient: [...prev.swell.gradient, newItem]
+        gradient: [...(prev.swell.gradient as any[]), newItem]
       }
     }));
   };
@@ -350,7 +348,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       ...prev,
       swell: {
         ...prev.swell,
-        gradient: prev.swell.gradient.filter((_: any, i: number) => i !== index)
+        gradient: (prev.swell.gradient as any[]).filter((_: any, i: number) => i !== index)
       }
     }));
   };
@@ -361,7 +359,8 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
     newValue: string
   ) => {
     setLayerConfigs(prev => {
-      const newGradient = prev.waves.gradient.map((item: any, i: number) =>
+      const gradient = prev.waves.gradient as any[];
+      const newGradient = gradient.map((item: any, i: number) =>
         i === index ? { ...item, [field]: newValue } : item
       );
       const newConfig = { ...prev.waves, gradient: newGradient };
@@ -381,7 +380,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       ...prev,
       waves: {
         ...prev.waves,
-        gradient: [...prev.waves.gradient, newItem]
+        gradient: [...(prev.waves.gradient as any[]), newItem]
       }
     }));
   };
@@ -391,7 +390,7 @@ const WeatherLayerConfig: React.FC<{ isOpen?: boolean; onClose?: () => void; act
       ...prev,
       waves: {
         ...prev.waves,
-        gradient: prev.waves.gradient.filter((_: any, i: number) => i !== index)
+        gradient: (prev.waves.gradient as any[]).filter((_: any, i: number) => i !== index)
       }
     }));
   };
