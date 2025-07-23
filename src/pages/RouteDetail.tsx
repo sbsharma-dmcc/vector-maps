@@ -80,7 +80,7 @@ const RouteDetail = () => {
   useEffect(() => {
     // TODO: In a real app, we would fetch the specific route from an API
     // For now, we'll generate mock data and find the route by ID
-    const mockVessels = generateMockVessels(25);
+    const mockVessels = generateMockVessels();
     const mockRoutes = generateMockRoutes(mockVessels);
     const foundRoute = mockRoutes.find(route => route.id === id);
     

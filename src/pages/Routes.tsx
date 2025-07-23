@@ -69,8 +69,8 @@ const Routes = () => {
     return vessel ? vessel.name : 'Unknown Vessel';
   };
 
-  // Get vessel type by ID - updated to handle 'circle' type
-  const getVesselType = (id: string): 'green' | 'orange' | 'circle' | 'unknown' => {
+  // Get vessel type by ID - updated to handle all vessel types
+  const getVesselType = (id: string) => {
     const vessel = vessels.find(v => v.id === id);
     return vessel ? vessel.type : 'unknown';
   };
