@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Route, Calendar, MapPin, Lock, AlertTriangle } from 'lucide-react';
+import WarningsPanel from './WarningsPanel';
 
 interface RouteDetailsDialogProps {
   isOpen: boolean;
@@ -23,6 +24,17 @@ const RouteDetailsDialog = ({ isOpen, onClose, route, activeTab, waypoints, onDo
     const [lng, lat] = coordinates;
     return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
   };
+
+  // Generate warnings from waypoints
+  const warnings = waypoints
+    .filter(wp => wp.weatherWarning)
+    .map((wp, index) => ({
+      id: `warning-${index}`,
+      waypointName: wp.name || `Waypoint ${index + 1}`,
+      message: wp.weatherWarning,
+      severity: 'medium' as const,
+      type: 'weather' as const
+    }));
 
   const routeStats = {
     base: {
@@ -184,6 +196,15 @@ const RouteDetailsDialog = ({ isOpen, onClose, route, activeTab, waypoints, onDo
               </div>
             </CardContent>
           </Card>
+
+          {/* Route Warnings */}
+          {warnings.length > 0 && (
+            <WarningsPanel 
+              warnings={warnings} 
+              position="sidebar"
+              className="bg-orange-50 border-orange-200"
+            />
+          )}
 
           {/* Weather Information */}
           <Card>

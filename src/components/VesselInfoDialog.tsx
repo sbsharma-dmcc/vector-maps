@@ -3,16 +3,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Ship, Navigation, Clock, MapPin } from 'lucide-react';
+import { Ship, Navigation, Clock, MapPin, AlertTriangle } from 'lucide-react';
+import WarningsPanel from './WarningsPanel';
 
 interface VesselInfoDialogProps {
   isOpen: boolean;
   onClose: () => void;
   vessel: any;
   onMoreDetails: () => void;
+  warnings?: Array<{
+    id: string;
+    waypointName: string;
+    message: string;
+    severity: 'high' | 'medium' | 'low';
+    type: 'weather' | 'route' | 'safety';
+  }>;
 }
 
-const VesselInfoDialog = ({ isOpen, onClose, vessel, onMoreDetails }: VesselInfoDialogProps) => {
+const VesselInfoDialog = ({ isOpen, onClose, vessel, onMoreDetails, warnings = [] }: VesselInfoDialogProps) => {
   if (!vessel) return null;
 
   const formatPosition = (position: [number, number]) => {
@@ -98,6 +106,30 @@ const VesselInfoDialog = ({ isOpen, onClose, vessel, onMoreDetails }: VesselInfo
           </div>
 
           <Separator />
+
+          {/* Route Warnings */}
+          {warnings.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                Route Warnings
+              </div>
+              <div className="space-y-2">
+                {warnings.slice(0, 2).map((warning) => (
+                  <div key={warning.id} className="p-2 bg-orange-50 rounded border border-orange-200">
+                    <div className="text-xs font-medium text-orange-800">{warning.waypointName}</div>
+                    <div className="text-xs text-orange-600">{warning.message}</div>
+                  </div>
+                ))}
+                {warnings.length > 2 && (
+                  <div className="text-xs text-muted-foreground">
+                    +{warnings.length - 2} more warnings
+                  </div>
+                )}
+              </div>
+              <Separator />
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button 

@@ -135,32 +135,29 @@ export const addRoutesToMap = (
     
     waypointMarker.setPopup(popup);
 
-    // Add weather warning overlay if present
+    // Add weather warning indicator (consolidated display)
     if (waypoint.weatherWarning) {
       const warningEl = document.createElement('div');
-      warningEl.className = 'weather-warning';
+      warningEl.className = 'weather-warning-indicator';
+      warningEl.style.width = '16px';
+      warningEl.style.height = '16px';
+      warningEl.style.backgroundColor = '#f59e0b';
+      warningEl.style.borderRadius = '50%';
+      warningEl.style.border = '2px solid white';
       warningEl.style.position = 'absolute';
-      warningEl.style.top = '-40px';
-      warningEl.style.left = '50%';
-      warningEl.style.transform = 'translateX(-50%)';
-      warningEl.style.backgroundColor = '#fbbf24';
-      warningEl.style.color = '#92400e';
-      warningEl.style.padding = '4px 8px';
-      warningEl.style.borderRadius = '4px';
-      warningEl.style.fontSize = '11px';
+      warningEl.style.top = '-8px';
+      warningEl.style.right = '-8px';
+      warningEl.style.display = 'flex';
+      warningEl.style.alignItems = 'center';
+      warningEl.style.justifyContent = 'center';
+      warningEl.style.fontSize = '8px';
+      warningEl.style.color = 'white';
       warningEl.style.fontWeight = 'bold';
-      warningEl.style.whiteSpace = 'nowrap';
-      warningEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-      warningEl.style.border = '1px solid #f59e0b';
-      warningEl.textContent = `⚠️ ${waypoint.weatherWarning}`;
+      warningEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      warningEl.textContent = '!';
       
-      // Create warning marker
-      const warningMarker = new mapboxgl.Marker({
-        element: warningEl,
-        anchor: 'bottom'
-      })
-        .setLngLat([waypoint.coordinates[0], waypoint.coordinates[1] + 0.01]) // Slightly offset
-        .addTo(map);
+      waypointEl.style.position = 'relative';
+      waypointEl.appendChild(warningEl);
     }
   });
 };

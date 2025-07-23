@@ -32,6 +32,7 @@ import CompleteVoyageDialog from '../components/CompleteVoyageDialog';
 import VoyageCompletedDialog from '../components/VoyageCompletedDialog';
 import VesselInfoDialog from '../components/VesselInfoDialog';
 import RouteDetailsDialog from '../components/RouteDetailsDialog';
+import WarningsPanel from '../components/WarningsPanel';
 import RouteHeader from '../components/RouteHeader';
 import RouteTabs from '../components/RouteTabs';
 import RouteStats from '../components/RouteStats';
@@ -79,6 +80,9 @@ const RouteDetail = () => {
   const [isVesselDialogOpen, setIsVesselDialogOpen] = useState(false);
   const [isRouteDetailsOpen, setIsRouteDetailsOpen] = useState(false);
   const [selectedVessel, setSelectedVessel] = useState<any>(null);
+  
+  // WARNINGS STATE
+  const [showWarningsPanel, setShowWarningsPanel] = useState(true);
   
   // UTILITIES
   const { toast } = useToast();                                   // Toast notification system
@@ -362,6 +366,18 @@ const RouteDetail = () => {
 
   // Get active waypoints with metadata
   const activeWaypoints = activeTab === 'base' ? baseRouteWaypoints : weatherRouteWaypoints;
+  
+  // Generate warnings from waypoints
+  const routeWarnings = activeWaypoints
+    .filter(wp => wp.weatherWarning)
+    .map((wp, index) => ({
+      id: `warning-${wp.name}-${index}`,
+      waypointName: wp.name,
+      message: wp.weatherWarning as string,
+      severity: wp.weatherWarning?.includes('storm') ? 'high' as const :
+                wp.weatherWarning?.includes('winds') ? 'medium' as const : 'low' as const,
+      type: 'weather' as const
+    }));
 
   // SPECIAL ROUTE HANDLING
   // Check if this is the RT-001 route which has a custom interface
@@ -452,6 +468,15 @@ const RouteDetail = () => {
             />
           </>
         )}
+        
+        {/* FLOATING WARNINGS PANEL */}
+        {routeWarnings.length > 0 && showWarningsPanel && (
+          <WarningsPanel 
+            warnings={routeWarnings}
+            position="floating"
+            onClose={() => setShowWarningsPanel(false)}
+          />
+        )}
       </div>
 
       {/* VOYAGE COMPLETION WORKFLOW DIALOGS */}
@@ -477,6 +502,7 @@ const RouteDetail = () => {
         onClose={() => setIsVesselDialogOpen(false)}
         vessel={selectedVessel}
         onMoreDetails={handleMoreDetails}
+        warnings={routeWarnings}
       />
 
       {/* Route details dialog */}
