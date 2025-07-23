@@ -115,8 +115,22 @@ const RouteDetail = () => {
   }, [id]);
 
   // ROUTE COORDINATE DEFINITIONS WITH WAYPOINT DATA
-  // Base route waypoints with additional metadata
-  const baseRouteWaypoints = [
+  // Base route waypoints with additional metadata - Updated for RT-006 with provided coordinates
+  const baseRouteWaypoints = id === 'RT-006' ? [
+    { coordinates: [69.103611, 22.625278] as [number, number], name: "Port Entry Point", isLocked: false, weatherWarning: null },
+    { coordinates: [69.166944, 22.630833] as [number, number], name: "Channel Marker 1", isLocked: false, weatherWarning: "Moderate winds" },
+    { coordinates: [69.280000, 22.581667] as [number, number], name: "Navigation Point 1", isLocked: true, weatherWarning: null },
+    { coordinates: [69.327000, 22.581667] as [number, number], name: "Traffic Separation", isLocked: false, weatherWarning: null },
+    { coordinates: [69.462222, 22.624444] as [number, number], name: "Pilot Station", isLocked: false, weatherWarning: "High traffic" },
+    { coordinates: [69.530278, 22.630000] as [number, number], name: "Anchorage Alpha", isLocked: true, weatherWarning: null },
+    { coordinates: [69.624167, 22.600000] as [number, number], name: "Deep Water Route", isLocked: false, weatherWarning: null },
+    { coordinates: [69.667500, 22.597222] as [number, number], name: "Navigation Point 2", isLocked: false, weatherWarning: "Current warning" },
+    { coordinates: [69.742500, 22.602222] as [number, number], name: "Channel Marker 2", isLocked: false, weatherWarning: null },
+    { coordinates: [69.855833, 22.663889] as [number, number], name: "Outer Anchorage", isLocked: true, weatherWarning: null },
+    { coordinates: [69.869444, 22.628611] as [number, number], name: "Port Approach", isLocked: false, weatherWarning: null },
+    { coordinates: [69.835833, 22.581389] as [number, number], name: "Terminal Berth", isLocked: false, weatherWarning: null }
+  ] : [
+    // Default waypoints for other routes
     { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port - Shanghai", isLocked: false, weatherWarning: null },
     { coordinates: [125.08295, 32.52432] as [number, number], name: "Transit Point 1", isLocked: false, weatherWarning: "High winds expected" },
     { coordinates: [128.08295, 35.52432] as [number, number], name: "Navigation Checkpoint", isLocked: true, weatherWarning: null },
@@ -125,7 +139,21 @@ const RouteDetail = () => {
   ];
 
   // Weather-optimized route waypoints
-  const weatherRouteWaypoints = [
+  const weatherRouteWaypoints = id === 'RT-006' ? [
+    { coordinates: [69.103611, 22.625278] as [number, number], name: "Port Entry Point", isLocked: false, weatherWarning: null },
+    { coordinates: [69.180000, 22.640000] as [number, number], name: "Weather Route 1", isLocked: false, weatherWarning: null },
+    { coordinates: [69.290000, 22.590000] as [number, number], name: "Weather Route 2", isLocked: false, weatherWarning: null },
+    { coordinates: [69.340000, 22.590000] as [number, number], name: "Weather Route 3", isLocked: true, weatherWarning: null },
+    { coordinates: [69.480000, 22.635000] as [number, number], name: "Weather Route 4", isLocked: false, weatherWarning: null },
+    { coordinates: [69.545000, 22.635000] as [number, number], name: "Weather Route 5", isLocked: false, weatherWarning: null },
+    { coordinates: [69.640000, 22.610000] as [number, number], name: "Weather Route 6", isLocked: false, weatherWarning: null },
+    { coordinates: [69.680000, 22.605000] as [number, number], name: "Weather Route 7", isLocked: false, weatherWarning: null },
+    { coordinates: [69.755000, 22.610000] as [number, number], name: "Weather Route 8", isLocked: false, weatherWarning: null },
+    { coordinates: [69.870000, 22.675000] as [number, number], name: "Weather Route 9", isLocked: true, weatherWarning: null },
+    { coordinates: [69.880000, 22.635000] as [number, number], name: "Weather Route 10", isLocked: false, weatherWarning: null },
+    { coordinates: [69.835833, 22.581389] as [number, number], name: "Terminal Berth", isLocked: false, weatherWarning: null }
+  ] : [
+    // Default weather route for other routes
     { coordinates: [121.08295, 29.52432] as [number, number], name: "Start Port - Shanghai", isLocked: false, weatherWarning: null },
     { coordinates: [126.08295, 33.52432] as [number, number], name: "Weather Route 1", isLocked: false, weatherWarning: null },
     { coordinates: [130.08295, 37.52432] as [number, number], name: "Weather Route 2", isLocked: false, weatherWarning: null },
