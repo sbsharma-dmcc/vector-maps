@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Lock, CheckCircle, Save, Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import VoyageConfigPanel from '@/components/VoyageCreation/VoyageConfigPanel';
 import VoyageMapInterface from '@/components/VoyageCreation/VoyageMapInterface';
+import WaypointsBottomPanel from '@/components/VoyageCreation/WaypointsBottomPanel';
 import { WaypointData } from '@/types/voyage';
 
 const ModifyVoyage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [waypoints, setWaypoints] = useState<WaypointData[]>([]);
+  const [mapboxToken] = useState('pk.eyJ1IjoiZ2Vvc2VydmUiLCJhIjoiY201Z2J3dXBpMDU2NjJpczRhbmJubWtxMCJ9.6Kw-zTqoQcNdDokBgbI5_Q');
+  const [voyageName, setVoyageName] = useState('');
+  const [vesselName, setVesselName] = useState('');
+  const [mirEnabled, setMirEnabled] = useState(true);
+  
   const [selectedWaypoint, setSelectedWaypoint] = useState<WaypointData | null>(null);
+  const [isPanelMinimized, setIsPanelMinimized] = useState(false);
 
-  // Mock mapbox token - in real app, this should come from environment
-  const mapboxToken = 'your-mapbox-token';
-
-  // Initialize with mock voyage data
+  // Initialize with mock voyage data - prefilled for modify
   useEffect(() => {
     const mockWaypoints: WaypointData[] = [
       {
@@ -81,6 +86,10 @@ const ModifyVoyage = () => {
       }
     ];
     setWaypoints(mockWaypoints);
+    
+    // Pre-fill with existing voyage data
+    setVoyageName(`Route ${id?.split('-')[1]} - Modified`);
+    setVesselName('MV Atlantic Express');
   }, [id]);
 
   const handleWaypointsChange = (newWaypoints: WaypointData[]) => {
@@ -89,153 +98,98 @@ const ModifyVoyage = () => {
 
   const handleWaypointClick = (waypoint: WaypointData) => {
     setSelectedWaypoint(waypoint);
+    setIsPanelMinimized(false); // Open the panel when waypoint is clicked
+  };
+
+  const handleUpdateWaypoint = (waypointId: string, updates: Partial<WaypointData>) => {
+    const updatedWaypoints = waypoints.map(wp => 
+      wp.id === waypointId ? { ...wp, ...updates } : wp
+    );
+    setWaypoints(updatedWaypoints);
+    toast.success('Waypoint updated');
+  };
+
+  const handleToggleLock = (waypointId: string) => {
+    const updatedWaypoints = waypoints.map(wp => 
+      wp.id === waypointId 
+        ? { ...wp, isLocked: !wp.isLocked }
+        : wp
+    );
+    setWaypoints(updatedWaypoints);
+    
+    const waypoint = waypoints.find(wp => wp.id === waypointId);
+    if (waypoint) {
+      toast.success(`Waypoint ${waypoint.waypointNumber} ${waypoint.isLocked ? 'unlocked' : 'locked'}`);
+    }
+  };
+
+  const handleDeleteWaypoint = (waypointId: string) => {
+    const waypoint = waypoints.find(wp => wp.id === waypointId);
+    if (!waypoint) return;
+
+    const updatedWaypoints = waypoints
+      .filter(wp => wp.id !== waypointId)
+      .map((wp, index) => ({ ...wp, waypointNumber: index + 1 })); // Renumber waypoints
+    
+    setWaypoints(updatedWaypoints);
+    toast.success(`Waypoint ${waypoint.waypointNumber} deleted`);
   };
 
   const handleSaveVoyage = () => {
-    // Implement save logic
-    console.log('Saving voyage with waypoints:', waypoints);
+    if (!voyageName.trim()) {
+      toast.error('Please enter a voyage name');
+      return;
+    }
+    
+    if (!vesselName.trim()) {
+      toast.error('Please enter a vessel name');
+      return;
+    }
+
+    console.log('Saving modified voyage with waypoints:', waypoints);
+    toast.success('Voyage modifications saved successfully!');
     navigate(`/routes/${id}`);
   };
 
-  const handleDownloadRTZ = () => {
-    // Implement RTZ download logic
-    console.log('Downloading RTZ file');
-  };
-
-  const getWaypointStatusColor = (waypoint: WaypointData) => {
-    if (waypoint.isPassed) return 'bg-green-500';
-    if (waypoint.isLocked) return 'bg-orange-500';
-    return 'bg-blue-500';
-  };
-
-  const getWaypointStatusText = (waypoint: WaypointData) => {
-    if (waypoint.isPassed) return 'Passed';
-    if (waypoint.isLocked) return 'Locked';
-    return 'Unlocked';
-  };
+  // Get only passed waypoints for display in config panel
+  const passedWaypoints = waypoints.filter(wp => wp.isPassed);
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <div className="bg-background border-b border-border p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`/routes/${id}`)}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Route
-            </Button>
-            <div>
-              <h1 className="text-xl font-semibold">Modify Voyage - Route #{id?.split('-')[1]}</h1>
-              <p className="text-sm text-muted-foreground">Edit waypoints and route configuration</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleDownloadRTZ}
-              className="flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Download RTZ
-            </Button>
-            <Button
-              onClick={handleSaveVoyage}
-              className="flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex">
-        {/* Left Panel - Waypoints List */}
-        <div className="w-80 bg-background border-r border-border p-4 overflow-y-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span>Waypoints</span>
-                <span className="text-sm font-normal text-muted-foreground">
-                  {waypoints.length} points
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {waypoints.map((waypoint) => (
-                  <div
-                    key={waypoint.id}
-                    className={`
-                      p-3 border rounded-lg cursor-pointer transition-colors
-                      ${selectedWaypoint?.id === waypoint.id 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-border hover:bg-muted/50'
-                      }
-                    `}
-                    onClick={() => handleWaypointClick(waypoint)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-3 h-3 rounded-full ${getWaypointStatusColor(waypoint)}`}
-                        />
-                        <span className="font-medium text-sm">
-                          {waypoint.name || `WP${waypoint.waypointNumber}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {waypoint.isPassed && <CheckCircle className="w-4 h-4 text-green-500" />}
-                        {waypoint.isLocked && <Lock className="w-4 h-4 text-orange-500" />}
-                      </div>
-                    </div>
-                    
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div>{waypoint.lat.toFixed(6)}, {waypoint.lon.toFixed(6)}</div>
-                      {waypoint.eta && (
-                        <div>ETA: {new Date(waypoint.eta).toLocaleString()}</div>
-                      )}
-                    </div>
-                    
-                    <Badge
-                      variant={waypoint.isPassed ? 'default' : waypoint.isLocked ? 'secondary' : 'outline'}
-                      className="mt-2 text-xs"
-                    >
-                      {getWaypointStatusText(waypoint)}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Panel - Map */}
-        <div className="flex-1 relative">
-          <VoyageMapInterface
+    <div className="flex h-screen bg-background">
+      {/* Left Panel - Configuration with prefilled data and passed waypoints info */}
+      <VoyageConfigPanel 
+        voyageName={voyageName}
+        setVoyageName={setVoyageName}
+        vesselName={vesselName}
+        setVesselName={setVesselName}
+        waypoints={passedWaypoints} // Show only passed waypoints as additional info
+        onWaypointsChange={setWaypoints}
+        onGenerateVoyage={handleSaveVoyage}
+      />
+      
+      {/* Right Panel - Map Interface */}
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1">
+          <VoyageMapInterface 
             mapboxToken={mapboxToken}
             waypoints={waypoints}
             onWaypointsChange={handleWaypointsChange}
             onWaypointClick={handleWaypointClick}
             zoomToWaypoint={selectedWaypoint}
           />
-          
-          {/* Current vessel position indicator */}
-          <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-10">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              <span className="font-medium">Current Position</span>
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {waypoints.find(wp => wp.isPassed)?.lat.toFixed(6)}, {waypoints.find(wp => wp.isPassed)?.lon.toFixed(6)}
-            </div>
-          </div>
         </div>
+        
+        {/* Bottom Waypoints Panel */}
+        <WaypointsBottomPanel
+          waypoints={waypoints}
+          onWaypointClick={handleWaypointClick}
+          onToggleLock={handleToggleLock}
+          onDeleteWaypoint={handleDeleteWaypoint}
+          onUpdateWaypoint={handleUpdateWaypoint}
+          selectedWaypointId={selectedWaypoint?.id}
+          isMinimized={isPanelMinimized}
+          onToggleMinimized={() => setIsPanelMinimized(!isPanelMinimized)}
+        />
       </div>
     </div>
   );

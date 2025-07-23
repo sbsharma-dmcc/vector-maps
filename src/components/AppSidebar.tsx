@@ -114,7 +114,7 @@ const AppSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      <div className="mt-auto p-2 mb-4">
+      <div className="mt-auto p-2 mb-4 space-y-2">
         <Button 
           className="w-full bg-blue-600 hover:bg-blue-700" 
           size="icon"
@@ -122,6 +122,15 @@ const AppSidebar = () => {
           title="Create New Voyage"
         >
           <Plus className="h-4 w-4" />
+        </Button>
+        
+        <Button 
+          className="w-full bg-green-600 hover:bg-green-700" 
+          size="icon"
+          onClick={() => navigate('/create-voyage-alt')}
+          title="Create Voyage (Alternative)"
+        >
+          <Ship className="h-4 w-4" />
         </Button>
       </div>
     </Sidebar>
