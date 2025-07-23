@@ -12,8 +12,8 @@ interface VoyageMapInterfaceProps {
 
 const VoyageMapInterface = ({ mapboxToken, waypoints, onWaypointsChange, onWaypointClick, zoomToWaypoint }: VoyageMapInterfaceProps) => {
   return (
-    <div className="flex-1 relative">
-      <InteractiveWaypointMap 
+    <div className="w-full h-full min-h-[400px]">
+      <InteractiveWaypointMap
         mapboxToken={mapboxToken}
         waypoints={waypoints}
         onWaypointUpdate={onWaypointsChange}

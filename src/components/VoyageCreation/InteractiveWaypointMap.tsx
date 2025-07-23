@@ -338,7 +338,7 @@ const InteractiveWaypointMap = ({
 
   return (
     <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0 rounded-lg" />
+      <div ref={mapContainer} className="absolute inset-0 w-full h-full" style={{ minHeight: '400px' }} />
       
       {waypoints.length === 0 && (
         <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 max-w-xs">
