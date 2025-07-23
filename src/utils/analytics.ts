@@ -88,6 +88,6 @@ export const trackSlowLoadingScreen = (screen: string, loadTime: string) => {
 // Set user properties using identify with a simple object
 export const setUserRole = (role: string) => {
   identify(undefined, {
-    user_role: role
+    // user_role: role // Commented out - not supported by EventOptions
   });
 };

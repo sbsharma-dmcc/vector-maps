@@ -28,7 +28,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     // Generate mock vessel data
-    const mockVessels = generateMockVessels(25);
+    const mockVessels = generateMockVessels();
     setVessels(mockVessels);
     setFilteredVessels(mockVessels);
   }, []);
@@ -97,11 +97,13 @@ const Dashboard = () => {
         onLayerToggle={handleLayerToggle}
         activeLayer={activeBaseLayer}
         onBaseLayerChange={handleBaseLayerChange}
+        isGlobeViewEnabled={false}
+        onGlobeViewToggle={() => {}}
       />
 
       {/* Map */}
       <MapboxMap 
-        vessels={filteredVessels} 
+        vessels={filteredVessels as any[]} 
         activeLayers={activeLayers}
         activeBaseLayer={activeBaseLayer}
       />
