@@ -43,6 +43,7 @@ import { generateMockRoutes, generateMockVessels, Route } from '@/lib/vessel-dat
 import { useToast } from '@/hooks/use-toast';
 
 const RouteDetail = () => {
+  console.log('RouteDetail component rendering');
   const navigate = useNavigate();
   // ROUTE IDENTIFICATION - Get route ID from URL parameters
   const { id } = useParams<{ id: string }>();
@@ -256,11 +257,9 @@ const RouteDetail = () => {
   };
 
   const handleModifyVoyage = () => {
-    // TODO: Implement voyage modification functionality
-    toast({
-      title: "Modify Voyage",
-      description: "Voyage modification feature will be available soon."
-    });
+    console.log('handleModifyVoyage called, navigating to modify page');
+    // Navigate to modify voyage page
+    navigate(`/routes/${id}/modify`);
   };
 
   const handleVoyageCompletion = (comments: string) => {
@@ -360,6 +359,7 @@ const RouteDetail = () => {
 
   // MAP CLICK HANDLERS
   const handleMapClick = (coordinates: [number, number], event: any) => {
+    console.log('handleMapClick called with coordinates:', coordinates);
     setContextMenu({
       isVisible: true,
       position: { x: event.originalEvent.clientX, y: event.originalEvent.clientY },
