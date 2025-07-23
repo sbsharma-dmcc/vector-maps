@@ -41,86 +41,6 @@ const VoyageConfigPanel = ({ voyageName, setVoyageName, vesselName, setVesselNam
         <div className="text-sm opacity-90">Somalia ► Mumbai</div>
       </div>
 
-      {/* Configuration Card */}
-      <Card className="m-4 border-none shadow-none">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Configurations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Optimization Type */}
-          <div>
-            <Label className="text-sm font-medium">Optimisation Type</Label>
-            <RadioGroup value={optimizationType} onValueChange={setOptimizationType} className="mt-2">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="fixed-arrival" id="fixed-arrival" />
-                <Label htmlFor="fixed-arrival" className="text-sm">Fixed Arrival</Label>
-              </div>
-              <div className="text-xs text-muted-foreground ml-6">Select to optimise based on Arrival</div>
-              
-              <Input 
-                value={departureDate}
-                onChange={(e) => setDepartureDate(e.target.value)}
-                className="text-sm"
-              />
-              
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="smart-optimization" id="smart-optimization" />
-                <Label htmlFor="smart-optimization" className="text-sm">Smart Optimisation</Label>
-              </div>
-              <div className="text-xs text-muted-foreground ml-6">Select to optimise based on lowest overall</div>
-              
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="weather-routing" id="weather-routing" />
-                <Label htmlFor="weather-routing" className="text-sm">Weather Routing</Label>
-              </div>
-              <div className="text-xs text-muted-foreground ml-6">Select to optimise based on weather</div>
-            </RadioGroup>
-          </div>
-
-          {/* Cost Section */}
-          <div>
-            <Label className="text-sm font-medium">Cost</Label>
-            <div className="space-y-3 mt-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">ECA Fuel ($/Metric Tonne)</Label>
-                <Input 
-                  value={ecaFuel}
-                  onChange={(e) => setEcaFuel(e.target.value)}
-                  className="text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Non ECA Fuel ($/Metric Tonne)</Label>
-                <Input 
-                  value={nonEcaFuel}
-                  onChange={(e) => setNonEcaFuel(e.target.value)}
-                  className="text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Hire Rate ($/Day)</Label>
-                <Input 
-                  value={hireRate}
-                  onChange={(e) => setHireRate(e.target.value)}
-                  className="text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Other Fixed Cost per Voyage</Label>
-                <Input 
-                  value={otherCost}
-                  onChange={(e) => setOtherCost(e.target.value)}
-                  className="text-sm"
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Voyage Details Card */}
       <Card className="m-4 border-none shadow-none">
         <CardHeader className="pb-2">
@@ -197,6 +117,86 @@ const VoyageConfigPanel = ({ voyageName, setVoyageName, vesselName, setVesselNam
             <div className="flex items-center gap-2 mt-1">
               <Input value="—" className="text-sm" />
               <span className="text-xs text-muted-foreground">12 Hrs</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Configuration Card */}
+      <Card className="m-4 border-none shadow-none">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Configurations
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Optimization Type */}
+          <div>
+            <Label className="text-sm font-medium">Optimisation Type</Label>
+            <RadioGroup value={optimizationType} onValueChange={setOptimizationType} className="mt-2">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="fixed-arrival" id="fixed-arrival" />
+                <Label htmlFor="fixed-arrival" className="text-sm">Fixed Arrival</Label>
+              </div>
+              <div className="text-xs text-muted-foreground ml-6">Select to optimise based on Arrival</div>
+              
+              <Input 
+                value={departureDate}
+                onChange={(e) => setDepartureDate(e.target.value)}
+                className="text-sm"
+              />
+              
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="smart-optimization" id="smart-optimization" />
+                <Label htmlFor="smart-optimization" className="text-sm">Smart Optimisation</Label>
+              </div>
+              <div className="text-xs text-muted-foreground ml-6">Select to optimise based on lowest overall</div>
+              
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="weather-routing" id="weather-routing" />
+                <Label htmlFor="weather-routing" className="text-sm">Weather Routing</Label>
+              </div>
+              <div className="text-xs text-muted-foreground ml-6">Select to optimise based on weather</div>
+            </RadioGroup>
+          </div>
+
+          {/* Cost Section */}
+          <div>
+            <Label className="text-sm font-medium">Cost</Label>
+            <div className="space-y-3 mt-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">ECA Fuel ($/Metric Tonne)</Label>
+                <Input 
+                  value={ecaFuel}
+                  onChange={(e) => setEcaFuel(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Non ECA Fuel ($/Metric Tonne)</Label>
+                <Input 
+                  value={nonEcaFuel}
+                  onChange={(e) => setNonEcaFuel(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Hire Rate ($/Day)</Label>
+                <Input 
+                  value={hireRate}
+                  onChange={(e) => setHireRate(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Other Fixed Cost per Voyage</Label>
+                <Input 
+                  value={otherCost}
+                  onChange={(e) => setOtherCost(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
             </div>
           </div>
         </CardContent>
