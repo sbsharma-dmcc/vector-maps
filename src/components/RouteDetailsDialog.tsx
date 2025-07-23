@@ -57,242 +57,155 @@ const RouteDetailsDialog = ({ isOpen, onClose, route, activeTab, waypoints, onDo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Route className="w-5 h-5" />
-              <span>Route #{route.id.split('-')[1]} - {route.name}</span>
+              <span className="text-xl font-bold">Route#{route.id.split('-')[1]}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-orange-100 text-orange-700">
-                Pending
-              </Badge>
-              <span className="text-lg font-bold">$0</span>
-              <span className="text-sm text-muted-foreground">Total Est. Cost</span>
-            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              ✕
+            </button>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Route Information */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Route Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Current Position</span>
-                  <span>{formatPosition([waypoints[0]?.coordinates[0] || 0, waypoints[0]?.coordinates[1] || 0])}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Optimised for</span>
-                  <span>{activeTab === 'weather' ? 'Weather Routing' : 'Base Route'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Remaining Time</span>
-                  <span>24d 20hr 20min</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Performance Metrics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Avg. Speed Over Ground</span>
-                  <span>{currentStats.speed}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Distance</span>
-                  <span>{currentStats.distance}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Fuel Consumption</span>
-                  <span>{currentStats.consumption}</span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Status and Cost Header */}
+          <div className="flex items-center justify-between">
+            <Badge className="bg-blue-500 text-white px-3 py-1">
+              Approved
+            </Badge>
+            <div className="text-right">
+              <div className="text-2xl font-bold">$0</div>
+              <div className="text-sm text-gray-500">Total Est. Cost</div>
+            </div>
           </div>
 
-          {/* Route Comparison */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Route Comparison</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="base">Base Route</TabsTrigger>
-                  <TabsTrigger value="weather">Weather Routing</TabsTrigger>
-                </TabsList>
-                
-                <div className="mt-4 grid grid-cols-5 gap-4">
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">ETA</div>
-                    <div className="font-semibold">{currentStats.eta}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Avg. SOG</div>
-                    <div className="font-semibold">{currentStats.speed}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Total Distance</div>
-                    <div className="font-semibold">{currentStats.distance}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Total Consumption</div>
-                    <div className="font-semibold">{currentStats.consumption}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Fuel Cost</div>
-                    <div className="font-semibold">{currentStats.cost}</div>
-                  </div>
-                </div>
-              </Tabs>
-            </CardContent>
-          </Card>
+          {/* Separator */}
+          <div className="border-t border-dashed border-gray-300"></div>
 
-          {/* Waypoints */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span>Waypoints</span>
-                <span className="text-sm font-normal text-muted-foreground">
-                  Showing {waypoints.length} Waypoints
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {waypoints.map((waypoint, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        <span className="font-medium">{waypoint.name}</span>
-                      </div>
-                      {waypoint.isLocked && (
-                        <Lock className="w-4 h-4 text-orange-500" />
-                      )}
-                      {waypoint.weatherWarning && (
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                          <span className="text-sm text-yellow-600">{waypoint.weatherWarning}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {formatPosition(waypoint.coordinates)}
-                    </div>
-                  </div>
-                ))}
+          {/* Destination */}
+          <div className="text-center">
+            <div className="text-gray-500 text-sm mb-1">
+              25° 41' 27.0" N, 53° 27' 14.0" W →
+            </div>
+            <div className="text-xl font-semibold text-gray-700">Abidjan</div>
+          </div>
+
+          {/* Mail Button */}
+          <Button className="w-full bg-blue-100 text-blue-600 hover:bg-blue-200 border border-blue-200">
+            Mail me
+          </Button>
+
+          {/* Cost Breakdown */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">ECA Fuel Cost to go</span>
+              <span className="font-semibold">$ 0.00</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Non ECA Fuel Cost to go</span>
+              <span className="font-semibold">$ 0.00</span>
+            </div>
+          </div>
+
+          {/* Separator */}
+          <div className="border-t border-dashed border-gray-300"></div>
+
+          {/* Weather Section */}
+          <div>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Weather</h3>
+              <p className="text-sm text-gray-500">For next nine days</p>
+            </div>
+            
+            {/* Weather Tabs */}
+            <div className="mb-4">
+              <div className="flex gap-1 text-center text-sm border-b border-gray-200">
+                <div className="px-4 py-2 bg-blue-100 text-blue-600 font-medium rounded-t border-b-2 border-blue-500">Wind</div>
+                <div className="px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer">Wave</div>
+                <div className="px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer">Swell</div>
+                <div className="px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer">Current</div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Route Warnings */}
-          {warnings.length > 0 && (
-            <WarningsPanel 
-              warnings={warnings} 
-              position="sidebar"
-              className="bg-orange-50 border-orange-200"
-            />
-          )}
-
-          {/* Weather Chart Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Weather</CardTitle>
-              <p className="text-sm text-muted-foreground">For next nine days</p>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <div className="flex gap-4 text-center text-sm border-b">
-                  <div className="px-4 py-2 bg-blue-100 text-blue-800 font-medium rounded-t">Wind</div>
-                  <div className="px-4 py-2 text-gray-600">Wave</div>
-                  <div className="px-4 py-2 text-gray-600">Swell</div>
-                  <div className="px-4 py-2 text-gray-600">Current</div>
+              
+              {/* Wind Chart */}
+              <div className="bg-blue-50 p-4 rounded-b">
+                <div className="h-32 relative bg-gradient-to-t from-blue-200 to-blue-100 rounded">
+                  {/* Y-axis labels */}
+                  <div className="absolute left-2 top-2 text-xs text-gray-600">16</div>
+                  <div className="absolute left-2 top-8 text-xs text-gray-600">12</div>
+                  <div className="absolute left-2 top-16 text-xs text-gray-600">8</div>
+                  <div className="absolute left-2 top-24 text-xs text-gray-600">4</div>
+                  <div className="absolute left-2 bottom-2 text-xs text-gray-600">0</div>
+                  
+                  {/* Chart line */}
+                  <svg className="absolute inset-0 w-full h-full">
+                    <polyline
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="2"
+                      points="40,20 80,25 120,30 160,40 200,35 240,45 280,40"
+                    />
+                  </svg>
+                  
+                  {/* X-axis labels */}
+                  <div className="absolute bottom-1 left-12 text-xs text-gray-600">Jul 23</div>
+                  <div className="absolute bottom-1 right-12 text-xs text-gray-600">Jul 24</div>
                 </div>
-                
-                {/* Wind Chart */}
-                <div className="p-4 bg-blue-50">
-                  <div className="h-32 bg-gradient-to-r from-blue-200 to-blue-300 rounded relative">
-                    <div className="absolute bottom-0 left-0 w-full h-20 bg-blue-400 rounded-b"></div>
-                    <div className="absolute top-4 left-4 text-xs text-blue-800">16</div>
-                    <div className="absolute top-8 left-4 text-xs text-blue-800">12</div>
-                    <div className="absolute top-12 left-4 text-xs text-blue-800">8</div>
-                    <div className="absolute top-16 left-4 text-xs text-blue-800">4</div>
-                    <div className="absolute bottom-0 left-4 text-xs text-blue-800">0</div>
-                    <div className="absolute bottom-2 left-8 text-xs text-blue-800">Jul 23</div>
-                    <div className="absolute bottom-2 right-8 text-xs text-blue-800">Jul 24</div>
-                  </div>
+                <div className="mt-2 text-xs text-gray-600">
+                  <span className="mr-4">Wind Speed (Knots)</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Waypoints Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span>Waypoints</span>
-                <span className="text-sm font-normal text-muted-foreground">
-                  Showing Only 10 Waypoints <button className="text-blue-600 hover:underline ml-2">See all</button>
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b text-left text-sm text-gray-600">
-                      <th className="pb-2">Waypoints</th>
-                      <th className="pb-2">ETA (UTC)</th>
-                      <th className="pb-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {waypoints.slice(0, 10).map((waypoint, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="py-3 flex items-center gap-2">
-                          <span className="font-medium">{index + 1}</span>
-                          {waypoint.isLocked && (
-                            <Lock className="w-4 h-4 text-orange-500" />
-                          )}
-                        </td>
-                        <td className="py-3 text-sm text-gray-600">
-                          {waypoint.eta || '2025-07-23T06:30:00Z'}
-                        </td>
-                        <td className="py-3">
-                          <button className="text-gray-400 hover:text-gray-600">
-                            <span className="text-lg">⋮</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Separator */}
+          <div className="border-t border-dashed border-gray-300"></div>
+
+          {/* Waypoints Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Waypoints</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Showing Only 10 Waypoints</span>
+                <button className="text-blue-600 hover:underline text-sm font-medium">
+                  See all
+                </button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button 
-              onClick={onDownloadRTZ}
-              className="flex items-center gap-2"
-              variant="default"
-            >
-              <Download className="w-4 h-4" />
-              Download RTZ File
-            </Button>
+            </div>
+            
+            {/* Waypoints Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b text-left text-sm text-gray-600">
+                    <th className="pb-2 font-medium">Waypoints ⟷</th>
+                    <th className="pb-2 font-medium">ETA (UTC) ⟷</th>
+                    <th className="pb-2 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-3 font-medium">1</td>
+                    <td className="py-3 text-sm text-gray-600">2025-07-23T06:30:00Z</td>
+                    <td className="py-3">
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <span className="text-lg">⋮</span>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-3 font-medium">X</td>
+                    <td className="py-3 text-sm text-gray-600">2025-07-23T12:30:00Z</td>
+                    <td className="py-3">
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <span className="text-lg">⋮</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </DialogContent>
