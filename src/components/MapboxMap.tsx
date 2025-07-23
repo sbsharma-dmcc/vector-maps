@@ -306,9 +306,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         description: "Map has been successfully initialized"
       });
       
-      // Add map click handler
+      // Add map right-click handler for context menu
       if (onMapClick) {
-        map.on('click', (e) => {
+        map.on('contextmenu', (e) => {
+          e.preventDefault(); // Prevent default browser context menu
           onMapClick([e.lngLat.lng, e.lngLat.lat], e);
         });
       }
