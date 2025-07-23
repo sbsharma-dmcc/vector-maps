@@ -14,7 +14,8 @@
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import RouteDetailsDialog from './RouteDetailsDialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 
 const RouteStats: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -150,15 +151,170 @@ const RouteStats: React.FC = () => {
         </Button>
       </div>
 
-      {/* Route Details Dialog */}
-      <RouteDetailsDialog
-        isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
-        route={mockRoute}
-        activeTab="weather"
-        waypoints={mockWaypoints}
-        onDownloadRTZ={handleDownloadRTZ}
-      />
+      {/* Route Details Sheet */}
+      <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <SheetContent side="right" className="w-96 overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center justify-between">
+              <span className="text-xl font-bold">Route#{mockRoute.id.split('-')[1]}</span>
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="space-y-6 mt-6">
+            {/* Status and Cost Header */}
+            <div className="flex items-center justify-between">
+              <Badge className="bg-orange-500 text-white px-3 py-1">
+                Pending
+              </Badge>
+              <div className="text-right">
+                <div className="text-2xl font-bold">$0</div>
+                <div className="text-sm text-gray-500">Total Est. Cost</div>
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="border-t border-dashed border-gray-300"></div>
+
+            {/* Destination */}
+            <div className="text-left">
+              <div className="text-gray-500 text-sm mb-1">
+                51° 56' 14" N, 4° 11' 14" E →
+              </div>
+              <div className="text-xl font-semibold text-gray-700">Ventspils</div>
+            </div>
+
+            {/* Mail Button */}
+            <Button className="w-full bg-blue-100 text-blue-600 hover:bg-blue-200 border border-blue-200">
+              Mail me
+            </Button>
+
+            {/* Route Information */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Optimised for</span>
+                <span className="font-semibold">Weather Routing</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Current Position</span>
+                <span className="font-semibold">26°8'32" N 15°22'17" W</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Remaining Time to go</span>
+                <span className="font-semibold">4d 2hr 17min</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Avg. Speed Over Ground</span>
+                <span className="font-semibold">9.8 Kt</span>
+              </div>
+            </div>
+
+            {/* Cost Breakdown */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Total ECA Fuel Cost</span>
+                <span className="font-semibold">$0</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Total Non ECA Fuel Cost</span>
+                <span className="font-semibold">$0</span>
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="border-t border-dashed border-gray-300"></div>
+
+            {/* Weather Section */}
+            <div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Weather</h3>
+                <p className="text-sm text-gray-500">For next nine days</p>
+              </div>
+              
+              {/* Weather Tabs */}
+              <div className="mb-4">
+                <div className="flex gap-1 text-center text-sm border-b border-gray-200">
+                  <div className="px-4 py-2 bg-blue-100 text-blue-600 font-medium rounded-t border-b-2 border-blue-500">Wind</div>
+                  <div className="px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer">Wave</div>
+                  <div className="px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer">Swell</div>
+                  <div className="px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer">Current</div>
+                </div>
+                
+                {/* Wind Chart */}
+                <div className="bg-blue-50 p-4 rounded-b">
+                  <div className="h-32 relative bg-gradient-to-t from-blue-200 to-blue-100 rounded">
+                    {/* Y-axis labels */}
+                    <div className="absolute left-2 top-2 text-xs text-gray-600">20</div>
+                    <div className="absolute left-2 top-8 text-xs text-gray-600">15</div>
+                    <div className="absolute left-2 top-16 text-xs text-gray-600">10</div>
+                    <div className="absolute left-2 top-24 text-xs text-gray-600">5</div>
+                    <div className="absolute left-2 bottom-2 text-xs text-gray-600">0</div>
+                    
+                    {/* Chart line */}
+                    <svg className="absolute inset-0 w-full h-full">
+                      <polyline
+                        fill="none"
+                        stroke="#2563eb"
+                        strokeWidth="2"
+                        points="40,20 60,15 80,25 100,20 120,10 140,15 160,8 180,12 200,18 220,15 240,10 260,12"
+                      />
+                    </svg>
+                    
+                    {/* X-axis labels */}
+                    <div className="absolute bottom-1 left-8 text-xs text-gray-600">Jul 16</div>
+                    <div className="absolute bottom-1 center text-xs text-gray-600">Jul 17</div>
+                    <div className="absolute bottom-1 right-8 text-xs text-gray-600">Jul 19</div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-600">
+                    <span className="mr-4">Wind Speed (Knots)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="border-t border-dashed border-gray-300"></div>
+
+            {/* Waypoints Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Waypoints</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Showing Only 10 Waypoints</span>
+                  <button className="text-blue-600 hover:underline text-sm font-medium">
+                    See all
+                  </button>
+                </div>
+              </div>
+              
+              {/* Waypoints Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b text-left text-sm text-gray-600">
+                      <th className="pb-2 font-medium">Waypoints ⟷</th>
+                      <th className="pb-2 font-medium">ETA (UTC) ⟷</th>
+                      <th className="pb-2 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockWaypoints.map((waypoint, index) => (
+                      <tr key={index} className="border-b border-gray-100">
+                        <td className="py-3 font-medium">{index + 1}</td>
+                        <td className="py-3 text-sm text-gray-600">{waypoint.eta}</td>
+                        <td className="py-3">
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <span className="text-lg">⋮</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
