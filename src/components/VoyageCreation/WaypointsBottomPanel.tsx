@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Lock, Unlock, Trash2, Edit2, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Lock, Unlock, Trash2, Edit2, Save, X, ChevronUp, ChevronDown, Download } from 'lucide-react';
 import { WaypointData } from '@/types/voyage';
 
 interface WaypointsBottomPanelProps {
@@ -62,6 +62,25 @@ const WaypointsBottomPanel = ({
     setEditValues(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleDownloadCSV = useCallback(() => {
+    if (waypoints.length === 0) return;
+    
+    const csvData = [
+      'Waypoint,Latitude,Longitude,Name,ETA,Status',
+      ...waypoints.map(wp => 
+        `${wp.waypointNumber},${wp.lat},${wp.lon},"${wp.name || `Waypoint ${wp.waypointNumber}`}",${wp.eta || ''},${wp.isPassed ? 'Passed' : wp.isLocked ? 'Locked' : 'Unlocked'}`
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `waypoints_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [waypoints]);
+
   if (waypoints.length === 0) return null;
 
   return (
@@ -81,14 +100,25 @@ const WaypointsBottomPanel = ({
             View all uploaded waypoints
           </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleMinimized}
-          className="h-8 w-8 p-0"
-        >
-          {isMinimized ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadCSV}
+            className="h-8 px-3 text-xs"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Download CSV
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleMinimized}
+            className="h-8 w-8 p-0"
+          >
+            {isMinimized ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
