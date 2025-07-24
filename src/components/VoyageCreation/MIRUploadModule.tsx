@@ -30,6 +30,7 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
   const [isProcessing, setIsProcessing] = useState(false);
   const [showTable, setShowTable] = useState(false);
   const [jsonText, setJsonText] = useState('');
+  const [textData, setTextData] = useState('');
 
   const handleMIRToggle = useCallback((enabled: boolean) => {
     setMirEnabled(enabled);
@@ -133,6 +134,68 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
     toast.success('Modified waypoints downloaded');
   }, [uploadState.waypoints, uploadState.fileName]);
 
+  const handleTextUpload = useCallback(async () => {
+    if (!textData.trim()) {
+      toast.error('Please enter waypoint data');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      // Parse flexible text format - extract coordinates and names
+      const lines = textData.split('\n').filter(line => line.trim());
+      const waypoints: WaypointData[] = [];
+      
+      lines.forEach((line, index) => {
+        const coordMatch = line.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+        if (coordMatch) {
+          const lat = parseFloat(coordMatch[1]);
+          const lon = parseFloat(coordMatch[2]);
+          
+          if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+            // Extract name (everything before coordinates or after)
+            const name = line.replace(coordMatch[0], '').replace(/[,\s]+/g, ' ').trim() || `Waypoint ${index + 1}`;
+            
+            waypoints.push({
+              id: `wp-${Date.now()}-${index}`,
+              lat,
+              lon,
+              waypointNumber: index + 1,
+              isLocked: true,
+              isPassed: false,
+              createdFrom: 'upload',
+              timestamp: new Date().toISOString(),
+              name: name
+            });
+          }
+        }
+      });
+
+      if (waypoints.length === 0) {
+        throw new Error('No valid coordinates found in the text');
+      }
+
+      setUploadState({
+        isUploaded: true,
+        fileName: 'Pasted Text Data',
+        waypoints,
+        validationErrors: [],
+        isEditing: false
+      });
+
+      onWaypointsChange(waypoints);
+      toast.success(`Successfully processed ${waypoints.length} waypoints from text`);
+      setShowTable(true);
+      setTextData('');
+    } catch (error) {
+      console.error('Text processing error:', error);
+      toast.error(error instanceof Error ? error.message : 'Text processing failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [textData, onWaypointsChange]);
+
   const handleJsonUpload = useCallback(async () => {
     if (!jsonText.trim()) {
       toast.error('Please enter JSON data');
@@ -207,8 +270,9 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
         <CardContent className="space-y-4">
           {!uploadState.isUploaded ? (
             <Tabs defaultValue="upload" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="upload">Upload File</TabsTrigger>
+                <TabsTrigger value="text">Paste Text</TabsTrigger>
                 <TabsTrigger value="json">Paste JSON</TabsTrigger>
               </TabsList>
               
@@ -258,6 +322,38 @@ const MIRUploadModule = ({ onWaypointsChange, waypoints }: MIRUploadModuleProps)
                   <Download className="h-4 w-4 mr-2" />
                   Download Sample CSV
                 </Button>
+              </TabsContent>
+              
+              <TabsContent value="text" className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Paste Waypoint Text</Label>
+                  <Textarea
+                    placeholder="Paste waypoint data from chat or email here...
+Example:
+Mumbai Port 22.3511, 70.0364
+Waypoint 2 19.0760, 72.8777
+Kochi Port 8.4875 76.9525"
+                    value={textData}
+                    onChange={(e) => setTextData(e.target.value)}
+                    className="min-h-[200px] text-sm"
+                    disabled={isProcessing}
+                  />
+                </div>
+                
+                <Button 
+                  onClick={handleTextUpload}
+                  disabled={isProcessing || !textData.trim()}
+                  className="w-full"
+                >
+                  Process Text Data
+                </Button>
+                
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Text waypoints will be locked by default. Supports coordinates in any format.
+                  </AlertDescription>
+                </Alert>
               </TabsContent>
               
               <TabsContent value="json" className="space-y-4">
