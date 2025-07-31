@@ -9,6 +9,7 @@ import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers
 import { addRoutesToMap, updateRouteVisibility } from '@/utils/routeManager';
 import { fourVessels, Vessel } from '@/lib/vessel-data';
 import { OceanPolygonManager } from '@/utils/oceanPolygons';
+import { addECAZones } from '@/utils/ecaZones';
 
 import WeatherLayerConfig from './WeatherLayerConfig';
 
@@ -290,6 +291,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       
       // Initialize Ocean Polygon Manager
       oceanPolygonManagerRef.current = new OceanPolygonManager(map);
+      
+      // Add ECA zones automatically
+      setTimeout(async () => {
+        if (oceanPolygonManagerRef.current) {
+          await addECAZones(oceanPolygonManagerRef.current);
+          console.log('ECA zones loaded successfully');
+        }
+      }, 1000);
       
       // Restore the dummy layer required by weather overlays
       if (!map.getLayer('vessel-layer')) {
