@@ -8,6 +8,7 @@ import { getDTNToken } from '@/utils/dtnTokenManager';
 import { createVesselMarkers, cleanupVesselMarkers } from '@/utils/vesselMarkers';
 import { addRoutesToMap, updateRouteVisibility } from '@/utils/routeManager';
 import { fourVessels, Vessel } from '@/lib/vessel-data';
+import { OceanPolygonManager } from '@/utils/oceanPolygons';
 
 import WeatherLayerConfig from './WeatherLayerConfig';
 
@@ -51,7 +52,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const mapref = useRef<mapboxgl.Map | null>(null);
   const vesselMarkersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [showLayers, setShowLayers] = useState(false);
-  
+  const oceanPolygonManagerRef = useRef<OceanPolygonManager | null>(null);
   
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const activeWeatherLayers = activeOverlays.filter(layer => ['wind', 'swell', 'tropicalStorms', 'pressure', 'current', 'symbol', 'waves'].includes(layer));
@@ -287,6 +288,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       setIsMapLoaded(true);
       console.log("Map fully loaded");
       
+      // Initialize Ocean Polygon Manager
+      oceanPolygonManagerRef.current = new OceanPolygonManager(map);
+      
       // Restore the dummy layer required by weather overlays
       if (!map.getLayer('vessel-layer')) {
         map.addLayer({
@@ -303,7 +307,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       
       toast({
         title: "Map Loaded",
-        description: "Map has been successfully initialized"
+        description: "Map has been successfully initialized with ocean polygon support"
       });
       
       // Add map right-click handler for context menu
@@ -325,6 +329,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
 
     return () => {
+      if (oceanPolygonManagerRef.current) {
+        oceanPolygonManagerRef.current.destroy();
+        oceanPolygonManagerRef.current = null;
+      }
       if (mapref.current) {
         mapref.current.remove();
         mapref.current = null;
