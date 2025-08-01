@@ -30,36 +30,97 @@ export const updateWeatherLayer = (
 
   try {
     if (enabled) {
-      // Add or update the source
-      if (!map.getSource(sourceId)) {
-        console.log("Adding new source:", sourceId);
-        map.addSource(sourceId, {
-          type: "raster",
-          tiles: [
-            `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.webp?size=512&unit=metric-marine&token=${dtnToken}`,
-          ],
-          tileSize: 512,
-        });
-      }
+      // Special handling for tropical storms (vector tiles)
+      if (layerType === 'tropicalStorms') {
+        if (!map.getSource(sourceId)) {
+          console.log("Adding tropical storms vector source:", sourceId);
+          map.addSource(sourceId, {
+            type: "vector",
+            tiles: [
+              `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.pbf?token=${dtnToken.replace('Bearer ', '')}`
+            ],
+            maxzoom: 14
+          });
+        }
 
-      if (!map.getLayer(layerId)) {
-        console.log("Adding new layer:", layerId);
-        const layers = map.getStyle().layers;
-        const topLayer = layers.find(layer => layer.type === 'symbol' && layer.id.includes('label'));
+        // Add vector layers for tropical storms
+        if (!map.getLayer(layerId)) {
+          console.log("Adding tropical storms layers:", layerId);
+          
+          // Add storm track line
+          map.addLayer({
+            id: `${layerId}-track`,
+            type: "line",
+            source: sourceId,
+            'source-layer': 'tropical_cyclone_consensus_history_track',
+            paint: {
+              "line-color": "#000000",
+              "line-width": 2
+            }
+          });
 
-        map.addLayer({
-          id: layerId,
-          type: "raster",
-          source: sourceId,
-          paint: {
-            "raster-opacity": 0.9
-          }
-        }, topLayer ? topLayer.id : undefined);
+          // Add forecast track line
+          map.addLayer({
+            id: `${layerId}-forecast`,
+            type: "line", 
+            source: sourceId,
+            'source-layer': 'tropical_cyclone_consensus_forecast_track',
+            paint: {
+              "line-color": "#000000",
+              "line-width": 1,
+              "line-dasharray": [7, 5]
+            }
+          });
+
+          // Add storm symbols
+          map.addLayer({
+            id: layerId,
+            type: "symbol",
+            source: sourceId,
+            'source-layer': 'tropical_cyclone_consensus_points',
+            layout: {
+              "icon-image": "circle-15",
+              "icon-size": 1.5,
+              "icon-allow-overlap": true
+            },
+            paint: {
+              "icon-color": "#FF0000",
+              "icon-opacity": 0.9
+            }
+          });
+        }
       } else {
-        console.log("Updating existing layer:", layerId);
-        // Make sure layer is visible and update opacity
-        map.setLayoutProperty(layerId, 'visibility', 'visible');
-        map.setPaintProperty(layerId, 'raster-opacity', 0.9);
+        // Regular raster layer handling
+        if (!map.getSource(sourceId)) {
+          console.log("Adding new source:", sourceId);
+          map.addSource(sourceId, {
+            type: "raster",
+            tiles: [
+              `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.webp?size=512&unit=metric-marine&token=${dtnToken.replace('Bearer ', '')}`,
+            ],
+            tileSize: 512,
+          });
+        }
+
+        if (!map.getLayer(layerId)) {
+          console.log("Adding new layer:", layerId);
+          const layers = map.getStyle().layers;
+          const topLayer = layers.find(layer => layer.type === 'symbol' && layer.id.includes('label'));
+
+          map.addLayer({
+            id: layerId,
+            type: "raster",
+            source: sourceId,
+            paint: {
+              "raster-opacity": 0.9
+            }
+          }, topLayer ? topLayer.id : undefined);
+        } else {
+          console.log("Updating existing layer:", layerId);
+          // Make sure layer is visible and update opacity
+          map.setLayoutProperty(layerId, 'visibility', 'visible');
+          map.setPaintProperty(layerId, 'raster-opacity', 0.9);
+        }
       }
       
       toast({
@@ -67,10 +128,20 @@ export const updateWeatherLayer = (
         description: `Successfully loaded ${layerType} overlay`
       });
     } else {
-      // Hide the layer
-      if (map.getLayer(layerId)) {
-        console.log("Hiding layer:", layerId);
-        map.setLayoutProperty(layerId, 'visibility', 'none');
+      // Hide the layer(s)
+      if (layerType === 'tropicalStorms') {
+        // Hide all tropical storm layers
+        [`${layerId}-track`, `${layerId}-forecast`, layerId].forEach(id => {
+          if (map.getLayer(id)) {
+            console.log("Hiding tropical storm layer:", id);
+            map.setLayoutProperty(id, 'visibility', 'none');
+          }
+        });
+      } else {
+        if (map.getLayer(layerId)) {
+          console.log("Hiding layer:", layerId);
+          map.setLayoutProperty(layerId, 'visibility', 'none');
+        }
       }
     }
   } catch (error) {
