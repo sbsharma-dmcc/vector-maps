@@ -23,8 +23,7 @@ export const layerConfigs = {
   pressure: { dtnLayerId: 'fcst-manta-mean-sea-level-pressure-isolines', tileSetId: '2703fb6d-0ace-43a3-aca1-76588e3ac9a8' },
   storm: { dtnLayerId: 'storm', tileSetId: 'storm-latest' },
   current: { dtnLayerId: 'current', tileSetId: 'current-latest' },
-  wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' },
-  tropicalStorms: { dtnLayerId: 'sevwx-dtn-tropical-cyclones-plot', tileSetId: 'f785e1fe-1624-40a3-be75-ed14c2c4a53c' }
+  wind: { dtnLayerId: 'fcst-manta-wind-speed-contours', tileSetId: 'b864ff86-22af-41fc-963e-38837d457566' }
 };
 
 // BASE LAYER STYLES - Different map visual styles for base layers
