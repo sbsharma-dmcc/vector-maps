@@ -36,10 +36,7 @@ export const updateWeatherLayer = (
           console.log("Adding tropical storms vector source:", sourceId);
           map.addSource(sourceId, {
             type: "vector",
-            tiles: [
-              `https://map.api.dtn.com/v2/tiles/${config.dtnLayerId}/${config.tileSetId}/{z}/{x}/{y}.pbf?token=${dtnToken.replace('Bearer ', '')}`
-            ],
-            maxzoom: 14
+            url: `https://map.api.dtn.com/v2/styles/${config.dtnLayerId}?token=${dtnToken.replace('Bearer ', '')}`
           });
         }
 
